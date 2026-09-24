@@ -1,8 +1,8 @@
-# The Lord's Ledger 2.0 working guide
+# Lord's Ledger TypeScript Rewrite working guide
 
 ## Boundary and mission
 
-This independent repository is `C:\Users\thecl\Documents\lords-ledger-typescript-rewrite` on `main`. It preserves the original Git history through `47570f9caa5696c7369d88a42ae87171b78cd68b` and a checkpoint of the uncommitted rewrite from `C:\Users\thecl\Documents\The-Lords-Ledger-v2`. The user authorized this checkpoint commit; the larger refactor goal remains paused. The original checkout at `C:\Users\thecl\Documents\LordsLedger`, its `main` reference, and the two existing rewrite worktrees are protected. Do not change those checkouts or their refs. See `docs/v2/checkpoint.md` for the current state; older evidence below describes the source worktree at its recorded fingerprints.
+This independent repository is `C:\Users\thecl\Documents\lords-ledger-typescript-rewrite` on `main`, with `origin` at `https://github.com/goldbar123467/lords-ledger-typescript-rewrite.git`. It preserves the original Git history through `47570f9caa5696c7369d88a42ae87171b78cd68b` and a checkpoint of the rewrite from `C:\Users\thecl\Documents\The-Lords-Ledger-v2`. The user requires a commit after every rewrite loop or section, as specified below. The larger refactor goal remains paused until the user resumes it; repository and documentation maintenance does not resume implementation. The original checkout at `C:\Users\thecl\Documents\LordsLedger`, its `main` reference, and the two existing rewrite worktrees are protected. Do not change those checkouts or their refs. See `docs/v2/checkpoint.md` for the preserved implementation state; older evidence below describes the source worktree at its recorded fingerprints.
 
 The mission is to preserve the 40-turn medieval estate game and all authored choices while repairing gameplay, improving readability and interaction, migrating first-party executable code to strict TypeScript, and removing redundant implementation code. Do not make the game easier by bypassing systems or trim narrative content to lower line counts.
 
@@ -25,11 +25,22 @@ The mission is to preserve the 40-turn medieval estate game and all authored cho
 
 ## Work loop and review
 
-For each vertical slice, inspect definitions, consumers, save shape, and tests; characterize baseline behavior; implement one coherent change; run focused tests, strict typecheck, lint, build, and an affected player flow; inspect fresh screenshots; obtain independent tester/grader findings at meaningful checkpoints; then update the ledger. Do not edit Vite-served source during a browser campaign. Review reports apply only to their recorded source fingerprint, including uncommitted and untracked source.
+For each vertical slice, inspect definitions, consumers, save shape, and tests; characterize baseline behavior; implement one coherent change; run focused tests, strict typecheck, lint, build, and an affected player flow; inspect fresh screenshots; obtain independent tester/grader findings at meaningful checkpoints; then update the ledger and commit before starting the next loop or section. Do not edit Vite-served source during a browser campaign. Review reports apply only to their recorded source fingerprint, including uncommitted and untracked source.
 
 The screenshot matrix uses 1366x768 as primary, 1280x720 for existing comparisons, 1920x1080 wide, and about 390x844 narrow. Cover title/navigation, all nine tabs, deeper interactions, phase/outcome screens, and stress states. Open actual before and after images and critique text, contrast, clipping, focus, and scroll; screenshot existence or pixel change alone is not approval. Update goldens only after the intended image was inspected and independently accepted. Browser screenshots do not establish gameplay correctness.
 
 Tester and grader are independent reviewers. They may write only under assigned `artifacts/v2/` review directories and must not edit production or shared tests. Tester provides reproducible player-flow failures; grader inspects diff and actual images and marks uninspected areas `NOT REVIEWED`. Primary agent owns production changes and test integration.
+
+## Required commits after every loop or section
+
+The user has authorized and requires automatic checkpoint commits in this repository after **every rewrite loop or section**, including review-and-fix iterations and documentation sections. Do not accumulate multiple loops into one final commit or ask for permission again to make these commits.
+
+1. Finish the bounded iteration and run checks appropriate to its changes. For documentation-only work, check the diff, referenced paths, and command accuracy; gameplay tests are required when the changes affect gameplay.
+2. Update `docs/v2/migration-ledger.md` and `docs/v2/verification.md` when implementation status or verification evidence changes. Record the section's scope, executed checks, results, review evidence, and unresolved work.
+3. Review `git status` and the diff, stage only files belonging to that section, and run `git diff --cached --check`. Include its implementation, regression tests, and relevant documentation together. Keep generated outputs, local evidence artifacts, secrets, and unrelated user changes out of the commit.
+4. Create a focused commit on this repository's `main` before starting another loop or section. Use a descriptive message such as `refactor(synergies): type tier evaluation`, `fix(saves): validate approval counters`, or `docs(rewrite): update migration workflow`. Include verification results and any outstanding checks in the commit body.
+5. If an iteration ends with unresolved work, still preserve its changes in an explicitly labeled checkpoint commit and keep the ledger status `IN PROGRESS`. Record failing or pending checks; a commit is not a completion or review signoff. If the iteration changed no tracked or intended new files, report that no commit was needed instead of creating an empty commit.
+6. Report the new commit SHA and section summary to the user. Preserve separate loop commits; do not amend, squash, or rewrite earlier checkpoints unless the user requests it. If Git prevents a commit, report the concrete failure and resolve it before accumulating another section.
 
 ## TypeScript and integrity gates
 
