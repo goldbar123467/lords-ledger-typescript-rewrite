@@ -5,6 +5,8 @@
  * flavor texts, Knight's Gambit config, Bard tales, riddles, stranger encounters.
  */
 
+import { getRecruitmentCapacity } from "./militaryRules.ts";
+
 // ---------------------------------------------------------------------------
 // Tavern flavor subtitles — one shown randomly per visit
 // ---------------------------------------------------------------------------
@@ -113,6 +115,7 @@ export const BARD_STATE_COMMENTS = [
 
 export const BARD_RIDDLES = [
   {
+    id: "salt_trade",
     question: "I am sought by kings but made by the sea. Caravans die for me. I preserve your meat but I'm not loyalty. What am I?",
     answer: "Salt",
     options: ["Salt", "Ice", "Honey"],
@@ -120,6 +123,7 @@ export const BARD_RIDDLES = [
     wrong: "No, friend. It's salt. Wars were fought over it. You put it on eggs.",
   },
   {
+    id: "map_without_houses",
     question: "I have cities but no houses, forests but no trees, and water but no fish. What am I?",
     answer: "A map",
     options: ["A map", "A painting", "A dream"],
@@ -127,6 +131,7 @@ export const BARD_RIDDLES = [
     wrong: "It's a map, friend. Perhaps you need one \u2014 you seem a bit lost.",
   },
   {
+    id: "footsteps",
     question: "The more you take, the more you leave behind. What am I?",
     answer: "Footsteps",
     options: ["Footsteps", "Memories", "Debts"],
@@ -134,6 +139,7 @@ export const BARD_RIDDLES = [
     wrong: "Footsteps, my lord. Like the ones merchants leave across a thousand miles of desert.",
   },
   {
+    id: "joke",
     question: "I can be cracked, made, told, and played. What am I?",
     answer: "A joke",
     options: ["A joke", "An egg", "A promise"],
@@ -141,6 +147,7 @@ export const BARD_RIDDLES = [
     wrong: "A joke! Like the one about the knight who forgot his armor. It didn't end well for him either.",
   },
   {
+    id: "water_clock",
     question: "I have hands but cannot clap. I have a face but cannot smile. Harun al-Rashid sent me as a gift.",
     answer: "A clock",
     options: ["A clock", "A puppet", "A shield"],
@@ -317,7 +324,7 @@ export const ALDRIC_TRAINING_OFFERS = [
     title: "Basic Drill",
     description: "Your men look soft. For 30d, I\u2019ll drill them for a week. They won\u2019t thank me, but they\u2019ll fight better.",
     costText: "30d",
-    rewardText: "Garrison readiness for 3 seasons",
+    rewardText: "+1 defense per garrison soldier for 3 seasons",
     canAccept: (s) => s.denarii >= 30 && (s.garrison ?? 0) > 0,
     cantAcceptText: "You need both coin and a garrison to drill.",
   },
@@ -335,9 +342,9 @@ export const ALDRIC_TRAINING_OFFERS = [
     title: "Recruit Referral",
     description: "I know a man \u2014 solid fighter, no lord to serve. He\u2019d join your garrison for 40d signing bonus.",
     costText: "40d",
-    rewardText: "+2 garrison",
-    canAccept: (s) => s.denarii >= 40,
-    cantAcceptText: "Good soldiers cost good coin. Come back with 40d.",
+    rewardText: "+1 man-at-arms (garrison)",
+    canAccept: (s) => s.denarii >= 40 && getRecruitmentCapacity(s, "menAtArms") >= 1,
+    cantAcceptText: "Need 40d and room: under 25 soldiers, 10 men-at-arms, and 60% of families.",
   },
   {
     id: "war_story_lesson",

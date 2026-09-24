@@ -8,7 +8,7 @@
  * Phase 4: Context-aware Edmund dialogue, trust/mood system, reputation evolution.
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import {
   Scale, Users, ScrollText, Landmark, Utensils, ChevronRight, Shield,
   AlertTriangle, Star, BookOpen, TrendingUp, TrendingDown,
@@ -665,7 +665,7 @@ function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust,
       <div className="flex flex-col md:flex-row gap-4">
         {/* Steward Edmund */}
         <div
-          className="flex-1"
+          className="flex-1 order-2 md:order-1"
           style={{
             border: `1px solid ${C.border}`,
             borderLeft: `3px solid ${C.red}`,
@@ -726,7 +726,7 @@ function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust,
 
         {/* Queue */}
         <div
-          className="flex-1"
+          className="flex-1 order-1 md:order-2"
           style={{
             border: `1px solid ${C.border}`,
             borderLeft: `3px solid ${C.red}`,
@@ -843,6 +843,23 @@ export default function GreatHall({ state, dispatch }) {
   const [ambientIndex, setAmbientIndex] = useState(0);
   const [ambientVisible, setAmbientVisible] = useState(true);
   const [selectedDispute, setSelectedDispute] = useState(null);
+  const hallNavRef = useRef(null);
+  const activeHallTabRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const alignActiveTab = () => {
+      const bar = hallNavRef.current;
+      const active = activeHallTabRef.current;
+      if (!bar || !active || bar.scrollWidth <= bar.clientWidth) return;
+      const viewport = bar.getBoundingClientRect();
+      const target = active.getBoundingClientRect();
+      if (target.left < viewport.left) bar.scrollLeft -= viewport.left - target.left;
+      else if (target.right > viewport.right) bar.scrollLeft += target.right - viewport.right;
+    };
+    alignActiveTab();
+    window.addEventListener('resize', alignActiveTab);
+    return () => window.removeEventListener('resize', alignActiveTab);
+  }, [currentView]);
 
   const hall = state.greatHall || {};
   const meters = hall.meters || DEFAULT_METERS;
@@ -948,10 +965,10 @@ export default function GreatHall({ state, dispatch }) {
     });
   };
 
-  const handleFeastComplete = (totalEffects) => {
+  const handleFeastComplete = (selection) => {
     dispatch({
       type: "HALL_FEAST_COMPLETE",
-      payload: { totalEffects },
+      payload: selection,
     });
   };
 
@@ -1105,6 +1122,7 @@ export default function GreatHall({ state, dispatch }) {
           {currentView === "feast" && (
             <FeastHall
               feastData={FEAST_DATA}
+              rngState={state.rngState}
               onComplete={handleFeastComplete}
               onReturn={() => switchView("throne")}
               hasFeastedThisSeason={hasFeastedThisSeason}
@@ -1136,6 +1154,7 @@ export default function GreatHall({ state, dispatch }) {
 
       {/* ═══ HALL NAVIGATION ═══ */}
       <div
+        ref={hallNavRef}
         className="flex overflow-x-auto"
         style={{
           borderTop: `1px solid ${C.border}`,
@@ -1147,8 +1166,9 @@ export default function GreatHall({ state, dispatch }) {
           return (
             <button
               key={view.id}
+              ref={isActive ? activeHallTabRef : null}
               onClick={() => switchView(view.id)}
-              className="flex-1 min-w-0 px-2"
+              className="flex-1 min-w-[80px] px-2"
               style={{
                 paddingTop: 8,
                 paddingBottom: 8,

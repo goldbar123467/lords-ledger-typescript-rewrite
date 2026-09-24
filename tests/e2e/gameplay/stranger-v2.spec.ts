@@ -1,0 +1,105 @@
+import { expect, test } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { writeV2Save } from '../../../src/save/saveGame.ts';
+
+test('a seeded stranger offers one canonical trade across save and load', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 2 } });
+  await page.addInitScript(({ raw }) => localStorage.setItem('lords-ledger-v2-save', raw),
+    { raw: writeV2Save(started) });
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load saved game' }).click();
+  const tutorial = page.getByRole('button', { name: 'I Understand' });
+  if (await tutorial.isVisible()) await tutorial.click();
+  await page.getByRole('button', { name: /Map tab/ }).click();
+  if (await tutorial.isVisible()) await tutorial.click();
+  await page.locator('button[title="Enter the Boar\'s Head Tavern"]').click();
+  await expect(page.getByRole('heading', { name: 'A Hooded Figure' })).toBeVisible();
+  const tradeButton = page.getByRole('button', { name: 'Trade 150d for 10 food' });
+  await expect(tradeButton).toBeVisible();
+  await expect(page.locator('.tavern-enter')).toHaveCount(0);
+  await mkdir('artifacts/v2/stranger-browser', { recursive: true });
+  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-1366x768.png' });
+  const laptopTradeBox = await tradeButton.boundingBox();
+  expect(laptopTradeBox).not.toBeNull();
+  if (laptopTradeBox) expect(laptopTradeBox.y + laptopTradeBox.height).toBeLessThanOrEqual(768);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-390x844-full.png', fullPage: true });
+  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-390x844.png' });
+  const tradeBox = await tradeButton.boundingBox();
+  expect(tradeBox).not.toBeNull();
+  if (tradeBox) {
+    expect(tradeBox.height).toBeGreaterThanOrEqual(44);
+    expect(tradeBox.y + tradeBox.height).toBeLessThanOrEqual(844);
+  }
+  const declineBox = await page.getByRole('button', { name: 'Decline' }).boundingBox();
+  expect(declineBox).not.toBeNull();
+  if (declineBox) expect(declineBox.height).toBeGreaterThanOrEqual(44);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.getByRole('button', { name: 'Save game' }).click();
+  const pendingPage = await page.context().newPage();
+  pendingPage.on('pageerror', error => errors.push(error.message));
+  await pendingPage.goto('/');
+  await pendingPage.getByRole('button', { name: 'Load saved game' }).click();
+  const pendingTutorial = pendingPage.getByRole('button', { name: 'I Understand' });
+  if (await pendingTutorial.isVisible()) await pendingTutorial.click();
+  await pendingPage.getByRole('button', { name: /Map tab/ }).click();
+  if (await pendingTutorial.isVisible()) await pendingTutorial.click();
+  await pendingPage.locator('button[title="Enter the Boar\'s Head Tavern"]').click();
+  await expect(pendingPage.getByRole('button', { name: 'Trade 150d for 10 food' })).toBeVisible();
+  await pendingPage.close();
+  await tradeButton.click();
+  await expect(page.getByRole('heading', { name: 'A Hooded Figure' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Save game' }).click();
+  const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+  if (!raw) throw new Error('Trade did not save.');
+  const state = JSON.parse(raw).state;
+  expect(state.denarii).toBe(550);
+  expect(state.food).toBe(490);
+  expect(state.inventory.grain).toBe(360);
+  expect(state.tavern.strangerAppearedThisSeason).toBe(true);
+  expect(state.tavern.pendingStrangerEncounter).toBeNull();
+  expect(state.tavern.totalVisits).toBe(1);
+  expect(state.rngState).toBe(2143695500);
+
+  const loadedPage = await page.context().newPage();
+  loadedPage.on('pageerror', error => errors.push(error.message));
+  await loadedPage.goto('/');
+  await loadedPage.getByRole('button', { name: 'Load saved game' }).click();
+  const loadedTutorial = loadedPage.getByRole('button', { name: 'I Understand' });
+  if (await loadedTutorial.isVisible()) await loadedTutorial.click();
+  await loadedPage.getByRole('button', { name: /Map tab/ }).click();
+  if (await loadedTutorial.isVisible()) await loadedTutorial.click();
+  await loadedPage.locator('button[title="Enter the Boar\'s Head Tavern"]').click();
+  await expect(loadedPage.getByRole('heading', { name: 'A Hooded Figure' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('declining an offered trade closes the encounter for the season', async ({ page }) => {
+  const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 2 } });
+  await page.addInitScript(({ raw }) => localStorage.setItem('lords-ledger-v2-save', raw),
+    { raw: writeV2Save(started) });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load saved game' }).click();
+  const tutorial = page.getByRole('button', { name: 'I Understand' });
+  if (await tutorial.isVisible()) await tutorial.click();
+  await page.getByRole('button', { name: /Map tab/ }).click();
+  if (await tutorial.isVisible()) await tutorial.click();
+  await page.locator('button[title="Enter the Boar\'s Head Tavern"]').click();
+  await expect(page.getByRole('button', { name: 'Trade 150d for 10 food' })).toBeVisible();
+  await page.getByRole('button', { name: 'Decline' }).click();
+  await expect(page.getByRole('heading', { name: 'A Hooded Figure' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Save game' }).click();
+  const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+  if (!raw) throw new Error('Dismissal did not save.');
+  const state = JSON.parse(raw).state;
+  expect(state.denarii).toBe(700);
+  expect(state.food).toBe(480);
+  expect(state.tavern.strangerAppearedThisSeason).toBe(true);
+  expect(state.tavern.pendingStrangerEncounter).toBeNull();
+  expect(state.chronicle.at(-1).text).toMatch(/declined.*provisions/i);
+});

@@ -229,13 +229,13 @@ export const SCAN_RATINGS = [
     captainLine: "Some threats spotted. But what did you miss?",
   },
   {
-    min: 4, max: 5,
+    min: 4, max: 4,
     label: "Sharp-eyed",
     denariiBonus: 5,
     captainLine: "Well observed, my lord. We\u2019ll be ready.",
   },
   {
-    min: 6, max: 99,
+    min: 5, max: 99,
     label: "Eagle-eyed",
     denariiBonus: 10,
     captainLine: "Nothing escapes your gaze. The enemy will find no surprise here.",
@@ -248,7 +248,7 @@ export const SCAN_RATINGS = [
 
 export const SCAN_DURATION_SECONDS = 15;
 export const SCAN_MIN_ANOMALIES = 4;
-export const SCAN_MAX_ANOMALIES = 6;
+export const SCAN_MAX_ANOMALIES = 5;
 
 // ---------------------------------------------------------------------------
 // Foreign trader names for merchant preview

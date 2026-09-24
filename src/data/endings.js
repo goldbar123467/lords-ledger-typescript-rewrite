@@ -95,7 +95,7 @@ export const victoryTitles = {
 //
 // Two failure modes:
 //   - "depopulation" — population reached 0
-//   - "bankruptcy" — denarii at 0 for 3+ consecutive turns
+//   - "bankruptcy" — denarii at 0 for 6+ consecutive turns
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const failureNarratives = {

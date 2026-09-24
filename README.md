@@ -1,3 +1,5 @@
+> **TypeScript rewrite checkpoint:** this repository preserves the work in progress. The full migration is incomplete, and the latest synergy corrections still need browser and independent reviewer retests. See [checkpoint status](docs/v2/checkpoint.md).
+
 <p align="center">
   <img src="https://img.shields.io/badge/you_inherited_a_medieval_estate-good_luck-8b1a1a?style=for-the-badge&labelColor=1a1610" alt="Good Luck" />
 </p>
@@ -86,7 +88,7 @@ Every mechanic teaches real medieval history through systems, not lectures.
 | **The Great Builder** | Most buildings constructed |
 | **The Balanced** | Decent across all categories |
 
-**Lose** if your population hits 0 (*The Empty Village*) or your treasury stays at 0 for 3+ consecutive turns (*The Empty Coffer*). Both failures come with historically grounded narratives explaining why your reign collapsed — and what real medieval lords faced in similar situations.
+**Lose** if your population hits 0 (*The Empty Village*) or your treasury stays at 0 for 6+ consecutive turns (*The Empty Coffer*). Famine also ends a reign after 4, 3, or 2 consecutive foodless seasons on Easy, Normal, or Hard. These failures come with historically grounded narratives explaining why your reign collapsed — and what real medieval lords faced in similar situations.
 
 ### Difficulty Modes
 
@@ -179,10 +181,10 @@ Two threat types that scale with game progression:
 
 | Threat | First Appears | Defense Needed | Stakes |
 |--------|--------------|----------------|--------|
-| **Outlaws & Brigands** | Turn 4+ | 25 defense rating | Lose 30-50d, food, trade goods |
-| **Scottish Border Reivers** | Turn 8+ (forced at turn 16) | 50 defense rating | Lose 80-120d, massive food/population loss |
+| **Outlaws & Brigands** | Turn 4+ | 18 defense rating | Lose 30-50d, food, trade goods |
+| **Scottish Border Reivers** | Turn 8+ (forced at turn 16) | 38 defense rating | Lose 80-120d, massive food/population loss |
 
-Raids are resolved by comparing your **defense rating** against the threat threshold. Victory earns bounty rewards; defeat is devastating. Zero garrison means automatic loss — *"There was no one to defend the estate."*
+Raids are resolved by comparing your **defense rating** against the threat threshold. Victory earns bounty rewards; defeat is devastating. Fortifications can meet the threshold with zero garrison; otherwise, having no soldiers increases the losses.
 
 ### &#9819; Great Hall
 
@@ -256,11 +258,11 @@ Synergies are **hidden** — students discover them through experimentation, not
 ```bash
 git clone https://github.com/goldbar123467/The-Lords-Ledger.git
 cd The-Lords-Ledger
-npm install
-npm run dev
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5180 --strictPort
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://127.0.0.1:5180](http://127.0.0.1:5180) in your browser when running this 2.0 worktree.
 
 ### Commands
 
@@ -273,7 +275,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Deploy
 
-The project deploys to **Vercel** with zero configuration. Push to `main` and it auto-deploys. Vercel Web Analytics is integrated for page view tracking.
+The production site uses **Vercel** and includes Vercel Web Analytics. The isolated 2.0 worktree must not be pushed or deployed during this refactor; `AGENTS.md` records the current boundary.
 
 ---
 
@@ -289,7 +291,7 @@ The project deploys to **Vercel** with zero configuration. Push to `main` and it
 | Icons | Lucide React | 0.577 |
 | Analytics | Vercel Analytics | 1.6 |
 | E2E Testing | Playwright | 1.58 |
-| Language | JavaScript (ES2024) | Pure JS, no TypeScript |
+| Language | JavaScript and TypeScript | Strict migration in progress; see `docs/v2/verification.md` |
 
 ### State Management
 
@@ -299,10 +301,10 @@ All game state lives in a **single `useReducer`** in `App.jsx`. The reducer (`ga
 App.jsx (useReducer)
   |
   +-- gameReducer.js -----> 70+ action types (BUILD, TRADE, RECRUIT, SET_TAX, SIMULATE_SEASON...)
-  +-- economyEngine.js ---> Pure simulation: production -> consumption -> upkeep -> tax -> growth
-  +-- eventSelector.js ---> Season-aware event selection with turn-based gating
+  +-- economyEngine.ts ---> Pure simulation: production -> consumption -> upkeep -> tax -> growth
+  +-- eventSelector.ts ---> Season-aware event selection with turn-based gating
   +-- raidEngine.js ------> Raid resolution: garrison + castle defense vs raider strength
-  +-- synergyEngine.js ---> Hidden strategy path detection and tier progression
+  +-- synergyEngine.ts ---> Hidden strategy path detection and tier progression
   +-- flipEngine.js ------> CYOA perspective flip branching narrative state machine
   +-- meterUtils.js ------> Legacy effect translation (old meter format -> resource deltas)
 ```
@@ -312,7 +314,7 @@ App.jsx (useReducer)
 ```
 title -> management -> seasonal_action -> seasonal_resolve -> random_event -> random_resolve -> management
                                                                                                   |
-game_over (population = 0 or bankrupt 3 turns)                                                    |
+game_over (population = 0, bankrupt 6 turns, or famine threshold)                                  |
 victory (survived 40 turns) <---------------------------------------------------------------------+
 ```
 
@@ -326,28 +328,28 @@ src/
  |
  +-- engine/                    # Pure functions only -- no side effects, no DOM access
  |    +-- gameReducer.js        # Central state machine (3,697 lines, 20+ actions)
- |    +-- economyEngine.js      # Seasonal simulation engine (658 lines)
- |    +-- eventSelector.js      # Event selection with turn gates
+ |    +-- economyEngine.ts      # Seasonal simulation engine
+ |    +-- eventSelector.ts      # Event selection with turn gates
  |    +-- raidEngine.js         # Raid combat resolution
- |    +-- synergyEngine.js      # Hidden path detection (7 paths x 3 tiers)
+ |    +-- synergyEngine.ts      # Hidden path detection (7 paths x 3 tiers)
  |    +-- flipEngine.js         # CYOA branching narrative engine
  |    +-- meterUtils.js         # Legacy effect translation layer
  |
  +-- data/                      # Pure data definitions -- no logic, no side effects
- |    +-- economy.js            # 17 resources, market prices, tax rates, castle levels
- |    +-- buildings.js          # 17 buildings with Latin names, synergies, historical notes
+ |    +-- economy.ts            # 17 resources, market prices, tax rates, castle levels
+ |    +-- buildings.ts          # 17 buildings with Latin names, synergies, historical notes
  |    +-- seasonalEvents.js     # 20+ season-specific narrative events (1,333 lines)
  |    +-- randomEvents.js       # 20+ random events by category (1,288 lines)
  |    +-- raids.js              # Criminal outlaws + Scottish Border Reivers
  |    +-- endings.js            # 5 victory titles + 2 failure narratives with history
- |    +-- synergies.js          # 7 hidden strategy paths (21 tiers total)
+ |    +-- synergies.ts          # 7 hidden strategy paths (21 tiers total)
  |    +-- cyoaFlips.js          # CYOA perspective flip content (1,025 lines)
  |    +-- blacksmith.js         # Forge recipes and crafting data
  |    +-- chapel.js             # Faith/piety system definitions
  |    +-- disputes.js           # 16 audience chamber dispute cases (1,907 lines)
- |    +-- decrees.js            # Great Hall decree definitions
+ |    +-- decrees.ts            # Great Hall decree, council, and feast definitions
  |    +-- audience.js           # 20 audience encounter scripts (1,301 lines)
- |    +-- market.js             # Market Square merchant data
+ |    +-- market.ts             # Checked Market Square merchant data
  |    +-- tavern.js             # Tavern NPC and activity data
  |    +-- watchtower.js         # Scouting and threat intelligence
  |    +-- greatHall.js          # Great Hall configuration
@@ -360,7 +362,7 @@ src/
       +-- TabBar.jsx            # Horizontal tab navigation (all tabs unlocked from turn 1)
       +-- TitleScreen.jsx       # Difficulty selection + intro narrative
       +-- EstateTab.jsx         # Building management + economy overview + inventory
-      +-- TradeTab.jsx          # Buy/sell marketplace with quantity controls (1, 5, All)
+      +-- MarketSquare.tsx      # Merchants, haggling, and Quick Trade (1, 5, All)
       +-- MilitaryTab.jsx       # Garrison, castle upgrades, defense installations
       +-- PeopleTab.jsx         # Tax rate management + church donations
       +-- ChapelTab.jsx         # Faith and piety management
@@ -376,9 +378,8 @@ src/
       +-- KnightsGambit.jsx     # Tavern: strategy game
       +-- RatsInCellar.jsx      # Tavern: pest control challenge
       +-- Watchtower.jsx        # Scouting and threat intelligence (1,497 lines)
-      +-- MarketSquare.jsx      # Market hub with NPC merchants
-      +-- MartaMerchant.jsx     # NPC: Marta the merchant
-      +-- OldAldric.jsx         # NPC: Old Aldric
+      +-- MarketSquare.tsx      # Market hub with NPC merchants
+      +-- TavernCompanion.tsx   # Shared typed Marta/Aldric view and distinct content/themes
       +-- Chronicle.jsx         # Reverse-chronological scrolling event log
       +-- EventCard.jsx         # Seasonal/random event presentation
       +-- FlipScreen.jsx        # CYOA perspective flip interface
@@ -464,19 +465,14 @@ The estate map (`MapTab.jsx`, 1,508 lines) is **entirely CSS-rendered** — no i
 
 ## &#129309; Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the architecture conventions in `CLAUDE.md`
-4. Commit your changes
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
+For this isolated 2.0 worktree, follow `AGENTS.md` and keep changes uncommitted and local unless the user separately authorizes a checkpoint or remote update. The usual fork, branch, commit, and pull-request workflow applies to independent contributions outside this experiment.
 
 ### Adding Content
 
 The most common contributions are new **events**, **buildings**, and **disputes**:
 
 - **New event:** Add to `src/data/seasonalEvents.js` or `src/data/randomEvents.js`. Include a `scribesNote` with real history.
-- **New building:** Add to `src/data/buildings.js`. Include `historicalNote`, set `rarity`, define `produces`/`consumes`.
+- **New building:** Add to `src/data/buildings.ts`. Include `historicalNote`, set `rarity`, define `produces`/`consumes`.
 - **New dispute:** Add to `src/data/disputes.js`. Write two options with meaningfully different consequences.
 
 ### Development Flow

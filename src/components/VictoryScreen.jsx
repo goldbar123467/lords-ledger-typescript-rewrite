@@ -1,5 +1,5 @@
 import { getVictoryTitle, victorySummary } from "../data/endings";
-import { getSynergyVictoryTitle, getActiveSynergyDisplay } from "../engine/synergyEngine.js";
+import { getSynergyVictoryTitle, getActiveSynergyDisplay } from "../engine/synergyEngine.ts";
 
 function computeVictoryTitle(state, activatedSynergies) {
   // Tier 3 synergy title override takes priority

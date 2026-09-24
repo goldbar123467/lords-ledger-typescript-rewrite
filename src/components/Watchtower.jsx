@@ -8,7 +8,9 @@
  * Rendered as an overlay within the Map tab (same pattern as Tavern).
  */
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { createRandomCursor } from "../engine/random.ts";
+import { createScanPlan, summarizeScan } from "../engine/watchtowerScan.ts";
 import {
   WATCHTOWER_SUBTITLES,
   RODERIC_DEFENSE_ASSESSMENTS,
@@ -16,12 +18,7 @@ import {
   RODERIC_STRATEGIC_TIPS,
   RODERIC_SCRIBES_NOTE,
   SCAN_SCRIBES_NOTE,
-  ANOMALY_TYPES,
-  SCAN_RATINGS,
   SCAN_DURATION_SECONDS,
-  SCAN_MIN_ANOMALIES,
-  SCAN_MAX_ANOMALIES,
-  FOREIGN_TRADERS,
 } from "../data/watchtower";
 
 // ---------------------------------------------------------------------------
@@ -35,14 +32,6 @@ function shuffle(arr) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
-}
-
-function pickRandom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getRating(found) {
-  return SCAN_RATINGS.find((r) => found >= r.min && found <= r.max) || SCAN_RATINGS[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -188,7 +177,7 @@ function LandscapeScene({ anomalies, onClickAnomaly, timeLeft, scanActive, scanD
 // ---------------------------------------------------------------------------
 
 function AnomalyElement({ anomaly, onClick }) {
-  const { type, x, y, found, missed } = anomaly;
+  const { id, x, y, found, missed } = anomaly;
 
   const baseStyle = {
     position: "absolute",
@@ -198,6 +187,14 @@ function AnomalyElement({ anomaly, onClick }) {
     cursor: found ? "default" : "pointer",
     zIndex: 10,
     transition: "box-shadow 200ms",
+    minWidth: "32px",
+    minHeight: "32px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: 0,
+    padding: 0,
+    background: "transparent",
   };
 
   if (missed) {
@@ -219,11 +216,11 @@ function AnomalyElement({ anomaly, onClick }) {
     ? { boxShadow: "0 0 8px var(--gold, #c4a24a)", borderRadius: "50%" }
     : {};
 
-  // Render different anomaly visuals based on type
-  switch (type) {
+  // Render the authored anomaly ID.
+  switch (id) {
     case "campfire":
       return (
-        <div style={{ ...baseStyle, ...highlight }} onClick={!found ? onClick : undefined}>
+        <button type="button" data-scan-anomaly={id} aria-label={`Spot ${anomaly.name}`} disabled={found} style={{ ...baseStyle, ...highlight }} onClick={onClick}>
           <div style={{ width: "30px", height: "40px", position: "relative" }}>
             {/* Smoke wisps */}
             <div style={{
@@ -239,13 +236,12 @@ function AnomalyElement({ anomaly, onClick }) {
               animation: "watchtower-smoke 3s ease-out infinite 0.8s",
             }} />
           </div>
-          {found && <AnomalyLabel text={anomaly.label} />}
-        </div>
+        </button>
       );
 
     case "dust":
       return (
-        <div style={{ ...baseStyle, ...highlight }} onClick={!found ? onClick : undefined}>
+        <button type="button" data-scan-anomaly={id} aria-label={`Spot ${anomaly.name}`} disabled={found} style={{ ...baseStyle, ...highlight }} onClick={onClick}>
           <div style={{
             width: "28px", height: "14px",
             borderRadius: "50%",
@@ -253,13 +249,12 @@ function AnomalyElement({ anomaly, onClick }) {
             filter: "blur(3px)",
             animation: "watchtower-pulse 2.5s ease-in-out infinite",
           }} />
-          {found && <AnomalyLabel text={anomaly.label} />}
-        </div>
+        </button>
       );
 
     case "signal":
       return (
-        <div style={{ ...baseStyle, ...highlight }} onClick={!found ? onClick : undefined}>
+        <button type="button" data-scan-anomaly={id} aria-label={`Spot ${anomaly.name}`} disabled={found} style={{ ...baseStyle, ...highlight }} onClick={onClick}>
           <div style={{
             width: "10px", height: "10px",
             borderRadius: "50%",
@@ -267,13 +262,12 @@ function AnomalyElement({ anomaly, onClick }) {
             animation: "watchtower-flicker 1.5s ease-in-out infinite",
             boxShadow: "0 0 6px rgba(196, 74, 26, 0.6)",
           }} />
-          {found && <AnomalyLabel text={anomaly.label} />}
-        </div>
+        </button>
       );
 
     case "wagon":
       return (
-        <div style={{ ...baseStyle, ...highlight }} onClick={!found ? onClick : undefined}>
+        <button type="button" data-scan-anomaly={id} aria-label={`Spot ${anomaly.name}`} disabled={found} style={{ ...baseStyle, ...highlight }} onClick={onClick}>
           <div style={{ position: "relative", width: "32px", height: "16px" }}>
             {/* Wagon body */}
             <div style={{
@@ -292,13 +286,12 @@ function AnomalyElement({ anomaly, onClick }) {
               backgroundColor: "#3a2a1a",
             }} />
           </div>
-          {found && <AnomalyLabel text={anomaly.label} />}
-        </div>
+        </button>
       );
 
     case "birds":
       return (
-        <div style={{ ...baseStyle, ...highlight }} onClick={!found ? onClick : undefined}>
+        <button type="button" data-scan-anomaly={id} aria-label={`Spot ${anomaly.name}`} disabled={found} style={{ ...baseStyle, ...highlight }} onClick={onClick}>
           <svg width="30" height="24" viewBox="0 0 30 24" style={{ overflow: "visible" }}>
             {/* V-shaped birds */}
             <path d="M4,16 L7,13 L10,16" stroke="#2a2a2a" strokeWidth="1.5" fill="none"
@@ -310,38 +303,12 @@ function AnomalyElement({ anomaly, onClick }) {
             <path d="M20,14 L23,11 L26,14" stroke="#3a3a3a" strokeWidth="1" fill="none"
               style={{ animation: "watchtower-birds 4s ease-in-out infinite 0.8s" }} />
           </svg>
-          {found && <AnomalyLabel text={anomaly.label} />}
-        </div>
+        </button>
       );
 
     default:
       return null;
   }
-}
-
-function AnomalyLabel({ text }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "100%",
-        left: "50%",
-        transform: "translateX(-50%)",
-        whiteSpace: "nowrap",
-        fontSize: "11px",
-        fontFamily: "system-ui, sans-serif",
-        color: "#fff",
-        backgroundColor: "rgba(15, 13, 10, 0.85)",
-        padding: "2px 6px",
-        borderRadius: "3px",
-        marginTop: "4px",
-        zIndex: 25,
-        animation: "watchtower-label-in 300ms ease-out",
-      }}
-    >
-      {text}
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -355,68 +322,19 @@ function HorizonScan({ state, dispatch, onBack }) {
   const [phase, setPhase] = useState("ready"); // ready | scanning | report
   const [anomalies, setAnomalies] = useState([]);
   const anomaliesRef = useRef([]);
+  const scanPlanRef = useRef(null);
+  const scanSeedRef = useRef(null);
   const [timeLeft, setTimeLeft] = useState(SCAN_DURATION_SECONDS);
   const [report, setReport] = useState(null);
   const timerRef = useRef(null);
 
-  // Generate anomalies
-  const generateAnomalies = useCallback(() => {
-    const count = SCAN_MIN_ANOMALIES + Math.floor(Math.random() * (SCAN_MAX_ANOMALIES - SCAN_MIN_ANOMALIES + 1));
-    const pool = [...ANOMALY_TYPES];
-
-    // Ensure at least 1 threat and 1 non-threat
-    const threats = pool.filter((a) => a.category === "threat");
-    const nonThreats = pool.filter((a) => a.category !== "threat");
-
-    const selected = [];
-    // 1 guaranteed threat
-    selected.push(pickRandom(threats));
-    // 1 guaranteed non-threat
-    selected.push(pickRandom(nonThreats));
-
-    // Fill remaining from full pool
-    const remaining = pool.filter((a) => !selected.find((s) => s.id === a.id));
-    const shuffled = shuffle(remaining);
-    for (let i = 0; i < count - 2 && i < shuffled.length; i++) {
-      selected.push(shuffled[i]);
-    }
-
-    // Position anomalies randomly, avoiding overlap
-    const positioned = shuffle(selected).map((anomalyType, i) => {
-      // Keep anomalies in the landscape area (hills/treeline: y 20-55%, fields: y 55-85%)
-      // Avoid edges
-      let x, y, attempts = 0;
-      do {
-        x = 8 + Math.random() * 84;
-        y = anomalyType.id === "signal" ? (15 + Math.random() * 20) : // signals on hilltops
-          anomalyType.id === "wagon" ? (55 + Math.random() * 25) : // wagons on road/fields
-          (20 + Math.random() * 55); // others spread across
-        attempts++;
-      } while (attempts < 10); // simple positioning, no collision detection needed at this scale
-
-      // Resolve ambiguous birds
-      let resolvedThreat = false;
-      if (anomalyType.id === "birds") {
-        resolvedThreat = Math.random() < 0.5;
-      }
-
-      return {
-        ...anomalyType,
-        key: `${anomalyType.id}-${i}`,
-        x,
-        y,
-        found: false,
-        missed: false,
-        resolvedThreat,
-        label: anomalyType.label,
-      };
-    });
-
-    return positioned;
-  }, []);
-
   function startScan() {
-    const newAnomalies = generateAnomalies();
+    if (state.phase !== "management" || scannedThisSeason) return;
+    const scanSeed = state.rngState;
+    const plan = createScanPlan(createRandomCursor(scanSeed).next);
+    const newAnomalies = plan.anomalies.map((anomaly) => ({ ...anomaly, found: false, missed: false }));
+    scanPlanRef.current = plan;
+    scanSeedRef.current = scanSeed;
     anomaliesRef.current = newAnomalies;
     setAnomalies(newAnomalies);
     setTimeLeft(SCAN_DURATION_SECONDS);
@@ -446,54 +364,9 @@ function HorizonScan({ state, dispatch, onBack }) {
     anomaliesRef.current = final;
     setAnomalies(final);
 
-    const found = final.filter((a) => a.found);
-    const missed = final.filter((a) => a.missed);
-    const rating = getRating(found.length);
-
-    // Build warnings from found anomalies
-    const warnings = {
-      criminalRaidBonus: 0,
-      scottishRaidBonus: 0,
-      raidRequirementReduction: 0,
-      merchantPreview: null,
-    };
-
-    found.forEach((a) => {
-      if (a.warningKey === "criminalRaidBonus") warnings.criminalRaidBonus = 2;
-      else if (a.warningKey === "scottishRaidBonus") warnings.scottishRaidBonus = 2;
-      else if (a.warningKey === "raidRequirementReduction") warnings.raidRequirementReduction = 2;
-      else if (a.warningKey === "merchantPreview") {
-        const trader = pickRandom(FOREIGN_TRADERS);
-        warnings.merchantPreview = trader;
-      }
-      // Birds: if resolved as threat, add criminal bonus
-      if (a.id === "birds" && a.resolvedThreat) {
-        warnings.criminalRaidBonus = 2;
-      }
-    });
-
-    const reportData = {
-      total: final.length,
-      found: found.length,
-      missed: missed.length,
-      threats: found.filter((a) => a.category === "threat" || (a.id === "birds" && a.resolvedThreat)).length,
-      opportunities: found.filter((a) => a.category === "opportunity").length,
-      foundList: found.map((a) => ({
-        name: a.name,
-        description: a.description,
-        reward: a.reward,
-        category: a.category,
-        id: a.id,
-        resolvedThreat: a.resolvedThreat,
-      })),
-      missedList: missed.map((a) => ({
-        name: a.name,
-        id: a.id,
-      })),
-      rating,
-      warnings,
-    };
-
+    if (!scanPlanRef.current) return;
+    const reportData = summarizeScan(scanPlanRef.current, final.filter((anomaly) => anomaly.found).map((anomaly) => anomaly.key));
+    if (!reportData) return;
     setReport(reportData);
     setPhase("report");
   }
@@ -522,13 +395,8 @@ function HorizonScan({ state, dispatch, onBack }) {
     dispatch({
       type: "WATCHTOWER_SCAN_COMPLETE",
       payload: {
-        anomaliesTotal: report.total,
-        anomaliesFound: report.found,
-        rating: report.rating.label,
-        denariiBonus: report.rating.denariiBonus,
-        warnings: report.warnings,
-        foundList: report.foundList,
-        missedList: report.missedList,
+        scanSeed: scanSeedRef.current,
+        foundKeys: anomaliesRef.current.filter((anomaly) => anomaly.found).map((anomaly) => anomaly.key),
       },
     });
 
@@ -667,6 +535,11 @@ function HorizonScan({ state, dispatch, onBack }) {
         <p className="text-xs text-center mt-2 italic" style={{ color: "#6a7a8a" }}>
           Click anomalies on the landscape before time runs out.
         </p>
+        <p aria-live="polite" className="text-xs text-center mt-2" style={{ color: "#c4a24a" }}>
+          {anomalies.some((anomaly) => anomaly.found)
+            ? `Spotted: ${anomalies.filter((anomaly) => anomaly.found).map((anomaly) => anomaly.name).join(", ")}`
+            : "No anomalies spotted yet."}
+        </p>
       </div>
     );
   }
@@ -676,10 +549,11 @@ function HorizonScan({ state, dispatch, onBack }) {
     return (
       <div className="max-w-xl mx-auto">
         <div
-          className="rounded-lg border-2 p-4"
+          className="rounded-lg border-2 p-4 flex flex-col"
           style={{
             backgroundColor: "var(--bg-card, #231e16)",
             borderColor: "var(--gold, #c4a24a)",
+            maxHeight: "calc(100dvh - 280px)",
           }}
         >
           <h3
@@ -689,7 +563,7 @@ function HorizonScan({ state, dispatch, onBack }) {
             Scout{"'"}s Report
           </h3>
 
-          <div className="grid grid-cols-3 gap-2 mb-4 text-center text-sm" style={{ color: "#a89070" }}>
+          <div className="watchtower-scan-summary grid grid-cols-3 gap-2 mb-4 text-center text-sm" style={{ color: "#a89070" }}>
             <div>
               <span style={{ color: "var(--gold-bright, #e8c44a)", fontWeight: "bold", fontSize: "1.2em" }}>
                 {report.found}/{report.total}
@@ -730,6 +604,11 @@ function HorizonScan({ state, dispatch, onBack }) {
             </span>
           </div>
 
+          <p className="text-xs text-center mb-1" style={{ color: "#a89070" }}>
+            Scout observations (scroll to read all)
+          </p>
+          <div className="min-h-0 overflow-y-auto rounded border px-2 py-1" aria-label="Scout's findings"
+            style={{ backgroundColor: "#1a1713", borderColor: "#3a3228" }}>
           {/* Spotted anomalies */}
           {report.foundList.length > 0 && (
             <div className="space-y-2 mb-3">
@@ -767,6 +646,7 @@ function HorizonScan({ state, dispatch, onBack }) {
               ))}
             </div>
           )}
+          </div>
 
           {/* Denarii bonus */}
           {report.rating.denariiBonus > 0 && (
@@ -785,7 +665,7 @@ function HorizonScan({ state, dispatch, onBack }) {
             </p>
           </div>
 
-          <div className="text-center mt-4">
+          <div className="text-center mt-2 pt-2 shrink-0" style={{ borderTop: "1px solid #3a3228" }}>
             <button
               onClick={acknowledgeReport}
               className="px-6 py-2 rounded-md border-2 font-bold text-sm uppercase tracking-wider"

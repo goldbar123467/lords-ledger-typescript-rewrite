@@ -43,6 +43,7 @@ export const RAID_TYPES = {
       "The garrison captain reports: no losses. The enemy broke against your defenses.",
       "Victory. But remain vigilant \u2014 they will return.",
     ],
+    fortificationVictoryLine: "The walls held. With no soldiers in the yard, stone and timber turned the outlaws back.",
     defeatLines: [
       "The brigands struck before dawn. They took what they wanted and vanished into the forest.",
       "Your garrison was overwhelmed. The outlaws ransacked the stores and disappeared.",
@@ -51,6 +52,8 @@ export const RAID_TYPES = {
     ],
     zeroGarrisonLine:
       "There was no one to defend the estate. The outlaws walked in unopposed. This is what happens when a lord forgets that power must be protected.",
+    partialZeroGarrisonLine:
+      "The outlaws breached the outer defenses, but your fortifications delayed them and limited the plunder.",
     scribesNote:
       "Banditry was endemic in medieval Europe. Dense forests, poor roads, and weak central authority created perfect conditions for outlaws. Some were desperate peasants driven to crime by famine or unjust lords. Others were organized gangs who terrorized entire regions. The famous legend of Robin Hood \u2014 whether based on a real person or not \u2014 reflects a society where the line between outlaw and hero was often a matter of perspective.",
   },
@@ -96,6 +99,7 @@ export const RAID_TYPES = {
       "The garrison captain salutes. 'They came in force, my lord. But we held. We held.'",
       "The Scots withdraw. Your walls are scarred but standing. The people cheer from the battlements.",
     ],
+    fortificationVictoryLine: "The reivers broke against the walls. Your fortifications held even without a garrison.",
     defeatLines: [
       "The raiders came like a storm. Mounted, armored, and merciless. Your garrison could not hold.",
       "The Scots burned the outlying fields and broke through the palisade. They took everything they could carry.",
@@ -105,6 +109,8 @@ export const RAID_TYPES = {
     ],
     zeroGarrisonLine:
       "There was no one to defend the estate. The Scottish reivers walked in unopposed. This is what happens when a lord forgets that power must be protected.",
+    partialZeroGarrisonLine:
+      "The reivers forced a way through, yet the walls slowed their assault and spared part of the stores.",
     scribesNote:
       "The Anglo-Scottish border was one of the most violent frontiers in medieval Europe. For centuries, raiding parties (known as 'reivers') crossed in both directions, stealing livestock, burning farms, and kidnapping for ransom. Border families \u2014 English and Scottish alike \u2014 built fortified tower houses called 'peel towers' for protection. The raids were so constant that a unique border culture emerged, with its own laws, its own loyalties, and its own code of honor. The word 'bereaved' comes from the border reiving tradition \u2014 to be 'reived' was to be robbed of everything.",
   },

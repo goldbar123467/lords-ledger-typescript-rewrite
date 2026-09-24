@@ -39,7 +39,7 @@ function Tier1Toast({ notification, onDismiss }) {
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex justify-center max-w-sm w-full"
+      className="fixed bottom-28 left-1/2 -translate-x-1/2 z-40 flex justify-center max-w-sm w-full"
       style={{ pointerEvents: "none" }}
     >
       <div

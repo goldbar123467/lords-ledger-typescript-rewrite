@@ -1,9 +1,10 @@
-import { useReducer, useMemo, useState, useEffect, lazy, Suspense } from "react";
+import { useReducer, useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import { gameReducer, initialState } from "./engine/gameReducer";
 import seasonalEventsData from "./data/seasonalEvents";
 import randomEventsData from "./data/randomEvents";
 import { ALL_FLIPS, computeFlipConsequences, isCyoaFlip, computeCyoaConsequences } from "./engine/flipEngine";
 import useMusic from "./hooks/useMusic";
+import { LEGACY_SAVE_KEY, SAVE_KEY_V2, readLegacySave, readV2Save, writeV2Save } from "./save/saveGame";
 
 import TitleScreen from "./components/TitleScreen";
 import Dashboard from "./components/Dashboard";
@@ -48,8 +49,6 @@ function TabLoadingFallback() {
 const seasonalEvents = Object.values(seasonalEventsData).flat();
 const randomEvents = randomEventsData;
 
-const SAVE_KEY = "lords-ledger-save";
-
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const { muted, toggleMute, ensurePlaying } = useMusic();
@@ -90,6 +89,14 @@ export default function App() {
     tutorialsSeen,
   } = state;
 
+  const previousPhase = useRef(phase);
+  useEffect(() => {
+    if (previousPhase.current === phase) return;
+    previousPhase.current = phase;
+    const frame = requestAnimationFrame(() => window.scrollTo(0, 0));
+    return () => cancelAnimationFrame(frame);
+  }, [phase]);
+
   const payload = useMemo(
     () => ({ seasonalEvents, randomEvents }),
     []
@@ -97,8 +104,15 @@ export default function App() {
 
   // --- Action handlers ---
 
+  function newGameSeed() {
+    if (globalThis.crypto?.getRandomValues) {
+      return globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
+    }
+    return Math.floor(Math.random() * 0x100000000);
+  }
+
   function handleStart(difficulty) {
-    dispatch({ type: "START_GAME", payload: { ...payload, difficulty } });
+    dispatch({ type: "START_GAME", payload: { ...payload, difficulty, seed: newGameSeed() } });
   }
 
   function handleSeasonalChoice(optionIndex) {
@@ -122,7 +136,7 @@ export default function App() {
   }
 
   function handlePlayAgain() {
-    dispatch({ type: "PLAY_AGAIN", payload });
+    dispatch({ type: "PLAY_AGAIN", payload: { ...payload, seed: newGameSeed() } });
   }
 
   function handleSetTab(tab) {
@@ -209,34 +223,71 @@ export default function App() {
   const [watchtowerOpen, setWatchtowerOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(null); // "saved" | "loaded" | "error"
+  const [saveError, setSaveError] = useState("");
   const [hasSavedGame, setHasSavedGame] = useState(() => {
-    try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
+    try { return !!localStorage.getItem(SAVE_KEY_V2); } catch { return false; }
   });
+  const [hasLegacySave] = useState(() => {
+    try { return !!localStorage.getItem(LEGACY_SAVE_KEY); } catch { return false; }
+  });
+
+  function reportSaveError(message) {
+    setSaveError(message);
+    setSaveFlash("error");
+  }
+
+  function reportSaveSuccess(kind) {
+    setSaveError("");
+    setSaveFlash(kind);
+    setTimeout(() => setSaveFlash(null), 2000);
+  }
 
   function handleSaveGame() {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      localStorage.setItem(SAVE_KEY_V2, writeV2Save(state));
       setHasSavedGame(true);
-      setSaveFlash("saved");
-      setTimeout(() => setSaveFlash(null), 1500);
-    } catch {
-      setSaveFlash("error");
-      setTimeout(() => setSaveFlash(null), 2000);
+      reportSaveSuccess("saved");
+    } catch (error) {
+      reportSaveError(error instanceof Error ? error.message : "Game could not be saved.");
     }
   }
 
   function handleLoadGame() {
     try {
-      const raw = localStorage.getItem(SAVE_KEY);
-      if (!raw) { setSaveFlash("error"); setTimeout(() => setSaveFlash(null), 2000); return; }
-      const savedState = JSON.parse(raw);
-      dispatch({ type: "LOAD_SAVE", payload: { savedState } });
+      const raw = localStorage.getItem(SAVE_KEY_V2);
+      if (!raw) { reportSaveError("No 2.0 save was found."); return; }
+      const result = readV2Save(raw);
+      if (!result.ok) { reportSaveError(result.error); return; }
+      setTavernOpen(false);
+      setWatchtowerOpen(false);
+      dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
       setHasSavedGame(true);
-      setSaveFlash("loaded");
-      setTimeout(() => setSaveFlash(null), 1500);
-    } catch {
-      setSaveFlash("error");
-      setTimeout(() => setSaveFlash(null), 2000);
+      reportSaveSuccess("loaded");
+    } catch (error) {
+      reportSaveError(error instanceof Error ? error.message : "Game could not be loaded.");
+    }
+  }
+
+  function handleImportLegacyGame() {
+    try {
+      const raw = localStorage.getItem(LEGACY_SAVE_KEY);
+      if (!raw) { reportSaveError("No old save was found."); return; }
+      const result = readLegacySave(raw);
+      if (!result.ok) { reportSaveError(result.error); return; }
+      const currentSaveExists = localStorage.getItem(SAVE_KEY_V2) !== null;
+      if (!currentSaveExists) localStorage.setItem(SAVE_KEY_V2, writeV2Save(result.state));
+      setTavernOpen(false);
+      setWatchtowerOpen(false);
+      dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
+      if (currentSaveExists) {
+        setSaveError("Old save opened. Your 2.0 save is unchanged; choose Save game to replace it.");
+        setSaveFlash("imported");
+      } else {
+        setHasSavedGame(true);
+        reportSaveSuccess("loaded");
+      }
+    } catch (error) {
+      reportSaveError(error instanceof Error ? error.message : "Old save could not be imported.");
     }
   }
 
@@ -337,16 +388,12 @@ export default function App() {
             {muted ? "\u266A" : "\u266B"}
           </button>
         </div>
-        {saveFlash && (
-          <div style={{
-            position: "absolute", top: "56px", right: "12px", zIndex: 50,
-            fontSize: "11px", fontFamily: "Cinzel, serif",
-            color: saveFlash === "error" ? "#c62828" : "#8dba6e",
-          }}>
-            {saveFlash === "loaded" ? "Game Loaded!" : "Error"}
-          </div>
-        )}
-        <TitleScreen onStart={handleStart} />
+        <TitleScreen
+          onStart={handleStart}
+          onImportLegacy={handleImportLegacyGame}
+          hasLegacySave={hasLegacySave}
+          saveMessage={saveFlash === "error" ? saveError : saveFlash === "loaded" ? "Game loaded." : ""}
+        />
       </div>
     );
   }
@@ -404,10 +451,7 @@ export default function App() {
       {/* Sticky header: Dashboard + TabBar */}
       <div className="sticky top-0 z-40">
         {/* Save / Load / Music controls */}
-        <div style={{
-          position: "absolute", top: "6px", right: "8px", zIndex: 50,
-          display: "flex", gap: "4px", alignItems: "center",
-        }}>
+        <div className="flex justify-end items-center gap-2 px-3 py-1" style={{ backgroundColor: "#1a1610", borderBottom: "1px solid #4a3a22" }}>
           {saveFlash && (
             <span style={{
               fontSize: "10px",
@@ -416,7 +460,7 @@ export default function App() {
               marginRight: "2px",
               animation: "tab-fade-in 0.2s",
             }}>
-              {saveFlash === "saved" ? "Saved!" : saveFlash === "loaded" ? "Loaded!" : "Error"}
+              {saveFlash === "saved" ? "Saved!" : saveFlash === "loaded" ? "Loaded!" : saveFlash === "imported" ? "Imported" : "Save error"}
             </span>
           )}
           <button
@@ -424,7 +468,7 @@ export default function App() {
             title="Save game"
             aria-label="Save game"
             style={{
-              width: "28px", height: "28px", borderRadius: "50%",
+              width: "36px", height: "36px", borderRadius: "50%",
               border: "1.5px solid #6a5a42", background: "#1a1610",
               color: "#c4a24a", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -438,7 +482,7 @@ export default function App() {
             title={hasSavedGame ? "Load saved game" : "No save found"}
             aria-label="Load saved game"
             style={{
-              width: "28px", height: "28px", borderRadius: "50%",
+              width: "36px", height: "36px", borderRadius: "50%",
               border: "1.5px solid #6a5a42",
               background: hasSavedGame ? "#1a1610" : "#0f0d0a",
               color: hasSavedGame ? "#c4a24a" : "#4a3a22",
@@ -455,7 +499,7 @@ export default function App() {
             title={muted ? "Unmute music" : "Mute music"}
             aria-label={muted ? "Unmute music" : "Mute music"}
             style={{
-              width: "28px", height: "28px", borderRadius: "50%",
+              width: "36px", height: "36px", borderRadius: "50%",
               border: "1.5px solid #6a5a42",
               background: muted ? "#1a1610" : "rgba(196, 162, 74, 0.15)",
               color: muted ? "#6a5a42" : "#c4a24a",
@@ -491,6 +535,11 @@ export default function App() {
             turn={turn}
             disabled={isEventPhase}
           />
+        )}
+        {(saveFlash === "error" || saveFlash === "imported") && (
+          <p role="alert" className="px-4 py-2 text-sm text-center" style={{ color: saveFlash === "error" ? "#ffd1c6" : "#e8c44a", background: saveFlash === "error" ? "#6b1b18" : "#2a2318" }}>
+            {saveError}
+          </p>
         )}
       </div>
 
@@ -650,7 +699,7 @@ export default function App() {
         )}
 
         {/* Spacer so the final rows of dense tab content (Market commodities, Forge info panels, Chronicle) can scroll above the sticky Simulate-Season bar on 1280x720 viewports (B-54). */}
-        {isManagement && !isFlipPhase && (
+        {isManagement && !isFlipPhase && !tavernOpen && !watchtowerOpen && (
           <div aria-hidden="true" style={{ height: 96 }} />
         )}
       </div>
@@ -664,7 +713,7 @@ export default function App() {
       )}
 
       {/* Simulate Season button */}
-      {isManagement && !isFlipPhase && (
+      {isManagement && !isFlipPhase && !tavernOpen && !watchtowerOpen && (
         <div
           className="sticky bottom-0 w-full px-4 py-3 text-center z-30"
           style={{ backgroundColor: "#0f0d0a", borderTop: "1px solid #8a7a3a" }}

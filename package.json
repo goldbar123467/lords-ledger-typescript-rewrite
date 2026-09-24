@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --project tsconfig.json",
+    "test:unit": "node --experimental-strip-types --test tests/unit/*.test.ts",
     "preview": "vite preview",
     "test": "npx playwright test",
     "test:visual": "npx playwright test tests/e2e/visual/",
@@ -23,6 +25,7 @@
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/vite": "^4.2.1",
+    "@types/node": "^22.20.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
@@ -32,6 +35,8 @@
     "globals": "^16.5.0",
     "playwright": "^1.56.1",
     "tailwindcss": "^4.2.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
     "vite": "^7.3.1"
   }
 }

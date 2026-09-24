@@ -15,6 +15,7 @@ import {
   calculateDefenseRating, getDefenseBreakdown, canUpgradeFortification,
   MILITARY_TOOLTIPS,
 } from "../data/military.js";
+import { getAldricDrillBonus, getRecruitmentCapacity } from "../data/militaryRules.ts";
 
 // ─── Shared styles ───────────────────────────────────────────────
 
@@ -255,6 +256,7 @@ function SoldierCard({ type, typeData, count, state, onRecruit, onDismiss }) {
     if (denarii < typeData.recruitCost * amount) return "Not enough denarii";
     if (typeData.max !== null && count + amount > typeData.max) return "At maximum";
     if (typeData.minPopulation && population < typeData.minPopulation) return `Need ${typeData.minPopulation} families`;
+    if (getRecruitmentCapacity(state, type) < amount) return "At garrison or population limit";
     return null;
   }
 
@@ -498,8 +500,9 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
   };
 
   const watchtowerBonus = state.watchtower?.defenseBonus || 0;
-  const defenseRating = calculateDefenseRating(mil, watchtowerBonus);
-  const breakdown = getDefenseBreakdown(mil, watchtowerBonus);
+  const drillBonus = getAldricDrillBonus(mil, state.tavern?.aldricDrillActive);
+  const defenseRating = calculateDefenseRating(mil, watchtowerBonus + drillBonus);
+  const breakdown = getDefenseBreakdown(mil, watchtowerBonus, drillBonus);
   const moraleLevel = getMoraleLevel(mil.morale);
   const totalUpkeep = getMilitaryUpkeep(mil.garrison);
   const estimatedIncome = (state.castleLevel || 1) * 5;

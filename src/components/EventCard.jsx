@@ -6,28 +6,28 @@ const INDICATOR_LABELS = {
   population: "\u2302",
   garrison: "\u2694",
 };
+const RESOURCE_NAMES = { denarii: "Denarii", food: "Food", population: "Families", garrison: "Garrison" };
 
-function IndicatorPills({ indicators }) {
-  if (!indicators) return null;
-  const translated = translateIndicators(indicators);
-  if (!translated) return null;
+function IndicatorPills({ entries }) {
+  if (entries.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-1">
-      {Object.entries(translated).map(([resource, dir]) => (
+      {entries.map(([resource, dir]) => (
         <span
           key={resource}
-          className="inline-flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border"
+          className="inline-flex items-center gap-1 text-sm px-2 py-0.5 rounded-full border"
           style={{
-            borderColor: dir === "up" ? "#4a8a3a" : "#c62828",
+            borderColor: dir === "up" ? "#8dba6e" : "#e59a91",
             backgroundColor:
               dir === "up"
                 ? "rgba(74, 138, 58, 0.15)"
                 : "rgba(198, 40, 40, 0.15)",
-            color: dir === "up" ? "#4a8a3a" : "#c62828",
+            color: dir === "up" ? "#8dba6e" : "#e59a91",
           }}
         >
-          {INDICATOR_LABELS[resource] || resource}
-          {dir === "up" ? " \u2191" : " \u2193"}
+          <span aria-hidden="true">{INDICATOR_LABELS[resource] || "\u25C6"}</span>
+          {RESOURCE_NAMES[resource] || resource}
+          <span aria-hidden="true">{dir === "up" ? "\u2191" : "\u2193"}</span>
         </span>
       ))}
     </div>
@@ -64,7 +64,12 @@ export default function EventCard({ event, onChoose, phaseLabel }) {
         {event.description}
       </p>
       <div className="flex flex-col gap-2" role="group" aria-label="Choose your response">
-        {event.options.map((option, i) => (
+        {event.options.map((option, i) => {
+          const entries = Object.entries(translateIndicators(option.indicators) || {});
+          const consequences = entries.map(([resource, dir]) =>
+            `${RESOURCE_NAMES[resource] || resource} ${dir === "up" ? "increase" : "decrease"}`).join(", ");
+          const choiceLabel = option.text.trim().replace(/[.!?]+$/, "");
+          return (
           <button
             key={i}
             onClick={() => onChoose(i)}
@@ -83,12 +88,13 @@ export default function EventCard({ event, onChoose, phaseLabel }) {
               e.currentTarget.style.backgroundColor = "#1a1610";
               e.currentTarget.style.borderColor = "#6a5a42";
             }}
-            aria-label={`Option ${i + 1}: ${option.text}`}
+            aria-label={`Option ${i + 1}: ${choiceLabel}${consequences ? `. Expected effects: ${consequences}.` : ""}`}
           >
             <div className="font-semibold text-base">{option.text}</div>
-            <IndicatorPills indicators={option.indicators} />
+            <IndicatorPills entries={entries} />
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

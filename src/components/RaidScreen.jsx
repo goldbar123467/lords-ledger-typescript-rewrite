@@ -68,7 +68,7 @@ function ensureStyles() {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function DefenseComparison({ defenseRating, threshold }) {
+function DefenseComparison({ defenseRating, threshold, drillBonus = 0 }) {
   const isReady = defenseRating >= threshold;
   return (
     <div
@@ -95,6 +95,11 @@ function DefenseComparison({ defenseRating, threshold }) {
       >
         {isReady ? "\u2713 DEFENSES HOLD" : "\u2717 DEFENSES INSUFFICIENT"}
       </div>
+      {drillBonus > 0 && (
+        <div className="mt-2 text-sm" style={{ color: "#e8c44a" }}>
+          Aldric's drill: +{drillBonus} defense
+        </div>
+      )}
     </div>
   );
 }
@@ -246,9 +251,9 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             {/* Defense comparison */}
             {(() => {
               const mil = military || { garrison: { levy: garrison, menAtArms: 0, knights: 0 }, walls: 1, gate: 0, moat: 0, morale: 50 };
-              const dr = calculateDefenseRating(mil);
+              const dr = raidState.defenseRating ?? calculateDefenseRating(mil, raidState.drillBonus ?? 0);
               const threshold = type === "criminal" ? CRIMINAL_DEFENSE_THRESHOLD : SCOTTISH_DEFENSE_THRESHOLD;
-              return <DefenseComparison defenseRating={dr} threshold={threshold} />;
+              return <DefenseComparison defenseRating={dr} threshold={threshold} drillBonus={raidState.drillBonus ?? 0} />;
             })()}
           </div>
 
@@ -301,7 +306,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
     }
 
     const resultBorder = isVictory ? "#c4a24a" : "#8b1a1a";
-    const resultBg = isVictory ? "rgba(196, 162, 74, 0.05)" : "rgba(139, 26, 26, 0.05)";
+    const resultBg = isVictory ? "#282318" : "#281a18";
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
@@ -358,7 +363,9 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             {/* Partial defense note */}
             {result.partial && (
               <p className="text-sm text-center mb-2 italic" style={{ color: "#a89070" }}>
-                Your {garrison} soldiers fought bravely but were outnumbered. Losses were reduced but not prevented.
+                {garrison > 0
+                  ? `Your ${garrison} soldiers fought bravely but were outnumbered. Losses were reduced but not prevented.`
+                  : "Your fortifications slowed the raiders. Losses were reduced but not prevented."}
               </p>
             )}
 

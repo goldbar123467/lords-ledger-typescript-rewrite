@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   RATS_DURATION_MS,
   RATS_GRID_SIZE,
-  RATS_RATINGS,
   RATS_SCRIBES_NOTE,
 } from "../data/tavern";
+import { createRandomCursor } from "../engine/random.ts";
+import { planRatRun, scoreRatRun } from "../engine/ratsInCellar.ts";
 import ScribesNote from "./ScribesNote";
 
 const TOTAL_CELLS = RATS_GRID_SIZE * RATS_GRID_SIZE;
@@ -62,26 +63,6 @@ function tileBg(index) {
   return variations[index % variations.length];
 }
 
-// Returns the visibility window (ms) for a rat based on elapsed time
-function getVisibilityWindow(elapsedMs) {
-  if (elapsedMs < 7000) return 1500;
-  if (elapsedMs < 14000) return 1000;
-  return 700;
-}
-
-// Returns a random spawn delay between 1000-1500ms
-function randomSpawnDelay() {
-  return 1000 + Math.random() * 500;
-}
-
-// Determine rating from caught count
-function getRating(caught) {
-  for (const r of RATS_RATINGS) {
-    if (caught >= r.min && caught <= r.max) return r;
-  }
-  return RATS_RATINGS[RATS_RATINGS.length - 1];
-}
-
 // ---- PHASES ----
 const PHASE_INTRO = "intro";
 const PHASE_COUNTDOWN = "countdown";
@@ -89,16 +70,18 @@ const PHASE_ACTIVE = "active";
 const PHASE_RESULTS = "results";
 
 export default function RatsInCellar({
-  food: _food,
+  rngState,
   ratsPlayedThisSeason,
   ratsScribesNoteSeen,
   onResult,
   onScribesNoteSeen,
   onBack,
 }) {
-  void _food; // Accepted prop for future use; avoids unused-var lint error
-
   const [phase, setPhase] = useState(PHASE_INTRO);
+  const [run] = useState(() => ({
+    seed: rngState,
+    spawns: planRatRun(createRandomCursor(rngState).next),
+  }));
   const [countdownNum, setCountdownNum] = useState(3);
   const [showScribesNote, setShowScribesNote] = useState(
     () => !ratsScribesNoteSeen
@@ -110,7 +93,7 @@ export default function RatsInCellar({
   const [totalClicks, setTotalClicks] = useState(0);
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  // Active rat: { cellIndex, spawnedAt }
+  // Active rat: { cellIndex }
   const [activeRat, setActiveRat] = useState(null);
   // Cell flash effects: Map<cellIndex, {type: "green"|"red", id}>
   const [cellFlashes, setCellFlashes] = useState({});
@@ -118,10 +101,11 @@ export default function RatsInCellar({
   const [floatTexts, setFloatTexts] = useState([]);
 
   const startTimeRef = useRef(null);
+  const activeRatRef = useRef(null);
+  const caughtRef = useRef(0);
   const ratTimerRef = useRef(null);
   const spawnTimerRef = useRef(null);
   const animFrameRef = useRef(null);
-  const lastRatCellRef = useRef(-1);
   const floatIdRef = useRef(0);
 
   // ---- COUNTDOWN LOGIC ----
@@ -160,30 +144,28 @@ export default function RatsInCellar({
     }, 800);
   }, []);
 
+  // ---- Settle the current rat before replacing it ----
+  const escapeRat = useCallback((rat) => {
+    if (activeRatRef.current !== rat) return;
+    activeRatRef.current = null;
+    setActiveRat(null);
+    setEscaped((e) => e + 1);
+    addCellFlash(rat.cellIndex, "red");
+    addFloatText(rat.cellIndex, "Rat escaped");
+  }, [addCellFlash, addFloatText]);
+
   // ---- Spawn a new rat ----
   const spawnRat = useCallback(
-    (elapsed) => {
-      let cell;
-      do {
-        cell = Math.floor(Math.random() * TOTAL_CELLS);
-      } while (cell === lastRatCellRef.current);
-      lastRatCellRef.current = cell;
-
-      const visibility = getVisibilityWindow(elapsed);
-
-      setActiveRat({ cellIndex: cell, spawnedAt: Date.now() });
-
-      // Schedule despawn (escape) if not caught
+    (spawn) => {
+      const cell = spawn.cellIndex;
       clearTimeout(ratTimerRef.current);
-      ratTimerRef.current = setTimeout(() => {
-        // Rat escaped
-        setActiveRat(null);
-        setEscaped((e) => e + 1);
-        addCellFlash(cell, "red");
-        addFloatText(cell, "-2 food");
-      }, visibility);
+      if (activeRatRef.current) escapeRat(activeRatRef.current);
+      const rat = { cellIndex: cell };
+      activeRatRef.current = rat;
+      setActiveRat(rat);
+      ratTimerRef.current = setTimeout(() => escapeRat(rat), spawn.visibilityMs);
     },
-    [addCellFlash, addFloatText]
+    [escapeRat]
   );
 
   // ---- ACTIVE PHASE: game loop ----
@@ -202,7 +184,10 @@ export default function RatsInCellar({
         // Time's up — end the game
         clearTimeout(ratTimerRef.current);
         clearTimeout(spawnTimerRef.current);
+        activeRatRef.current = null;
         setActiveRat(null);
+        // Delayed browser timers cannot silently erase a scheduled rat.
+        setEscaped(run.spawns.length - caughtRef.current);
         setPhase(PHASE_RESULTS);
         return;
       }
@@ -210,22 +195,29 @@ export default function RatsInCellar({
     };
     animFrameRef.current = requestAnimationFrame(updateTimer);
 
-    // Start spawning rats
+    // Play the same seeded spawn sequence that the reducer will score.
+    let spawnIndex = 0;
     const scheduleSpawn = () => {
       const elapsed = Date.now() - startTimeRef.current;
       if (elapsed >= RATS_DURATION_MS) return;
-      spawnRat(elapsed);
-      spawnTimerRef.current = setTimeout(scheduleSpawn, randomSpawnDelay());
+      const spawn = run.spawns[spawnIndex];
+      if (!spawn) return;
+      spawnRat(spawn);
+      spawnIndex += 1;
+      const next = run.spawns[spawnIndex];
+      if (next) {
+        const delay = Math.max(0, next.atMs - (Date.now() - startTimeRef.current));
+        spawnTimerRef.current = setTimeout(scheduleSpawn, delay);
+      }
     };
-    // First rat after a short delay
-    spawnTimerRef.current = setTimeout(scheduleSpawn, 500);
+    spawnTimerRef.current = setTimeout(scheduleSpawn, run.spawns[0]?.atMs ?? 500);
 
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       clearTimeout(ratTimerRef.current);
       clearTimeout(spawnTimerRef.current);
     };
-  }, [phase, spawnRat]);
+  }, [phase, run, spawnRat]);
 
   // ---- CLICK HANDLERS ----
   const handleCellClick = useCallback(
@@ -233,9 +225,11 @@ export default function RatsInCellar({
       if (phase !== PHASE_ACTIVE) return;
       setTotalClicks((c) => c + 1);
 
-      if (activeRat && activeRat.cellIndex === cellIndex) {
+      if (activeRatRef.current?.cellIndex === cellIndex) {
         // Caught the rat
         clearTimeout(ratTimerRef.current);
+        activeRatRef.current = null;
+        caughtRef.current += 1;
         setCaught((c) => c + 1);
         addCellFlash(cellIndex, "green");
         setActiveRat(null);
@@ -244,24 +238,25 @@ export default function RatsInCellar({
         addFloatText(cellIndex, "Miss!");
       }
     },
-    [phase, activeRat, addCellFlash, addFloatText]
+    [phase, addCellFlash, addFloatText]
   );
 
   // ---- RESULTS LOGIC ----
-  const rating = getRating(caught);
+  const score = scoreRatRun(caught, escaped, run.spawns.length);
+  if (!score) throw new Error("Rat results exceeded the planned spawn count.");
+  const rating = score.rating;
   const accuracy =
     totalClicks > 0 ? Math.round((caught / totalClicks) * 100) : 0;
-  const foodLost = escaped * (rating?.foodPerEscape ?? 2);
-  const reward = rating?.reward ?? 0;
+  const foodLost = score.foodLost;
+  const reward = score.reward;
 
   const handleFinish = useCallback(() => {
     onResult({
       caught,
       escaped,
-      foodLost,
-      reward,
+      seed: run.seed,
     });
-  }, [caught, escaped, foodLost, reward, onResult]);
+  }, [caught, escaped, run.seed, onResult]);
 
   // ---- Timer bar values ----
   const timerFraction = Math.min(elapsedMs / RATS_DURATION_MS, 1);
@@ -338,13 +333,13 @@ export default function RatsInCellar({
         >
           Rats in the Cellar
         </h3>
-        <p className="text-base leading-relaxed mb-4" style={{ color: "#a89070" }}>
+        <p className="text-base leading-relaxed mb-4" style={{ color: "#c9b38d" }}>
           "Rats in the grain stores again, my lord! Help me catch them before
           they ruin everything!"
         </p>
-        <p className="text-sm mb-4" style={{ color: "#6a5a42" }}>
+        <p className="text-sm mb-4" style={{ color: "#bfa982" }}>
           Click the rats before they escape. They get faster as time goes on.
-          Every rat that escapes steals your food.
+          Escapees can cost food; catching more rats reduces the loss.
         </p>
         <div className="flex gap-3 justify-center">
           <button
@@ -372,8 +367,8 @@ export default function RatsInCellar({
             className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
             style={{
               backgroundColor: "#2a2318",
-              borderColor: "#6a5a42",
-              color: "#a89070",
+              borderColor: "#8a7a3a",
+              color: "#bfa982",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "#3a3228";
@@ -439,46 +434,46 @@ export default function RatsInCellar({
         </h3>
         <p
           className="text-center text-base mb-4"
-          style={{ color: "#a89070" }}
+          style={{ color: "#c9b38d" }}
         >
           {rating.label}
         </p>
 
         <div
-          className="rounded-md p-4 mb-4 grid grid-cols-3 gap-y-3 text-center"
-          style={{ backgroundColor: "#1a1610" }}
+          className="rounded-md p-4 mb-4 grid gap-y-3 text-center"
+          style={{ display: "grid", backgroundColor: "#1a1610", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
         >
           <div>
             <div
               className="text-2xl font-bold"
-              style={{ color: "#4a8a3a" }}
+              style={{ color: "#7dc673" }}
             >
               {caught}
             </div>
-            <div className="text-xs" style={{ color: "#6a5a42" }}>
+            <div className="text-xs" style={{ color: "#bfa982" }}>
               Caught
             </div>
           </div>
           <div>
             <div
               className="text-2xl font-bold"
-              style={{ color: "#c62828" }}
+              style={{ color: "#f0786d" }}
             >
               {escaped}
             </div>
-            <div className="text-xs" style={{ color: "#6a5a42" }}>
+            <div className="text-xs" style={{ color: "#bfa982" }}>
               Escaped
             </div>
           </div>
           <div>
             <div
               className="text-2xl font-bold"
-              style={{ color: "#a89070" }}
+              style={{ color: "#e0c18e" }}
             >
               {accuracy}%
             </div>
-            <div className="text-xs" style={{ color: "#6a5a42" }}>
-              Accuracy
+            <div className="text-xs" style={{ color: "#bfa982" }}>
+              Click accuracy
             </div>
           </div>
         </div>
@@ -490,12 +485,12 @@ export default function RatsInCellar({
               className="flex items-center justify-between px-3 py-2 rounded-md"
               style={{ backgroundColor: "rgba(198, 40, 40, 0.1)" }}
             >
-              <span className="text-sm" style={{ color: "#c62828" }}>
+              <span className="text-sm" style={{ color: "#f0786d" }}>
                 Food stolen by rats
               </span>
               <span
                 className="text-sm font-bold"
-                style={{ color: "#c62828" }}
+                style={{ color: "#f0786d" }}
               >
                 -{foodLost} food
               </span>
@@ -572,7 +567,7 @@ export default function RatsInCellar({
           {Math.max(0, Math.ceil((RATS_DURATION_MS - elapsedMs) / 1000))}s
         </span>
         <span className="text-sm font-bold" style={{ color: "#c62828" }}>
-          Lost: {escaped * 2} food
+          Escaped: {escaped}
         </span>
       </div>
 
@@ -633,7 +628,6 @@ export default function RatsInCellar({
                 animation: flashAnim,
                 backgroundImage:
                   "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 50%, rgba(0,0,0,0.1) 100%)",
-                outline: "none",
                 padding: 0,
               }}
               aria-label={

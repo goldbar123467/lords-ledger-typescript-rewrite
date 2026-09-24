@@ -6,6 +6,8 @@
 
 import { test, expect } from "@playwright/test";
 import { startGame } from "../helpers.js";
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 /**
  * Get the current denarii value from the Dashboard.
@@ -22,6 +24,16 @@ async function getDenarii(page) {
   });
 }
 
+async function getPlotUsage(page) {
+  const match = (await page.locator('body').innerText()).match(/(\d+)\s*\/\s*(\d+)\s*used/i);
+  expect(match, 'Estate must show its used and total plot count').not.toBeNull();
+  return { used: Number(match[1]), total: Number(match[2]) };
+}
+
+async function buildStripFarm(page) {
+  await page.getByTestId('build-card-strip_farm').getByRole('button', { name: 'Build (80d)' }).click();
+}
+
 test.describe("Estate Building", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
@@ -33,140 +45,63 @@ test.describe("Estate Building", () => {
   }) => {
     await expect(page.getByText("Build New")).toBeVisible();
 
-    // Should show at least one buildable building with cost
-    const buildButtons = page.locator("button").filter({ hasText: /Build \(\d+d\)/ });
-    const count = await buildButtons.count();
-    expect(count).toBeGreaterThan(0);
+    await expect(page.getByTestId('build-card-strip_farm').getByRole('button', { name: 'Build (80d)' })).toBeEnabled();
   });
 
   test("building a Strip Farm costs denarii", async ({ page }) => {
     const initialDenarii = await getDenarii(page);
 
-    // Find and click the Strip Farm build button
-    // Strip Farm costs 100d
-    const stripFarmSection = page.getByText("Strip Farm", { exact: false }).first();
-    await expect(stripFarmSection).toBeVisible();
-
-    // Find the build button near "Strip Farm"
-    const buildBtn = page
-      .locator("button")
-      .filter({ hasText: "Build (100d)" })
-      .first();
-    await buildBtn.click();
-
-    // Denarii should decrease
+    expect(initialDenarii).toBe(700);
+    await buildStripFarm(page);
     const newDenarii = await getDenarii(page);
-    expect(newDenarii).toBe(initialDenarii - 100);
+    expect(newDenarii).toBe(initialDenarii - 80);
+    await expect(page.getByTestId(/built-building-strip_farm-1-seq-/)).toHaveCount(1);
   });
 
   test("built building appears in Your Buildings section", async ({ page }) => {
-    // Build a Strip Farm
-    const buildBtn = page
-      .locator("button")
-      .filter({ hasText: "Build (100d)" })
-      .first();
-    await buildBtn.click();
-
-    // Wait for UI to update
-    await page.waitForTimeout(300);
-
-    // Should now have 5 buildings (4 pre-built + 1 new)
-    // The "Your Buildings" section should contain Strip Farm
-    // Look for the Strip Farm appearing as a built building (not in Build New)
-    const builtCount = await page.evaluate(() => {
-      // Count all "Repair" buttons as an indicator of built buildings
-      const repairButtons = document.querySelectorAll('button');
-      return Array.from(repairButtons).filter(b => b.textContent.includes("Repair") || b.textContent.includes("Info")).length;
-    });
-
-    // Should have more than the initial 4 buildings worth of Info buttons
-    expect(builtCount).toBeGreaterThanOrEqual(4);
+    await expect(page.getByTestId(/^built-building-/)).toHaveCount(4);
+    await buildStripFarm(page);
+    await expect(page.getByTestId(/^built-building-/)).toHaveCount(5);
+    await expect(page.getByTestId(/built-building-strip_farm-1-seq-/)).toHaveCount(1);
   });
 
   test("cannot build when denarii are insufficient", async ({ page }) => {
-    // On Easy mode, start with 700d. The most expensive buildings should
-    // show locked state if we spend enough. Let's just verify that
-    // disabled build buttons exist for expensive buildings
-    const lockedButtons = page.locator("button").filter({ hasText: /Cannot Build|Locked|Need/ });
-    // Some buildings have prerequisites and show as locked
-    // This is valid if there are any locked buildings
-    const count = await lockedButtons.count();
-    // At minimum, buildings with unmet prerequisites should be locked
-    expect(count).toBeGreaterThanOrEqual(0); // soft assertion — some may be buildable
+    const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 17 } });
+    const raw = writeV2Save({ ...started, denarii: 0 });
+    await page.evaluate(value => localStorage.setItem('lords-ledger-v2-save', value), raw);
+    await page.reload();
+    await page.getByRole('button', { name: 'Load saved game' }).click();
+    const tutorial = page.getByRole('button', { name: 'I Understand' });
+    if (await tutorial.isVisible()) await tutorial.click();
+    expect(await getDenarii(page)).toBe(0);
+    const stripFarm = page.getByTestId('build-card-strip_farm');
+    await expect(stripFarm.getByRole('button', { name: /Need 80d/i })).toBeDisabled();
+    await expect(page.getByTestId(/^built-building-/)).toHaveCount(4);
   });
 
   test("building uses a land plot", async ({ page }) => {
-    // Check initial plot count
-    const initialPlots = await page.evaluate(() => {
-      const text = document.body.innerText;
-      const match = text.match(/(\d+)\s*\/\s*(\d+)\s*plots/i);
-      if (!match) return null;
-      return { used: parseInt(match[1]), total: parseInt(match[2]) };
-    });
-
-    if (!initialPlots) {
-      // Plot info might be displayed differently, skip test
-      test.skip();
-      return;
-    }
-
-    // Build a 1-plot building (Strip Farm)
-    const buildBtn = page
-      .locator("button")
-      .filter({ hasText: "Build (100d)" })
-      .first();
-    await buildBtn.click();
-    await page.waitForTimeout(300);
-
-    const newPlots = await page.evaluate(() => {
-      const text = document.body.innerText;
-      const match = text.match(/(\d+)\s*\/\s*(\d+)\s*plots/i);
-      if (!match) return null;
-      return { used: parseInt(match[1]), total: parseInt(match[2]) };
-    });
-
-    if (newPlots) {
-      expect(newPlots.used).toBe(initialPlots.used + 1);
-    }
+    const initialPlots = await getPlotUsage(page);
+    expect(initialPlots).toEqual({ used: 4, total: 24 });
+    await buildStripFarm(page);
+    expect(await getPlotUsage(page)).toEqual({ used: 5, total: 24 });
   });
 
   test("demolishing a building frees the land plot", async ({ page }) => {
-    // First, build a Strip Farm
-    const buildBtn = page
-      .locator("button")
-      .filter({ hasText: "Build (100d)" })
-      .first();
-    await buildBtn.click();
-    await page.waitForTimeout(300);
-
-    // Find the Demolish button for the newly built Strip Farm
-    // We need to expand the info panel first
-    const infoButtons = page.locator("button").filter({ hasText: "Info" });
-    // Click the last Info button (most recently built)
-    const lastInfo = infoButtons.last();
-    if (await lastInfo.isVisible({ timeout: 1_000 }).catch(() => false)) {
-      await lastInfo.click();
-      await page.waitForTimeout(200);
-    }
-
-    // Look for the Demolish button
-    const demolishBtn = page.locator("button").filter({ hasText: "Demolish" }).last();
-    if (await demolishBtn.isVisible({ timeout: 1_000 }).catch(() => false)) {
-      const denariiBeforeDemolish = await getDenarii(page);
-      await demolishBtn.click();
-      await page.waitForTimeout(300);
-
-      // Denarii should stay the same or increase (no refund expected for demolish)
-      const denariiAfterDemolish = await getDenarii(page);
-      expect(denariiAfterDemolish).toBeGreaterThanOrEqual(denariiBeforeDemolish);
-    }
+    await buildStripFarm(page);
+    const built = page.getByTestId(/built-building-strip_farm-1-seq-/);
+    await expect(built).toHaveCount(1);
+    expect(await getPlotUsage(page)).toEqual({ used: 5, total: 24 });
+    await built.getByRole('button', { name: 'Demolish' }).click();
+    await expect(built).toHaveCount(0);
+    expect(await getPlotUsage(page)).toEqual({ used: 4, total: 24 });
+    expect(await getDenarii(page)).toBe(660); // 700 - 80 build + 40 half-cost refund
   });
 
   test("pre-built buildings show condition information", async ({ page }) => {
-    // The 4 pre-built buildings (Coal Pit, Tannery, Sawmill, Smelter) should show condition
-    // Condition displays as "Good (100%)" label text
-    const conditionLabels = page.getByText("Condition:", { exact: false });
-    const count = await conditionLabels.count();
-    expect(count).toBeGreaterThanOrEqual(1);
+    const built = page.getByTestId(/^built-building-/);
+    await expect(built).toHaveCount(4);
+    for (let index = 0; index < 4; index++) {
+      await expect(built.nth(index).getByText('Condition:')).toBeVisible();
+    }
   });
 });

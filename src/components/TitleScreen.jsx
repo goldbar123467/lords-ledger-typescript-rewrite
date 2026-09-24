@@ -4,7 +4,7 @@ const DIFFICULTIES = [
   { key: "hard", label: "Hard", desc: "Fewer resources, harsher realm", icon: "\u2620" },
 ];
 
-export default function TitleScreen({ onStart }) {
+export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, saveMessage }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
       style={{ backgroundColor: "#0f0d0a" }}
@@ -36,6 +36,11 @@ export default function TitleScreen({ onStart }) {
           <span style={{ color: "#c4a24a", fontSize: "0.75rem" }}>{"\u25C6"}</span>
           <div className="flex-1 h-px" style={{ backgroundColor: "#c4a24a" }} />
         </div>
+        {saveMessage && (
+          <p role="alert" className="mb-4 rounded border px-3 py-2 text-sm" style={{ color: "#ffd1c6", borderColor: "#8b1a1a", background: "#3b1714" }}>
+            {saveMessage}
+          </p>
+        )}
         <p className="text-base leading-relaxed mb-6" style={{ color: "#a89070" }}>
           The old lord has passed, and the estate is now yours. Manage your treasury,
           keep your people fed, defend your borders, and honor the Church — for ten
@@ -45,27 +50,6 @@ export default function TitleScreen({ onStart }) {
         <p className="text-sm mb-4" style={{ color: "#8a7a3a" }}>
           Every choice has consequences. There are no right answers — only trade-offs.
         </p>
-
-        {/* How to Play */}
-        <div
-          className="rounded-md border p-4 mb-5 text-left"
-          style={{ borderColor: "#6a5a42", backgroundColor: "#231e16" }}
-        >
-          <h3
-            className="font-heading text-sm font-bold uppercase tracking-wider mb-2 text-center"
-            style={{ color: "#c4a24a" }}
-          >
-            How to Play
-          </h3>
-          <ul className="text-sm space-y-1.5 list-none" style={{ color: "#a89070" }}>
-            <li><strong>Goal:</strong> Survive 40 turns (10 years). Manage your resources wisely — if your population reaches 0 or you go bankrupt, you lose.</li>
-            <li><strong>{"\u269C"} Denarii:</strong> Earn money by building, trading, and collecting taxes. Pay for buildings, soldiers, and upgrades.</li>
-            <li><strong>{"\u2727"} Food:</strong> Keep your families fed. Build farms and buy grain to sustain your growing population.</li>
-            <li><strong>{"\u2694"} Military:</strong> Recruit soldiers and upgrade your castle to defend against raids and protect your estate.</li>
-            <li><strong>{"\u2302"} Population:</strong> Attract settlers with surplus food, ale, and fair taxes. More families means more labor and tax income.</li>
-            <li><strong>Each turn:</strong> Build, trade, and manage your estate, then click <em>Simulate Season</em> to advance. Events will challenge you — choose wisely!</li>
-          </ul>
-        </div>
 
         <p
           className="text-sm font-heading font-semibold uppercase tracking-wider mb-3"
@@ -104,6 +88,29 @@ export default function TitleScreen({ onStart }) {
             </button>
           ))}
         </div>
+        {hasLegacySave && (
+          <button
+            type="button"
+            onClick={onImportLegacy}
+            className="mt-4 w-full rounded-md border px-4 py-2 font-heading text-sm font-semibold focus-visible:outline"
+            style={{ color: "#e8c44a", borderColor: "#c4a24a", background: "#231e16" }}
+          >
+            Import old save
+          </button>
+        )}
+        <details className="mt-4 rounded-md border text-left" style={{ borderColor: "#6a5a42", backgroundColor: "#231e16" }}>
+          <summary className="cursor-pointer px-4 py-3 text-center font-heading text-sm font-bold uppercase tracking-wider" style={{ color: "#e8c44a" }}>
+            How to Play
+          </summary>
+          <ul className="px-4 pb-4 text-sm space-y-1.5 list-none" style={{ color: "#a89070" }}>
+            <li><strong>Goal:</strong> Survive 40 turns (10 years). Manage your resources wisely — if your population reaches 0 or you go bankrupt, you lose.</li>
+            <li><strong>{"\u269C"} Denarii:</strong> Earn money by building, trading, and collecting taxes. Pay for buildings, soldiers, and upgrades.</li>
+            <li><strong>{"\u2727"} Food:</strong> Keep your families fed. Build farms and buy grain to sustain your growing population.</li>
+            <li><strong>{"\u2694"} Military:</strong> Recruit soldiers and upgrade your castle to defend against raids and protect your estate.</li>
+            <li><strong>{"\u2302"} Population:</strong> Attract settlers with surplus food, ale, and fair taxes. More families means more labor and tax income.</li>
+            <li><strong>Each turn:</strong> Build, trade, and manage your estate, then click <em>Simulate Season</em> to advance. Events will challenge you — choose wisely!</li>
+          </ul>
+        </details>
       </div>
       <p className="mt-6 text-xs" style={{ color: "#8a7a3a" }}>
         A game about medieval economics, trade-offs, and the weight of a crown.

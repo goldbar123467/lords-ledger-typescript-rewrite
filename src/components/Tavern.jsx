@@ -8,12 +8,11 @@
  * Rendered as an overlay within the Map tab.
  */
 
-import { useState, useMemo, useEffect } from "react"; // useMemo used in TavernWall
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react"; // useMemo used in TavernWall
 import KnightsGambit from "./KnightsGambit";
 import RatsInCellar from "./RatsInCellar";
 import BardsCorner from "./BardsCorner";
-import MartaMerchant from "./MartaMerchant";
-import OldAldric from "./OldAldric";
+import TavernCompanion from "./TavernCompanion.tsx";
 import {
   TAVERN_SUBTITLES,
   WALL_STATIC_GRAFFITI,
@@ -260,62 +259,60 @@ function StrangerCard({ encounter, state, onTrade, onDismiss }) {
 
   function handleClick() {
     setInteracted(true);
-    if (encounter.type === "trade") {
-      // Show trade option
-    } else {
-      onDismiss();
-    }
+    onDismiss();
   }
 
   return (
     <div
-      className="tavern-card rounded-lg p-4 text-center border-2 w-full"
+      className="tavern-card rounded-lg p-4 sm:p-5 text-center border-2 w-full"
       style={{
-        backgroundColor: "#0e0a14",
-        borderColor: "#4a2a6a",
+        backgroundColor: "#21182a",
+        borderColor: "#76559b",
       }}
     >
-      <div className="text-3xl mb-2" style={{ color: "#8a5aaa" }}>
+      <div className="text-3xl mb-2" style={{ color: "#d2a9ef" }}>
         {"\u2620"}
       </div>
       <h3
-        className="font-bold text-sm uppercase tracking-wide"
-        style={{ fontFamily: "Cinzel, serif", color: "#8a5aaa" }}
+        className="font-bold text-base uppercase tracking-wide"
+        style={{ fontFamily: "Cinzel, serif", color: "#d2a9ef" }}
       >
         A Hooded Figure
       </h3>
       <p
-        className="text-xs mt-2 italic"
-        style={{ fontFamily: "Crimson Text, serif", color: "#a89070" }}
+        className="text-sm sm:text-base mt-2 italic"
+        style={{ fontFamily: "Crimson Text, serif", color: "#e1d1ed" }}
       >
         &ldquo;{displayText}&rdquo;
       </p>
-      <div className="mt-3 flex gap-2 justify-center">
+      <div className="mt-4 flex flex-wrap gap-3 justify-center">
         {encounter.type === "trade" ? (
           <>
             <button
               onClick={() => {
                 setInteracted(true);
-                onTrade(encounter.cost, encounter.reward?.food ?? 0);
+                onTrade();
               }}
               disabled={state.denarii < encounter.cost}
-              className="px-3 py-1 rounded text-xs font-bold"
+              className="px-4 py-2 rounded text-sm font-bold"
               style={{
+                minHeight: 44,
                 backgroundColor: state.denarii >= encounter.cost ? "#2a1a3a" : "#1a1018",
-                color: state.denarii >= encounter.cost ? "#c4a24a" : "#5a4a30",
-                border: "1px solid #4a2a6a",
+                color: state.denarii >= encounter.cost ? "#f1d4ff" : "#947c9d",
+                border: "1px solid #a073c6",
                 cursor: state.denarii >= encounter.cost ? "pointer" : "not-allowed",
               }}
             >
-              Pay {encounter.cost}d
+              Trade {encounter.cost}d for {encounter.reward?.food} food
             </button>
             <button
               onClick={handleClick}
-              className="px-3 py-1 rounded text-xs"
+              className="px-4 py-2 rounded text-sm"
               style={{
+                minHeight: 44,
                 backgroundColor: "#1a1208",
-                color: "#8a7a5a",
-                border: "1px solid #3a3020",
+                color: "#c9b38d",
+                border: "1px solid #8a7a5a",
               }}
             >
               Decline
@@ -324,11 +321,12 @@ function StrangerCard({ encounter, state, onTrade, onDismiss }) {
         ) : (
           <button
             onClick={handleClick}
-            className="px-3 py-1 rounded text-xs"
+            className="px-4 py-2 rounded text-sm"
             style={{
+              minHeight: 44,
               backgroundColor: "#1a1208",
-              color: "#8a7a5a",
-              border: "1px solid #3a3020",
+              color: "#c9b38d",
+              border: "1px solid #8a7a5a",
             }}
           >
             Nod silently
@@ -347,6 +345,7 @@ export default function Tavern({ state, dispatch, onClose }) {
   const [activeStation, setActiveStation] = useState(null);
   const [stashMessage, setStashMessage] = useState(null);
   const [entering, setEntering] = useState(true);
+  const visitLoggedRef = useRef(false);
 
   const tavern = state.tavern ?? {};
 
@@ -364,33 +363,34 @@ export default function Tavern({ state, dispatch, onClose }) {
     () => TAVERN_SUBTITLES[Math.floor(Math.random() * TAVERN_SUBTITLES.length)]
   );
 
-  // Determine if stranger appears (10% chance, not two visits in a row)
-  const [strangerEncounter] = useState(() => {
-    if (tavern.strangerAppearedThisSeason) return null;
-    if (Math.random() > 0.1) return null;
-    const idx = Math.floor(Math.random() * STRANGER_ENCOUNTERS.length);
-    return STRANGER_ENCOUNTERS[idx];
-  });
+  const strangerEncounter = STRANGER_ENCOUNTERS.find(
+    encounter => encounter.type === tavern.pendingStrangerEncounter
+  );
 
   // Log visit on mount
   useEffect(() => {
-    dispatch({ type: "TAVERN_VISIT" });
+    if (!visitLoggedRef.current) {
+      visitLoggedRef.current = true;
+      dispatch({ type: "TAVERN_VISIT" });
+    }
     // Entry animation
     const timer = setTimeout(() => setEntering(false), 600);
     return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Station cards can sit below the sticky navigation on narrow screens.
+  // Restore the first viewport when replacing one Tavern view with another.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeStation]);
 
   // Gambit disabled check
   const gambitDisabled = (tavern.gambitRoundsThisSeason ?? 0) >= 5;
   const ratsDisabled = tavern.ratsPlayedThisSeason === true;
 
   // Handlers for sub-games
-  function handleGambitResult(result, wager) {
-    dispatch({ type: "TAVERN_GAMBIT_RESULT", payload: { result, wager } });
-  }
-
-  function handleGambitSetLast(choice) {
-    dispatch({ type: "TAVERN_GAMBIT_SET_LAST", payload: { choice } });
+  function handleGambitResult(choice, wager, seed) {
+    dispatch({ type: "TAVERN_GAMBIT_PLAY", payload: { choice, wager, seed } });
   }
 
   function handleGambitScribesNoteSeen() {
@@ -398,7 +398,7 @@ export default function Tavern({ state, dispatch, onClose }) {
   }
 
   function handleRatsResult(stats) {
-    dispatch({ type: "TAVERN_RATS_RESULT", payload: stats });
+    dispatch({ type: "TAVERN_RATS_FINISH", payload: stats });
     setActiveStation(null);
   }
 
@@ -406,12 +406,20 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_RATS_SCRIBES_NOTE_SEEN" });
   }
 
-  function handleRiddleSolved() {
-    dispatch({ type: "TAVERN_BARD_RIDDLE_SOLVED" });
+  function handleBardNext() {
+    dispatch({ type: "TAVERN_BARD_NEXT" });
+  }
+
+  function handleBardAnswer(option) {
+    dispatch({ type: "TAVERN_BARD_ANSWER", payload: { option } });
   }
 
   function handleMartaAcceptOffer(offerId) {
     dispatch({ type: "TAVERN_MARTA_ACCEPT_OFFER", payload: { offerId } });
+  }
+
+  function handleMartaNext() {
+    dispatch({ type: "TAVERN_MARTA_NEXT" });
   }
 
   function handleMartaDeclineOffer(offerId) {
@@ -424,6 +432,10 @@ export default function Tavern({ state, dispatch, onClose }) {
 
   function handleAldricAcceptOffer(offerId) {
     dispatch({ type: "TAVERN_ALDRIC_ACCEPT_OFFER", payload: { offerId } });
+  }
+
+  function handleAldricNext() {
+    dispatch({ type: "TAVERN_ALDRIC_NEXT" });
   }
 
   function handleAldricDeclineOffer(offerId) {
@@ -444,8 +456,8 @@ export default function Tavern({ state, dispatch, onClose }) {
     }
   }
 
-  function handleStrangerTrade(cost, foodReward) {
-    dispatch({ type: "TAVERN_STRANGER_TRADE", payload: { cost, foodReward } });
+  function handleStrangerTrade() {
+    dispatch({ type: "TAVERN_STRANGER_TRADE" });
   }
 
   function handleStrangerDismiss() {
@@ -460,9 +472,9 @@ export default function Tavern({ state, dispatch, onClose }) {
           denarii={state.denarii}
           gambitRoundsThisSeason={tavern.gambitRoundsThisSeason ?? 0}
           gambitLastChoice={tavern.gambitLastChoice}
+          rngState={state.rngState}
           gambitScribesNoteSeen={tavern.gambitScribesNoteSeen ?? false}
           onResult={handleGambitResult}
-          onSetLast={handleGambitSetLast}
           onScribesNoteSeen={handleGambitScribesNoteSeen}
           onBack={() => setActiveStation(null)}
         />
@@ -474,7 +486,7 @@ export default function Tavern({ state, dispatch, onClose }) {
     return (
       <div className={entering ? "tavern-enter" : ""}>
         <RatsInCellar
-          food={state.food}
+          rngState={state.rngState}
           ratsPlayedThisSeason={tavern.ratsPlayedThisSeason ?? false}
           ratsScribesNoteSeen={tavern.ratsScribesNoteSeen ?? false}
           onResult={handleRatsResult}
@@ -490,7 +502,8 @@ export default function Tavern({ state, dispatch, onClose }) {
       <div className={entering ? "tavern-enter" : ""}>
         <BardsCorner
           state={state}
-          onRiddleSolved={handleRiddleSolved}
+          onNext={handleBardNext}
+          onAnswer={handleBardAnswer}
           onBack={() => setActiveStation(null)}
         />
       </div>
@@ -500,8 +513,11 @@ export default function Tavern({ state, dispatch, onClose }) {
   if (activeStation === "marta") {
     return (
       <div className={entering ? "tavern-enter" : ""}>
-        <MartaMerchant
+        <TavernCompanion
+          key="marta"
+          kind="marta"
           state={state}
+          onNext={handleMartaNext}
           onAcceptOffer={handleMartaAcceptOffer}
           onDeclineOffer={handleMartaDeclineOffer}
           onScribesNoteSeen={handleMartaScribesNoteSeen}
@@ -514,8 +530,11 @@ export default function Tavern({ state, dispatch, onClose }) {
   if (activeStation === "aldric") {
     return (
       <div className={entering ? "tavern-enter" : ""}>
-        <OldAldric
+        <TavernCompanion
+          key="aldric"
+          kind="aldric"
           state={state}
+          onNext={handleAldricNext}
           onAcceptOffer={handleAldricAcceptOffer}
           onDeclineOffer={handleAldricDeclineOffer}
           onScribesNoteSeen={handleAldricScribesNoteSeen}
@@ -569,6 +588,18 @@ export default function Tavern({ state, dispatch, onClose }) {
           </div>
         )}
 
+        {/* An active offer is the visit's immediate decision. */}
+        {strangerEncounter && (
+          <div className="mb-3">
+            <StrangerCard
+              encounter={strangerEncounter}
+              state={state}
+              onTrade={handleStrangerTrade}
+              onDismiss={handleStrangerDismiss}
+            />
+          </div>
+        )}
+
         {/* Station grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           {STATIONS.map((station) => {
@@ -592,18 +623,6 @@ export default function Tavern({ state, dispatch, onClose }) {
             );
           })}
         </div>
-
-        {/* Stranger card (10% chance) */}
-        {strangerEncounter && (
-          <div className="mb-3">
-            <StrangerCard
-              encounter={strangerEncounter}
-              state={state}
-              onTrade={handleStrangerTrade}
-              onDismiss={handleStrangerDismiss}
-            />
-          </div>
-        )}
 
         {/* Wall stash found message */}
         {stashMessage && (

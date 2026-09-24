@@ -2,38 +2,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { BARD_TALES, BARD_STATE_COMMENTS, BARD_RIDDLES } from "../data/tavern";
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Shuffle an array (Fisher-Yates) without mutating the original. */
-function shuffle(arr) {
-  const copy = [...arr];
-  for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
-/** Create a shuffled index queue for cycling through tales without repeats. */
-function createTaleQueue() {
-  return shuffle(Array.from({ length: BARD_TALES.length }, (_, i) => i));
-}
-
-/**
- * Roll a random content type based on weighted probabilities:
- *   tale    = 60%
- *   comment = 25%
- *   riddle  = 15%
- */
-function rollContentType() {
-  const roll = Math.random();
-  if (roll < 0.6) return "tale";
-  if (roll < 0.85) return "comment";
-  return "riddle";
-}
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
@@ -83,104 +51,51 @@ function BardPortrait() {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export default function BardsCorner({ state, onRiddleSolved, onBack }) {
-  // Track tale cycling: shuffled queue of indices, no repeats until exhausted
-  const taleQueue = useRef(createTaleQueue());
-  const taleIndex = useRef(0);
-  const cycleCount = useRef(0);
-
-  // Animation key to trigger quill-appear on each new content
+export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
+  const content = state.tavern?.bardCurrentContent ?? null;
+  const [entryContent] = useState(() => content);
+  const [advanceOnEntry] = useState(() =>
+    content === null || content.type !== "riddle" || content.answer !== null
+  );
+  const visibleContent = advanceOnEntry && content === entryContent ? null : content;
+  const seededRef = useRef(false);
+  const responseRef = useRef(null);
   const [animKey, setAnimKey] = useState(0);
 
-  /** Pull the next tale from the shuffled queue, cycling when exhausted. */
-  const getNextTale = useCallback(() => {
-    if (taleIndex.current >= taleQueue.current.length) {
-      // All tales shown — reshuffle and start a new cycle
-      taleQueue.current = createTaleQueue();
-      taleIndex.current = 0;
-      cycleCount.current += 1;
-    }
-    const idx = taleQueue.current[taleIndex.current];
-    taleIndex.current += 1;
-    const text = BARD_TALES[idx];
-    const isRepeat = cycleCount.current > 0;
-    return { type: "tale", text, isRepeat };
-  }, []);
-
-  /** Generate a piece of content based on weighted roll. */
-  const generateContent = useCallback(
-    (forceType) => {
-      const type = forceType || rollContentType();
-
-      if (type === "tale") {
-        return getNextTale();
-      }
-
-      if (type === "comment") {
-        const match = BARD_STATE_COMMENTS.find((c) => c.condition(state));
-        return {
-          type: "comment",
-          text: match ? match.text : "Your manor endures, my lord.",
-        };
-      }
-
-      // riddle
-      const riddle =
-        BARD_RIDDLES[Math.floor(Math.random() * BARD_RIDDLES.length)];
-      return {
-        type: "riddle",
-        question: riddle.question,
-        answer: riddle.answer,
-        options: shuffle(riddle.options),
-        correctText: riddle.correct,
-        wrongText: riddle.wrong,
-      };
-    },
-    [state, getNextTale]
-  );
-
-  const [content, setContent] = useState(null);
-  const [riddleResult, setRiddleResult] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
-
   useEffect(() => {
-    setContent((prev) => (prev === null ? generateContent() : prev));
-    // Only run once on mount to seed initial content; generateContent is
-    // intentionally omitted so state changes don't re-seed.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (advanceOnEntry && !seededRef.current) {
+      seededRef.current = true;
+      onNext();
+    }
+  }, [advanceOnEntry, onNext]);
 
   const reroll = useCallback(() => {
-    setContent(generateContent());
-    setRiddleResult(null);
-    setSelectedOption(null);
+    onNext();
     setAnimKey((k) => k + 1);
-  }, [generateContent]);
+  }, [onNext]);
 
-  const handleRiddleAnswer = useCallback(
-    (option) => {
-      if (riddleResult !== null) return;
-      setSelectedOption(option);
-      if (option === content.answer) {
-        setRiddleResult("correct");
-        onRiddleSolved();
-      } else {
-        setRiddleResult("wrong");
-      }
-    },
-    [riddleResult, content, onRiddleSolved]
-  );
+  const handleRiddleAnswer = useCallback((option) => onAnswer(option), [onAnswer]);
+  const riddle = visibleContent?.type === "riddle"
+    ? BARD_RIDDLES.find(item => item.id === visibleContent.id)
+    : null;
+  const selectedOption = visibleContent?.type === "riddle" ? visibleContent.answer : null;
+  const riddleResult = selectedOption === null ? null
+    : selectedOption === riddle?.answer ? "correct" : "wrong";
+
+  useEffect(() => {
+    if (selectedOption !== null) responseRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedOption]);
 
   // --- Render content body ---------------------------------------------------
 
   let body = null;
 
-  if (content === null) {
+  if (visibleContent === null) {
     body = null;
-  } else if (content.type === "tale") {
+  } else if (visibleContent.type === "tale") {
     body = (
       <SpeechBubble animKey={animKey}>
-        {content.isRepeat && (
+        {visibleContent.repeat && (
           <p
             className="text-xs mb-2 italic"
             style={{ color: "#8a7a5a", fontFamily: "Crimson Text, serif" }}
@@ -195,14 +110,14 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
           <span style={{ color: "#e8c44a", fontSize: "1.3em", lineHeight: 1 }}>
             {"\u201C"}
           </span>
-          {content.text}
+          {BARD_TALES[visibleContent.index]}
           <span style={{ color: "#e8c44a", fontSize: "1.3em", lineHeight: 1 }}>
             {"\u201D"}
           </span>
         </p>
       </SpeechBubble>
     );
-  } else if (content.type === "comment") {
+  } else if (visibleContent.type === "comment") {
     body = (
       <SpeechBubble animKey={animKey}>
         <p
@@ -212,14 +127,14 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
           <span style={{ color: "#e8c44a", fontSize: "1.3em", lineHeight: 1 }}>
             {"\u201C"}
           </span>
-          {content.text}
+          {BARD_STATE_COMMENTS[visibleContent.index]?.text ?? "Your manor endures, my lord."}
           <span style={{ color: "#e8c44a", fontSize: "1.3em", lineHeight: 1 }}>
             {"\u201D"}
           </span>
         </p>
       </SpeechBubble>
     );
-  } else if (content.type === "riddle") {
+  } else if (visibleContent.type === "riddle" && riddle) {
     body = (
       <div key={animKey} className="quill-appear">
         <SpeechBubble>
@@ -227,17 +142,17 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
             className="text-sm sm:text-base leading-relaxed font-semibold"
             style={{ color: "#e8c44a", fontFamily: "Crimson Text, serif" }}
           >
-            {content.question}
+            {riddle.question}
           </p>
         </SpeechBubble>
 
         <div className="flex flex-col gap-2 mt-3">
-          {content.options.map((option) => {
+          {visibleContent.optionOrder.map((index) => riddle.options[index]).map((option) => {
             let bg = "#1a1610";
             let border = "#6a5a42";
             let textColor = "#c8b090";
 
-            if (riddleResult !== null && option === content.answer) {
+            if (riddleResult !== null && option === riddle.answer) {
               bg = "rgba(74, 138, 58, 0.25)";
               border = "#4a8a3a";
               textColor = "#6dc858";
@@ -254,7 +169,7 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
               <button
                 key={option}
                 onClick={() => handleRiddleAnswer(option)}
-                disabled={riddleResult !== null}
+                disabled={selectedOption !== null}
                 className="w-full text-left px-4 py-3 rounded-md border-2 cursor-pointer min-h-[44px]"
                 style={{
                   backgroundColor: bg,
@@ -264,7 +179,7 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
                   transition: "all 200ms ease",
                   opacity:
                     riddleResult !== null &&
-                    option !== content.answer &&
+                    option !== riddle.answer &&
                     option !== selectedOption
                       ? 0.5
                       : 1,
@@ -288,18 +203,19 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
           })}
         </div>
 
+        <div ref={responseRef}>
         {riddleResult === "correct" && (
           <SpeechBubble>
             <p
-              className="text-sm italic"
-              style={{ color: "#4a8a3a", fontFamily: "Crimson Text, serif" }}
+              className="text-base italic"
+              style={{ color: "#a9df95", fontFamily: "Crimson Text, serif" }}
             >
-              {content.correctText}
-              <span
-                className="block mt-1 font-semibold not-italic"
-                style={{ color: "#e8c44a" }}
-              >
-                +10 denarii
+                  {riddle.correct}
+                  <span
+                    className="block mt-1 font-semibold not-italic"
+                    style={{ color: "#e8c44a" }}
+                  >
+                    {visibleContent.awarded ? "+10 denarii" : "You know this one already. No new reward."}
               </span>
             </p>
           </SpeechBubble>
@@ -307,13 +223,14 @@ export default function BardsCorner({ state, onRiddleSolved, onBack }) {
         {riddleResult === "wrong" && (
           <SpeechBubble>
             <p
-              className="text-sm italic"
-              style={{ color: "#c62828", fontFamily: "Crimson Text, serif" }}
+              className="text-base italic"
+              style={{ color: "#f28b82", fontFamily: "Crimson Text, serif" }}
             >
-              {content.wrongText}
+              {riddle.wrong}
             </p>
           </SpeechBubble>
         )}
+        </div>
       </div>
     );
   }

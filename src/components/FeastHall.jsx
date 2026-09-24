@@ -7,7 +7,8 @@
  * effects and a running cost preview throughout.
  */
 
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
+import { resolveFeast } from "../engine/feast.ts";
 import {
   Utensils, ChevronRight, ArrowLeft, Sparkles, Crown,
 } from "lucide-react";
@@ -169,6 +170,8 @@ function CostPreview({ effects }) {
 function OptionCard({ option, isSelected, onSelect }) {
   return (
     <button
+      type="button"
+      aria-pressed={isSelected}
       onClick={() => onSelect(option)}
       style={{
         textAlign: "left",
@@ -305,20 +308,20 @@ function AlreadyFeasedView({ onReturn }) {
           justifyContent: "center",
           width: 72,
           height: 72,
-          border: "2px solid #3d3630",
+          border: "2px solid #6a5a42",
           borderRadius: 8,
           backgroundColor: "rgba(26,23,20,0.5)",
           marginBottom: 16,
         }}
       >
-        <Utensils size={32} style={{ color: "#6a5a42" }} />
+        <Utensils size={32} style={{ color: "#d4a44c" }} />
       </div>
 
       <h3
         style={{
           fontFamily: "Cinzel Decorative, Cinzel, serif",
           fontSize: "1.1rem",
-          color: "#6a5a42",
+          color: "#d4a44c",
           letterSpacing: "2px",
           margin: "0 0 12px",
         }}
@@ -331,7 +334,7 @@ function AlreadyFeasedView({ onReturn }) {
           fontFamily: "Crimson Text, serif",
           fontStyle: "italic",
           fontSize: "0.9rem",
-          color: "#4a4030",
+          color: "#c8b090",
           maxWidth: 380,
           margin: "0 auto 8px",
           lineHeight: 1.5,
@@ -344,8 +347,8 @@ function AlreadyFeasedView({ onReturn }) {
       <p
         style={{
           fontFamily: "Cinzel, serif",
-          fontSize: "0.65rem",
-          color: "#4a4030",
+          fontSize: "0.8rem",
+          color: "#a89070",
           letterSpacing: "1px",
           textTransform: "uppercase",
           marginBottom: 20,
@@ -367,18 +370,16 @@ function AlreadyFeasedView({ onReturn }) {
 // ─── Main Component ─────────────────────────────────────────────
 
 // eslint-disable-next-line no-unused-vars
-export default function FeastHall({ feastData, onComplete, onReturn, hasFeastedThisSeason, treasuryMeter }) {
+export default function FeastHall({ feastData, rngState, onComplete, onReturn, hasFeastedThisSeason, treasuryMeter }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedGuests, setSelectedGuests] = useState(null);
   const [selectedEntertainment, setSelectedEntertainment] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
 
-  // Pick a random event once when step 3 (The Feast Begins) is reached
-  // Use useState initializer to avoid Math.random in render
-  const [randomEventIndex] = useState(() => {
-    if (!feastData?.randomEvents?.length) return 0;
-    return Math.floor(Math.random() * feastData.randomEvents.length);
-  });
+  // Advancing a long planning step must reveal its new heading below the sticky header.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentStep, hasFeastedThisSeason]);
 
   // ── Already feasted
   if (hasFeastedThisSeason) {
@@ -399,8 +400,16 @@ export default function FeastHall({ feastData, onComplete, onReturn, hasFeastedT
     );
   }
 
-  const { guestOptions, entertainmentOptions, courseOptions, randomEvents } = feastData;
-  const randomEvent = randomEvents?.[randomEventIndex] || null;
+  const { guestOptions, entertainmentOptions, courseOptions } = feastData;
+  const plannedFeast = selectedGuests && selectedEntertainment && selectedCourse
+    ? resolveFeast({
+      guestId: selectedGuests.id,
+      entertainmentId: selectedEntertainment.id,
+      courseId: selectedCourse.id,
+      seed: rngState,
+    }, rngState)
+    : null;
+  const randomEvent = plannedFeast?.event ?? null;
 
   // Compute running effects total
   const runningEffects = combineEffects(
@@ -410,12 +419,8 @@ export default function FeastHall({ feastData, onComplete, onReturn, hasFeastedT
   );
 
   // Total effects including random event (for step 3+)
-  const totalEffects = combineEffects(
-    selectedGuests?.effects,
-    selectedEntertainment?.effects,
-    selectedCourse?.effects,
-    currentStep >= 3 ? randomEvent?.effects : null,
-  );
+  const totalEffects = currentStep >= 3 && plannedFeast
+    ? plannedFeast.totalEffects : runningEffects;
 
   // ── Step navigation
   const canAdvance = () => {
@@ -438,7 +443,7 @@ export default function FeastHall({ feastData, onComplete, onReturn, hasFeastedT
   };
 
   const handleComplete = () => {
-    onComplete(totalEffects);
+    if (plannedFeast) onComplete(plannedFeast.selection);
   };
 
   // ── Current options for active step

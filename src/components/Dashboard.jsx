@@ -8,6 +8,7 @@
 
 import { Coins, Wheat, Users, Swords, Cross, Church, Heart } from "lucide-react";
 import { getMoraleLevel } from "../data/military.js";
+import { BANKRUPTCY_SEASONS } from "../engine/endConditions.ts";
 
 const RESOURCE_THEMES = {
   denarii: { color: "#c4a24a", Icon: Coins },
@@ -32,16 +33,15 @@ function ResourceStat({ resourceKey, label, value, warning, delta }) {
 
   return (
     <div
-      className={`flex flex-col items-center gap-1 px-3 py-2${warning ? " critical-pulse" : ""}`}
+      className={`resource-stat flex flex-col items-center gap-1 px-3 py-2${warning ? " critical-pulse" : ""}`}
       style={{
-        minWidth: 80,
         borderBottom: `3px solid ${borderColor}`,
       }}
     >
       <div className="flex items-center gap-1.5">
         <Icon size={16} color="#a89070" aria-hidden="true" />
         <span
-          className="font-heading font-semibold"
+          className="resource-stat-heading font-heading font-semibold"
           style={{
             color: "#a89070",
             fontSize: "0.7rem",
@@ -85,16 +85,15 @@ function MoraleStat({ morale }) {
 
   return (
     <div
-      className={`flex flex-col items-center gap-1 px-3 py-2${warning ? " critical-pulse" : ""}`}
+      className={`resource-stat flex flex-col items-center gap-1 px-3 py-2${warning ? " critical-pulse" : ""}`}
       style={{
-        minWidth: 80,
         borderBottom: `3px solid ${level.color}`,
       }}
     >
       <div className="flex items-center gap-1.5">
         <Heart size={16} color="#a89070" aria-hidden="true" />
         <span
-          className="font-heading font-semibold"
+          className="resource-stat-heading font-heading font-semibold"
           style={{
             color: "#a89070",
             fontSize: "0.7rem",
@@ -109,6 +108,7 @@ function MoraleStat({ morale }) {
       <div className="flex flex-col items-center">
         <span
           data-testid="resource-morale"
+          aria-label={`Morale ${morale}, ${level.label}`}
           className="text-2xl"
           style={{
             color: level.color,
@@ -120,7 +120,7 @@ function MoraleStat({ morale }) {
           {morale}
         </span>
         <span
-          className="text-xs font-semibold"
+          className="resource-morale-label text-xs font-semibold"
           style={{ color: level.color, lineHeight: 1 }}
         >
           {level.label}
@@ -192,11 +192,11 @@ function ResourceWarningBanner({ denarii, food, population, garrison, bankruptcy
     warnings.push("No food! Your people will starve and leave. Buy grain or build farms immediately.");
   }
   if (denarii <= 0) {
-    const turnsLeft = 3 - (bankruptcyTurns || 0);
+    const turnsLeft = BANKRUPTCY_SEASONS - (bankruptcyTurns || 0);
     warnings.push(`Treasury is empty! ${turnsLeft > 0 ? `${turnsLeft} more seasons and creditors seize your estate.` : "Creditors are at the gate!"} Sell goods or cut spending.`);
   }
   if (garrison <= 0) {
-    warnings.push("No garrison! Your estate is defenseless against raids.");
+    warnings.push("No garrison! Your fortifications must carry the defense; a breach brings extra losses.");
   }
 
   if (warnings.length === 0) return null;
@@ -227,7 +227,7 @@ function TurnProgressBar({ turn }) {
 
   return (
     <div
-      className="relative w-full sm:w-48"
+      className="turn-progress relative w-full sm:w-48"
       style={{ height: 8 }}
     >
       {/* Track */}
@@ -284,7 +284,7 @@ export default function Dashboard({
 
   return (
     <div
-      className="w-full"
+      className="dashboard w-full"
       style={{
         background: "linear-gradient(180deg, #1a1610 0%, #0f0d0a 100%)",
         borderBottom: "1px solid #8a7a3a",
@@ -294,7 +294,7 @@ export default function Dashboard({
       {flipMode && flipStats ? (
         <FlipStatBar flipStats={flipStats} />
       ) : (
-        <div className="px-3 py-1 flex justify-center gap-4 sm:gap-6">
+        <div className="resource-grid px-3 py-1">
           <ResourceStat
             resourceKey="denarii"
             label="Denarii"
@@ -351,7 +351,7 @@ export default function Dashboard({
       {/* Row 2: Season info + turn progress */}
       {!flipMode && (
         <div
-          className="px-3 py-2 flex flex-wrap justify-center items-center gap-x-4 gap-y-2"
+          className="dashboard-season-row px-3 py-2 flex flex-wrap justify-center items-center gap-x-4 gap-y-2"
           style={{
             backgroundColor: "#1a1610",
             borderTop: "1px solid #8a7a3a",

@@ -12,7 +12,8 @@
  */
 
 import { useState } from "react";
-import BUILDINGS, { BUILDING_LIST } from "../data/buildings.js";
+import BUILDINGS, { BUILDING_LIST } from "../data/buildings.ts";
+import { getUpgradeEligibility } from "../engine/buildingActions.ts";
 import {
   RESOURCE_CONFIG,
   FOOD_RESOURCES,
@@ -20,21 +21,21 @@ import {
   SEASON_FARM_MULTIPLIERS,
   STARTING_TOTAL_PLOTS,
   REPAIR_COST_PER_POINT,
-} from "../data/economy.js";
+} from "../data/economy.ts";
 import {
   canBuildBuilding,
   getTotalBuildingUpkeep,
   getGarrisonUpkeep,
   getPassiveIncome,
-  getFoodConsumption,
   getUsedPlots,
   getBuildingType,
   getConditionMultiplier,
   getRepairCost,
   getActiveBuildingSynergies,
-} from "../engine/economyEngine.js";
-import { getSynergyBuildings } from "../engine/synergyEngine.js";
-import { getConditionLevel } from "../data/economy.js";
+} from "../engine/economyEngine.ts";
+import { getSeasonFoodRequirement } from "../engine/foodRequirement.ts";
+import { getSynergyBuildings } from "../engine/synergyEngine.ts";
+import { getConditionLevel } from "../data/economy.ts";
 
 // ---------------------------------------------------------------------------
 // Color constants
@@ -160,8 +161,7 @@ function EconomyOverview({ state }) {
     buildings, garrison, castleLevel, season,
   } = state;
 
-  const garrisonFood = Math.ceil(garrison / 5);
-  const consumption = getFoodConsumption(population) + garrisonFood;
+  const consumption = getSeasonFoodRequirement(population, garrison, season, state.difficulty || "normal").totalNeed;
   const buildingUpkeep = getTotalBuildingUpkeep(buildings);
   const garrisonUpkeep = getGarrisonUpkeep(garrison);
   const totalUpkeep = buildingUpkeep + garrisonUpkeep;
@@ -499,7 +499,8 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
   const canRepair = condition < 100 && state.denarii >= repairCost;
   const needsRepair = condition < 75;
   const upgradeDef = def.upgradeTo ? BUILDINGS[def.upgradeTo] : null;
-  const canUpgrade = upgradeDef && state.denarii >= (def.upgradeCost ?? upgradeDef.cost);
+  const upgradeEligibility = getUpgradeEligibility(state, buildingIndex);
+  const canUpgrade = upgradeEligibility.allowed;
 
   // Season modifier display
   const seasonMult = def.isFarm ? SEASON_FARM_MULTIPLIERS[state.season] : 1.0;
@@ -512,6 +513,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
 
   return (
     <div
+      data-testid={`built-building-${typeof building === "string" ? `${building}-${buildingIndex}` : building.instanceId}`}
       className="rounded-lg p-3 flex flex-col"
       style={{
         backgroundColor: "#231e16",
@@ -652,7 +654,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
               border: `1px solid ${canUpgrade ? "#c4a24a" : "#4a4030"}`,
               color: canUpgrade ? "#c4a24a" : "#4a4030",
             }}
-            title={!canUpgrade ? `Not enough denarii (need ${def.upgradeCost ?? upgradeDef.cost}d, have ${state.denarii}d)` : `Upgrade to ${upgradeDef.name}`}
+            title={!canUpgrade ? upgradeEligibility.reason : `Upgrade to ${upgradeDef.name}`}
           >
             {"\u25B2"} {upgradeDef.name} ({def.upgradeCost ?? upgradeDef.cost}d)
           </button>
@@ -724,6 +726,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
 
   return (
     <div
+      data-testid={`build-card-${building.id}`}
       className="rounded-lg p-3 flex flex-col"
       style={{
         backgroundColor: locked ? "#1a1612" : "#231e16",

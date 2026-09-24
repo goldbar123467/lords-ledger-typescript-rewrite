@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from "react";
-import BUILDINGS from "../data/buildings.js";
+import BUILDINGS from "../data/buildings.ts";
 
 // ---------------------------------------------------------------------------
 // Season palette — terrain colors shift each season

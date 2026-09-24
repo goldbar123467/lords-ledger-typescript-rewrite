@@ -561,11 +561,11 @@ export const RESOURCE_MARKET = {
 };
 
 // Generate fluctuating market prices for a given season
-export function generateForgeMarketPrices(season) {
+export function generateForgeMarketPrices(season, random) {
   const prices = {};
   for (const [key, cfg] of Object.entries(RESOURCE_MARKET)) {
     const seasonMod = cfg.seasonal[season] || 1.0;
-    const fluctuation = 0.7 + Math.random() * 0.6;
+    const fluctuation = 0.7 + random() * 0.6;
     prices[key] = Math.max(1, Math.round(cfg.basePrice * seasonMod * fluctuation));
   }
   return prices;
@@ -1004,12 +1004,12 @@ export const FORGE_SUPPLY_EVENTS = [
  * Select a supply event for the current season (20% chance per season after turn 3).
  * Returns null or a supply event object.
  */
-export function rollForgeSupplyEvent(turn, usedEventIds) {
+export function rollForgeSupplyEvent(turn, usedEventIds, random) {
   if (turn < 4) return null;
-  if (Math.random() > 0.2) return null;
+  if (random() > 0.2) return null;
   const available = FORGE_SUPPLY_EVENTS.filter(e => !usedEventIds.includes(e.id));
   if (available.length === 0) return null;
-  return available[Math.floor(Math.random() * available.length)];
+  return available[Math.floor(random() * available.length)];
 }
 
 // ─── Forge Readiness Calculation ────────────────────────────

@@ -2,17 +2,17 @@
 
 ## Overview
 
-This document describes the persona-based QA process used to validate
-The Lord's Ledger before merge. It captures how Playwright is wired up,
-how each persona plays, and what is expected of a "pass" run.
+This document preserves the persona-based QA scenarios. For the active 2.0
+worktree, `AGENTS.md` and `docs/v2/verification.md` define the execution
+and evidence gates. The worktree is not being merged to `main`.
 
 ## Playwright Quick Reference
 
-- Config: `playwright.config.js` (Chromium only, 1280×720, Vite dev server auto-started).
+- Config: `playwright.config.ts` (Chromium and gameplay projects, isolated Vite server on 127.0.0.1:5182 with no reuse).
 - Helpers: `tests/e2e/helpers.js` — `startGame()`, `navigateToTab()`,
   `playOneTurn()`, `dismissOverlay()`, `dismissTutorial()`.
 - Existing specs:
-  - `tests/e2e/gameplay/*.spec.js` — gameplay / flow
+  - `tests/e2e/gameplay/*.spec.js` and `*.spec.ts` — gameplay / flow
   - `tests/e2e/visual/*.spec.js` — screenshot / unicode / icon audits
 - Commands:
   ```bash
@@ -53,21 +53,11 @@ how each persona plays, and what is expected of a "pass" run.
 - Actual: …
 ```
 
-- **Cap: 25 items.** When the backlog is full, fixing takes priority
-  over new bug intake.
+## 2.0 fix cycle
 
-## Fix Cycle
-
-1. Two Opus 4.7 subagents each take 2–3 items from the top of the backlog.
-2. Each fix must pass `npm run lint` and build.
-3. After 5 items are fixed, re-run the persona QA and take fresh
-   screenshots for the merged branch.
-4. 8-step code-review pipeline before merging to `main`:
-   1. Lint passes.
-   2. Build passes.
-   3. No new console errors in QA run.
-   4. No regressions in gameplay happy path.
-   5. No hard-coded secrets or API keys.
-   6. State mutations still go through the reducer.
-   7. Pure-function rule holds in `src/engine/`.
-   8. Diff scoped to the fixes (no scope creep).
+Keep all reproducible findings, prioritizing P0/P1 and significant P2 issues.
+The primary implementer owns source changes; one independent tester and one
+grader verify the frozen candidate. Run focused tests, typecheck, lint, build,
+an affected browser flow, and opened before/after images. Record commands and
+results in `docs/v2/verification.md`; a screenshot or assertion-free persona
+run is not by itself a passing gameplay check.

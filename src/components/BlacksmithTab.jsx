@@ -1415,7 +1415,7 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
   const [buyQty, setBuyQty] = useState({});
 
   const prices = useMemo(() => {
-    return marketPrices || generateForgeMarketPrices(season);
+    return marketPrices || generateForgeMarketPrices(season, () => 0.5);
   }, [marketPrices, season]);
 
   function handleBuy(resource, qty) {
@@ -1424,7 +1424,7 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
     if (denarii < totalCost) return;
     dispatch({
       type: "BLACKSMITH_BUY_RESOURCE",
-      payload: { resource, quantity: qty, totalCost },
+      payload: { resource, quantity: qty },
     });
   }
 
@@ -1462,6 +1462,7 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
           return (
             <div
               key={res.key}
+              data-testid={`forge-resource-${res.key}`}
               style={{
                 display: "flex",
                 alignItems: "center",

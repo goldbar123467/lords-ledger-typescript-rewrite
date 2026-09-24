@@ -4,18 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-The Lord's Ledger is a medieval economic simulation game for 6th graders. Players inherit a feudal estate and manage it for 40 turns (10 years x 4 seasons). Built with React 19 + Vite 7 + Tailwind CSS 4, pure JavaScript (no TypeScript).
+The Lord's Ledger is a medieval economic simulation game for 6th graders. Players inherit a feudal estate and manage it for 40 turns (10 years x 4 seasons). It uses React 19, Vite 7, and Tailwind CSS 4. The 2.0 worktree is migrating from JavaScript to TypeScript; see `AGENTS.md` and `docs/v2/verification.md` for current status and rules.
 
 ## Commands
 
 ```bash
-npm run dev       # Vite dev server at http://localhost:5173
+npm run dev -- --host 127.0.0.1 --port 5180 --strictPort # Isolated 2.0 worktree server
 npm run build     # Production build → dist/
 npm run lint      # ESLint (flat config, React hooks + refresh rules)
+npm run typecheck # Strict check of migrated TypeScript; JS migration remains open
+npm run test:unit # Focused Node unit tests
+npm run test      # Playwright browser suite on isolated port 5182
 npm run preview   # Preview production build
 ```
 
-No test framework is configured. Playwright is installed but no test suite exists.
+Playwright browser tests and focused Node unit tests exist. The historical architecture notes below describe much of the JavaScript code still awaiting conversion; `AGENTS.md` owns the active 2.0 workflow.
 
 ## Architecture
 
@@ -27,7 +30,7 @@ All game state lives in a single `useReducer` in `App.jsx`. The reducer (`src/en
 ```
 title → management → seasonal_action → seasonal_resolve → random_event → random_resolve → management (next turn)
                                                                                           ↗
-game_over (population = 0, or bankrupt 3 turns)
+game_over (population = 0, bankrupt 6 turns, or famine threshold)
 victory (survived 40 turns)
 ```
 
@@ -35,15 +38,15 @@ During `management`, the player browses 9 tabs and makes decisions. Clicking "Si
 
 ### Engine Layer (`src/engine/`)
 
-All engine files export **pure functions only** — no side effects, no I/O, no DOM access. Math.random() is the only exception (intentional RNG for event selection).
+Engine transitions have no DOM or storage access. Reducer gameplay draws now use the saved cursor in `random.ts`; audit component-owned minigame and offer randomness before claiming whole-player-flow replay. Most engine and state contracts remain unchecked JavaScript.
 
 - **gameReducer.js** — 70+ action types. Event data injected via action payloads. Contains all state transitions for every subsystem.
-- **economyEngine.js** — `simulateEconomy(state)` runs: production → levy labor penalty → consumption → upkeep (typed garrison) → tax (Autumn only) → passive income → population growth.
+- **economyEngine.ts** — `simulateEconomy(state)` runs: production → levy labor penalty → consumption → upkeep (typed garrison) → tax (Autumn only) → passive income → population growth.
 - **raidEngine.js** — `resolveRaid(raidType, defenseRating, defenseThreshold, garrison, castleLevel, inventory)`. Defense rating system (not raw garrison count).
 - **flipEngine.js** — Perspective flips (Serf, Merchant, Noble, Knight) and CYOA branching narratives.
-- **synergyEngine.js** — `checkSynergies()` evaluates 10+ strategy paths with 3 tiers each. Provides passive income, trade bonuses, population growth.
+- **synergyEngine.ts** — `checkSynergies()` evaluates seven strategy paths with three tiers each. Provides passive income, trade bonuses, population growth.
 - **meterUtils.js** — Legacy name. Contains `translateEffects()` (converts old meter-format event effects to resource deltas), `applyResourceEffects()`, `checkGameOver()`.
-- **eventSelector.js** — `selectSeasonalEvent()`, `selectRandomEvent()` with turn-based gating.
+- **eventSelector.ts** — typed `selectSeasonalEvent()`, `selectRandomEvent()` with turn-based gating and injectable random input.
 
 ### Resource System
 
@@ -54,7 +57,7 @@ Concrete resources (no abstract meters at the top level):
 - **Garrison** — total soldier count (backward-compat number synced from `state.military.garrison`)
 - **Morale** — military morale (0-100), affects defense rating and desertion
 
-Game over: population = 0 (depopulation) or denarii = 0 for 3+ consecutive turns (bankruptcy).
+Game over: population = 0 (depopulation), denarii = 0 for 6+ consecutive turns (bankruptcy), or zero food for 4/3/2 consecutive turns on Easy/Normal/Hard (famine).
 
 ### Tabs (9 total, all unlocked from turn 1)
 
@@ -76,7 +79,7 @@ Game over: population = 0 (depopulation) or denarii = 0 for 3+ consecutive turns
 - Three fortification tracks: walls (0-4), gate (0-4), moat (0-3) with prerequisites
 - Morale (0-100): affects defense multiplier (×0.70 to ×1.25), triggers desertion below 20
 - Defense rating = (garrison defense + fortification defense) × morale modifier + watchtower bonus
-- Raid thresholds: criminal = 25, scottish = 50
+- Raid defense thresholds: criminal = 18, scottish = 38 (`src/data/military.js`). Fortifications can repel a raid even with zero garrison if their defense rating reaches the threshold.
 - Top-level `state.garrison` kept as total count for backward compat (Dashboard, economyEngine)
 - `state.castleLevel` synced to walls level (for passive income)
 
@@ -112,12 +115,12 @@ Game over: population = 0 (depopulation) or denarii = 0 for 3+ consecutive turns
 ### Data Layer (`src/data/`)
 
 20 data files. All export constants and pure functions. Key files:
-- **buildings.js** — 20+ buildings with costs, production, upkeep, synergies, upgrade paths, land plots
+- **buildings.ts** — 17 buildings with costs, production, upkeep, synergies, upgrade paths, land plots
 - **military.js** — Soldier types, fortification tracks, morale levels, defense calculation helpers, tooltips, scribe's notes
-- **economy.js** — Resource types, prices, tax rates, castle levels, season multipliers, constants
+- **economy.ts** — Resource types, prices, tax rates, castle levels, season multipliers, constants
 - **greatHall.js** — Edmund dialogue matrix, reputation system, trust/mood mechanics
-- **disputes.js** / **audience.js** / **decrees.js** — Content for Great Hall interactions
-- **market.js** — Merchants, haggle config, reputation tiers, market events
+- **disputes.js** / **audience.js** / **decrees.ts** — Content for Great Hall interactions
+- **market.ts** — Merchants, haggle config, reputation tiers, market events
 - **endings.js** — Victory titles, failure narratives, `victorySummary(state)`
 - **seasonalEvents.js** / **randomEvents.js** — Event pools with effects and scribe's notes
 
@@ -127,7 +130,7 @@ Game over: population = 0 (depopulation) or denarii = 0 for 3+ consecutive turns
 - Land system: `state.totalPlots` (default 12), each building costs 1-2 plots
 - Condition: degrades 5-10%/season (×1.5 winter), affects output (Good ×1.0, Fair ×0.75, Poor ×0.5, Ruined ×0)
 - Seasonal farm multipliers: Spring ×0.5, Summer ×1.0, Autumn ×1.5, Winter ×0.25
-- Building synergies in `buildingSynergies` array in buildings.js
+- Building synergies in `buildingSynergies` array in buildings.ts
 
 ## Key Conventions
 
@@ -157,4 +160,4 @@ Game over: population = 0 (depopulation) or denarii = 0 for 3+ consecutive turns
 - Old UPGRADE_CASTLE is no-op — use UPGRADE_FORTIFICATION with `{ track }` payload
 - RECRUIT_SOLDIERS / DISMISS_SOLDIERS take `{ soldierType, count }` payload (default: "levy")
 - Events still use old effect format `{ treasury: N, people: N }` translated via `translateEffects()` in meterUtils.js
-- `getBuildingType(b)` adapter in economyEngine.js handles both string and object building formats
+- `getBuildingType(b)` adapter in economyEngine.ts handles both string and object building formats

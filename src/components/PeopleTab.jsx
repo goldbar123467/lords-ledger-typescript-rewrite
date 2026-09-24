@@ -14,8 +14,8 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, Crown, Scissors,
   ArrowUpRight, ArrowRight, ArrowDownRight,
 } from "lucide-react";
-import { TAX_RATES, FOOD_PER_FAMILY } from "../data/economy.js";
-import { getTotalFood } from "../engine/economyEngine.js";
+import { TAX_RATES, FOOD_PER_FAMILY } from "../data/economy.ts";
+import { getTotalFood } from "../engine/economyEngine.ts";
 import {
   TIER_CONFIG,
   computeMorale,

@@ -357,19 +357,19 @@ const SEASONAL_LIFE = {
  * Pick 3-4 feed events for the current season/state.
  * Mixes seasonal flavor with state-dependent events.
  */
-export function pickFeedEvents(season, morale, foodBalance, population, families) {
+export function pickFeedEvents(season, morale, foodBalance, population, families, random) {
   const events = [];
 
   // 1. Always include a seasonal flavor event
   const seasonPool = SEASONAL_LIFE[season] || SEASONAL_LIFE.spring;
   events.push({
-    text: seasonPool[Math.floor(Math.random() * seasonPool.length)],
+    text: seasonPool[Math.floor(random() * seasonPool.length)],
     type: "life",
   });
 
   // 2. A general life event
   events.push({
-    text: LIFE_EVENTS[Math.floor(Math.random() * LIFE_EVENTS.length)],
+    text: LIFE_EVENTS[Math.floor(random() * LIFE_EVENTS.length)],
     type: "life",
   });
 
@@ -490,7 +490,7 @@ export function getInitialPeopleState(population) {
     laborFarming: LABOR_DEFAULTS.farming,
     laborGarrison: LABOR_DEFAULTS.garrison,
     laborChurch: LABOR_DEFAULTS.church,
-    notableFamilies: INITIAL_FAMILIES.map((f) => ({ ...f })),
+    notableFamilies: INITIAL_FAMILIES.map((f) => ({ ...f, bonus: { ...f.bonus } })),
     villageFeed: [],
     taxHistory: [],
   };

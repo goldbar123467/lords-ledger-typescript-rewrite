@@ -7,6 +7,7 @@
  *
  * No side effects, no I/O. All functions are deterministic.
  */
+import { BANKRUPTCY_SEASONS, famineSeasonsForDifficulty } from "./endConditions.ts";
 
 /**
  * Translates old-format meter effects (from events) into resource deltas.
@@ -110,13 +111,13 @@ export function checkGameOver(state) {
       reason: "All your families have abandoned or perished on your estate.",
     };
   }
-  if ((state.bankruptcyTurns || 0) >= 6) {
+  if ((state.bankruptcyTurns || 0) >= BANKRUPTCY_SEASONS) {
     return {
       type: "bankruptcy",
       reason: "Your creditors have seized the estate after seasons of empty coffers.",
     };
   }
-  const famineThreshold = state.difficulty === "easy" ? 4 : state.difficulty === "hard" ? 2 : 3;
+  const famineThreshold = famineSeasonsForDifficulty(state.difficulty);
   if ((state.starvationTurns || 0) >= famineThreshold) {
     return {
       type: "famine",

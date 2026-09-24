@@ -64,6 +64,7 @@ test.describe("Sprite Assets", () => {
 
   test("sprites render correctly when loaded as images", async ({ page }) => {
     // Build a test page that loads all sprites as <img> elements
+    await page.goto("/");
     await page.setContent(`
       <!DOCTYPE html>
       <html>
@@ -78,7 +79,7 @@ test.describe("Sprite Assets", () => {
       <body>
         ${SPRITE_FILES.map(
           (s) =>
-            `<div class="sprite-box"><img src="http://localhost:5173/sprites/${s}" alt="${s}" /><span>${s}</span></div>`
+            `<div class="sprite-box"><img src="/sprites/${s}" alt="${s}" /><span>${s}</span></div>`
         ).join("\n")}
       </body>
       </html>

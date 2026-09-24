@@ -8,7 +8,7 @@
  * Results are written to tests/e2e/playthrough-results.json for analysis.
  */
 
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { startGame, dismissTutorial, dismissOverlay } from "../helpers.js";
 import { writeFileSync, existsSync, readFileSync, readdirSync, unlinkSync } from "fs";
 import { resolve } from "path";
@@ -537,6 +537,8 @@ test.describe("Automated Playthroughs", () => {
   for (const run of PLAYTHROUGHS) {
     test(`Full game: ${run.label}`, async ({ page }) => {
       test.setTimeout(300_000); // 5 minutes per run
+      const pageErrors = [];
+      page.on("pageerror", error => pageErrors.push(error.message));
 
       const result = await runPlaythrough(
         page,
@@ -544,6 +546,18 @@ test.describe("Automated Playthroughs", () => {
         run.strategy,
         run.label
       );
+
+      // A logged run is not a passed campaign unless it reaches a real ending.
+      expect(result.errors, `${run.label} encountered a recovered turn error`).toEqual([]);
+      expect(pageErrors, `${run.label} had an uncaught browser error`).toEqual([]);
+      expect(result.finalOutcome, `${run.label} stopped without a terminal screen`).toMatch(/^(victory|game_over:.+)$/);
+      if (result.finalOutcome === "victory") {
+        expect(result.turnsPlayed, `${run.label} declared victory before turn 40`).toBe(40);
+      } else {
+        await page.getByRole("button", { name: "Try Again" }).click();
+        await expect(page.getByRole("button", { name: "Simulate this season" })).toBeVisible();
+        await expect(page.getByText(/Spring, Year 1 \(Turn 1\/40\)/)).toBeVisible();
+      }
 
       // Append to results file
       const results = loadResults();

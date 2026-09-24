@@ -6,6 +6,7 @@
  */
 
 import { Landmark, Map, Store, Shield, Users, ScrollText, Scale, Church, Hammer } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import { TAB_CONFIG as TAB_LABELS } from "./tabConfig.js";
 
 // Re-export the plain tab list for any JSX consumers that want it from here.
@@ -26,9 +27,23 @@ const TAB_ICONS = {
 const TABS = TAB_LABELS.map((t) => ({ ...t, Icon: TAB_ICONS[t.id] }));
 
 export default function TabBar({ activeTab, onSetTab, disabled }) {
+  const barRef = useRef(null);
+  const activeRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    const active = activeRef.current;
+    if (!bar || !active || bar.scrollWidth <= bar.clientWidth) return;
+    const viewport = bar.getBoundingClientRect();
+    const target = active.getBoundingClientRect();
+    if (target.left < viewport.left) bar.scrollLeft -= viewport.left - target.left;
+    else if (target.right > viewport.right) bar.scrollLeft += target.right - viewport.right;
+  }, [activeTab]);
+
   return (
     <div
-      className="w-full flex overflow-x-auto"
+      ref={barRef}
+      className="tab-nav w-full flex overflow-x-auto"
       style={{ backgroundColor: "#0f0d0a" }}
     >
       {TABS.map((tab) => {
@@ -38,10 +53,11 @@ export default function TabBar({ activeTab, onSetTab, disabled }) {
         return (
           <button
             key={tab.id}
+            ref={isActive ? activeRef : null}
             onClick={() => !isDisabled && onSetTab(tab.id)}
             disabled={isDisabled}
             title={tab.label}
-            className="tab-button flex-1 min-w-0 px-2 py-3 text-center border-b-2 group"
+            className="tab-button flex-none sm:flex-1 min-w-[80px] sm:min-w-0 px-2 py-3 text-center border-b-2 group"
             style={{
               backgroundColor: isActive ? "#231e16" : "transparent",
               borderBottomColor: isActive ? "#c4a24a" : "transparent",

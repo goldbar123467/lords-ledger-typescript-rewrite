@@ -155,7 +155,7 @@ export function calculateDefenseRating(military, watchtowerBonus = 0) {
  * Produce a structured breakdown of all defense contributions for
  * display in the UI (garrison lines, fortification lines, modifiers).
  */
-export function getDefenseBreakdown(military, watchtowerBonus = 0) {
+export function getDefenseBreakdown(military, watchtowerBonus = 0, drillBonus = 0) {
   const { garrison, walls, gate, moat, morale } = military;
 
   const garrisonItems = [];
@@ -182,8 +182,11 @@ export function getDefenseBreakdown(military, watchtowerBonus = 0) {
   if (watchtowerBonus > 0) {
     modifierItems.push({ label: "Watchtower Warning", value: `+${watchtowerBonus}`, numericAdd: watchtowerBonus });
   }
+  if (drillBonus > 0) {
+    modifierItems.push({ label: "Aldric's Drill", value: `+${drillBonus}`, numericAdd: drillBonus });
+  }
 
-  const total = Math.round((garrisonTotal + fortTotal) * moraleMod + watchtowerBonus);
+  const total = Math.round((garrisonTotal + fortTotal) * moraleMod + watchtowerBonus + drillBonus);
 
   return { garrisonItems, garrisonTotal, fortItems, fortTotal, modifierItems, moraleMod, watchtowerBonus, total };
 }

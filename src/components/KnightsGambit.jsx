@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   GAMBIT_WEAPONS,
   GAMBIT_WAGERS,
@@ -8,6 +8,8 @@ import {
   GAMBIT_DRAW_LINES,
   GAMBIT_SCRIBES_NOTE,
 } from "../data/tavern";
+import { createRandomCursor } from "../engine/random.ts";
+import { resolveGambitRound } from "../engine/tavernGambit.ts";
 
 const WEAPON_KEYS = Object.keys(GAMBIT_WEAPONS);
 
@@ -16,32 +18,6 @@ const PHASE_CHOICE = "choice";
 const PHASE_REVEAL = "reveal";
 const PHASE_RESULT = "result";
 const PHASE_MAXED = "maxed";
-
-/** Pick opponent weapon with weighted randomness based on player's last choice. */
-function pickOpponentWeapon(lastChoice) {
-  const rand = Math.random();
-  if (!lastChoice) {
-    // First round: uniform
-    if (rand < 0.333) return WEAPON_KEYS[0];
-    if (rand < 0.666) return WEAPON_KEYS[1];
-    return WEAPON_KEYS[2];
-  }
-  // 40% counter to last pick, 30% each for others
-  const counter = WEAPON_KEYS.find(
-    (k) => GAMBIT_WEAPONS[k].beats === lastChoice
-  );
-  const others = WEAPON_KEYS.filter((k) => k !== counter);
-  if (rand < 0.4) return counter;
-  if (rand < 0.7) return others[0];
-  return others[1];
-}
-
-/** Determine outcome: "win", "lose", or "draw". */
-function resolveRound(playerKey, opponentKey) {
-  if (playerKey === opponentKey) return "draw";
-  if (GAMBIT_WEAPONS[playerKey].beats === opponentKey) return "win";
-  return "lose";
-}
 
 function pickLine(lines) {
   return lines[Math.floor(Math.random() * lines.length)];
@@ -67,9 +43,9 @@ export default function KnightsGambit({
   denarii,
   gambitRoundsThisSeason,
   gambitLastChoice,
+  rngState,
   gambitScribesNoteSeen,
   onResult,
-  onSetLast,
   onScribesNoteSeen,
   onBack,
 }) {
@@ -90,6 +66,11 @@ export default function KnightsGambit({
   const [showVignette, setShowVignette] = useState(false);
   const [goldFlash, setGoldFlash] = useState(false);
   const [revealText, setRevealText] = useState("");
+  const revealTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (revealTimerRef.current !== null) clearTimeout(revealTimerRef.current);
+  }, []);
 
   const handleDismissScribesNote = useCallback(() => {
     setShowScribesNote(false);
@@ -103,8 +84,9 @@ export default function KnightsGambit({
 
   const handleChoice = useCallback(
     (weaponKey) => {
+      const round = resolveGambitRound(gambitLastChoice ?? null, weaponKey, createRandomCursor(rngState).next);
+      if (!round) return;
       setPlayerChoice(weaponKey);
-      onSetLast(weaponKey);
 
       // Gold border flash on selection
       setGoldFlash(true);
@@ -114,11 +96,12 @@ export default function KnightsGambit({
       setRevealText("The stranger reaches for...");
       setPhase(PHASE_REVEAL);
 
-      const opponent = pickOpponentWeapon(gambitLastChoice);
+      const opponent = round.opponent;
 
-      setTimeout(() => {
+      revealTimerRef.current = setTimeout(() => {
+        revealTimerRef.current = null;
         setOpponentChoice(opponent);
-        const result = resolveRound(weaponKey, opponent);
+        const result = round.outcome;
         setOutcome(result);
 
         if (result === "win") {
@@ -141,10 +124,10 @@ export default function KnightsGambit({
         setPhase(PHASE_RESULT);
 
         // Dispatch result to parent
-        onResult(result, wager);
+        onResult(weaponKey, wager, rngState);
       }, 800);
     },
-    [gambitLastChoice, wager, onResult, onSetLast]
+    [gambitLastChoice, rngState, wager, onResult]
   );
 
   const handlePlayAgain = useCallback(() => {
@@ -156,7 +139,7 @@ export default function KnightsGambit({
     setParticles([]);
     setWager(0);
 
-    if (gambitRoundsThisSeason + 1 >= GAMBIT_MAX_ROUNDS) {
+    if (gambitRoundsThisSeason >= GAMBIT_MAX_ROUNDS) {
       setPhase(PHASE_MAXED);
     } else {
       setPhase(PHASE_WAGER);
@@ -286,8 +269,9 @@ export default function KnightsGambit({
         >
           Knight's Gambit
         </h2>
-        <p className="text-xs" style={{ color: "#6a5a42" }}>
-          Round {Math.min(gambitRoundsThisSeason + 1, GAMBIT_MAX_ROUNDS)} of{" "}
+        <p className="text-xs" style={{ color: "#bfa982" }}>
+          Round {Math.min(phase === PHASE_RESULT ? Math.max(1, gambitRoundsThisSeason) :
+            gambitRoundsThisSeason + 1, GAMBIT_MAX_ROUNDS)} of{" "}
           {GAMBIT_MAX_ROUNDS}
           {" | "}
           <span style={{ color: "#c4a24a" }}>{denarii}d</span> in purse
@@ -380,8 +364,8 @@ export default function KnightsGambit({
                   onClick={() => handleChoice(key)}
                   className="flex flex-col items-center justify-center rounded-lg border-2 cursor-pointer"
                   style={{
-                    width: "120px",
-                    height: "160px",
+                    width: "min(120px, 27vw)",
+                    height: "min(160px, 40vw)",
                     backgroundColor: "#1a1610",
                     borderColor: "#6a5a42",
                     color: "#c8b090",
@@ -444,7 +428,7 @@ export default function KnightsGambit({
             <div className="flex flex-col items-center">
               <p
                 className="text-xs mb-1 uppercase tracking-wider"
-                style={{ color: "#6a5a42" }}
+                style={{ color: "#bfa982" }}
               >
                 You
               </p>
@@ -471,7 +455,7 @@ export default function KnightsGambit({
                   transition: "box-shadow 300ms ease",
                 }}
               >
-                <span style={{ fontSize: "2.2rem" }}>
+                <span style={{ fontSize: "2.2rem", color: "#c8b090" }}>
                   {GAMBIT_WEAPONS[playerChoice].symbol}
                 </span>
               </div>
@@ -479,7 +463,7 @@ export default function KnightsGambit({
                 className="text-xs mt-1"
                 style={{
                   fontFamily: "Cinzel, serif",
-                  color: "#a89070",
+                  color: "#c8b090",
                 }}
               >
                 {GAMBIT_WEAPONS[playerChoice].name}
@@ -489,7 +473,7 @@ export default function KnightsGambit({
             {/* VS */}
             <span
               className="text-lg font-bold"
-              style={{ fontFamily: "Cinzel, serif", color: "#6a5a42" }}
+              style={{ fontFamily: "Cinzel, serif", color: "#a89070" }}
             >
               vs
             </span>
@@ -498,7 +482,7 @@ export default function KnightsGambit({
             <div className="flex flex-col items-center">
               <p
                 className="text-xs mb-1 uppercase tracking-wider"
-                style={{ color: "#6a5a42" }}
+                style={{ color: "#bfa982" }}
               >
                 Stranger
               </p>
@@ -522,7 +506,7 @@ export default function KnightsGambit({
                         : "0 0 12px rgba(41, 98, 168, 0.3)",
                 }}
               >
-                <span style={{ fontSize: "2.2rem" }}>
+                <span style={{ fontSize: "2.2rem", color: "#c8b090" }}>
                   {GAMBIT_WEAPONS[opponentChoice].symbol}
                 </span>
               </div>
@@ -530,7 +514,7 @@ export default function KnightsGambit({
                 className="text-xs mt-1"
                 style={{
                   fontFamily: "Cinzel, serif",
-                  color: "#a89070",
+                  color: "#c8b090",
                 }}
               >
                 {GAMBIT_WEAPONS[opponentChoice].name}
@@ -614,7 +598,7 @@ export default function KnightsGambit({
           {reasonText && (
             <p
               className="text-xs mt-1 text-center"
-              style={{ color: "#6a5a42" }}
+              style={{ color: "#bfa982" }}
             >
               {reasonText}
             </p>
@@ -622,7 +606,7 @@ export default function KnightsGambit({
 
           {/* Action buttons */}
           <div className="flex gap-3 mt-5">
-            {roundsLeft > 1 && (
+            {roundsLeft > 0 && (
               <button
                 onClick={handlePlayAgain}
                 className="px-5 py-2 rounded border-2 cursor-pointer"

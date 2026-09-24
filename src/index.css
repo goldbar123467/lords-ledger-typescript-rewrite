@@ -961,80 +961,97 @@ input[type="range"].labor-slider::-moz-range-thumb {
 
 /* ================================================================
    MOBILE / iOS PHONE OVERRIDES
-   Pure CSS layer — no component changes. Targets phones ≤ 480px.
+   Targets phones ≤ 480px.
    ================================================================ */
+
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.resource-stat {
+  min-width: 0;
+}
 
 @media (max-width: 480px) {
 
-  /* --- DASHBOARD: make resource row scrollable instead of overflowing --- */
-  /* Row 1 resource stats container */
-  .sticky .flex.justify-center.gap-4,
-  .sticky .flex.justify-center.gap-6 {
-    justify-content: flex-start !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  .resource-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .resource-stat {
+    padding: 3px 2px !important;
+    gap: 2px !important;
+  }
+
+  .resource-morale-label,
+  .turn-progress {
+    display: none;
+  }
+
+  .resource-stat svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .resource-stat-heading {
+    font-size: 0.6rem !important;
+    letter-spacing: 0.03em !important;
+  }
+
+  .resource-stat .text-2xl {
+    font-size: 1rem !important;
+  }
+
+  .dashboard-season-row {
+    padding: 4px 8px !important;
     gap: 0 !important;
-    padding-left: 4px !important;
-    padding-right: 60px !important; /* room for save/load/music buttons */
   }
 
-  .sticky .flex.justify-center.gap-4::-webkit-scrollbar,
-  .sticky .flex.justify-center.gap-6::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Shrink individual resource stat cells */
-  .sticky .flex.flex-col.items-center.gap-1 {
-    min-width: 62px !important;
-    padding-left: 6px !important;
-    padding-right: 6px !important;
-  }
-
-  /* Smaller resource values on mobile */
-  .sticky .text-2xl {
-    font-size: 1.15rem !important;
-  }
-
-  /* Smaller resource labels */
-  .sticky .font-heading.font-semibold {
-    font-size: 0.55rem !important;
-    letter-spacing: 1px !important;
-  }
-
-  /* --- TABBAR: scrollable, icon-first on phones --- */
-  .sticky + div .flex.overflow-x-auto,
-  .flex.overflow-x-auto[style*="background"] {
+  .tab-nav {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
 
-  .flex.overflow-x-auto[style*="background"]::-webkit-scrollbar {
+  .tab-nav::-webkit-scrollbar {
     display: none;
   }
 
-  /* Tab buttons: narrower on phone */
-  .flex.overflow-x-auto button.flex-1 {
-    min-width: 44px !important;
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
+  .tab-nav .tab-button {
+    min-width: 80px;
+    padding: 5px 4px;
   }
 
-  /* Tab labels smaller */
-  .flex.overflow-x-auto button .text-xs {
-    font-size: 0.55rem !important;
+  .tab-nav .tab-button svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .tab-nav .text-xs {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.02em;
+  }
+
+  .sticky.top-0 > .flex button[aria-label="Save game"],
+  .sticky.top-0 > .flex button[aria-label="Load saved game"],
+  .sticky.top-0 > .flex button[aria-label$="music"] {
+    min-width: 44px;
   }
 
   /* --- SEASON INFO ROW: stack vertically on phone --- */
-  .sticky .flex.flex-wrap.justify-center.items-center {
-    flex-direction: column !important;
-    gap: 4px !important;
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-  }
-
   .sticky .font-heading.font-semibold[style*="Cinzel"] {
     font-size: 0.75rem !important;
   }
@@ -1049,18 +1066,18 @@ input[type="range"].labor-slider::-moz-range-thumb {
 
   /* --- SIMULATE BUTTON: full width on phone --- */
   .sticky.bottom-0 button {
-    padding-left: 20px !important;
-    padding-right: 20px !important;
-    font-size: 0.9rem !important;
+    padding: 8px 16px !important;
+    font-size: 0.85rem !important;
     width: 100% !important;
     max-width: 320px !important;
   }
 
-  /* --- BUILDING GRID: 2-col on phone instead of 3 --- */
-  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3,
-  .grid.sm\:grid-cols-2.lg\:grid-cols-3 {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 6px !important;
+  .sticky.bottom-0 {
+    padding: 5px 10px !important;
+  }
+
+  .sticky.bottom-0 p {
+    display: none;
   }
 
   /* --- EVENT CARDS / MODALS: full-width on phone --- */
@@ -1100,6 +1117,10 @@ input[type="range"].labor-slider::-moz-range-thumb {
     gap: 6px !important;
   }
 
+  .grid.grid-cols-3.watchtower-scan-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
   /* --- GREAT HALL: sub-chamber cards stack --- */
   .grid.grid-cols-2 {
     grid-template-columns: 1fr !important;
@@ -1135,5 +1156,9 @@ input[type="range"].labor-slider::-moz-range-thumb {
   button.text-xs,
   button.text-sm {
     min-height: 36px;
+  }
+
+  button.market-quick-action {
+    min-height: 44px;
   }
 }

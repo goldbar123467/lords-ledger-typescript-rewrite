@@ -7,7 +7,7 @@
 
 import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.js";
 import { CYOA_FLIPS } from "../data/cyoaFlips.js";
-import { getBuildingType } from "./economyEngine.js";
+import { getBuildingType } from "./economyEngine.ts";
 
 export const ALL_FLIPS = { ...PERSPECTIVE_FLIPS, ...CYOA_FLIPS };
 
@@ -144,18 +144,18 @@ export function getInitialFlipStats(flipId) {
 /**
  * Resolves a player's choice on a flip decision option.
  * Deterministic options apply statEffects directly.
- * Chance-based options roll Math.random().
+ * Chance-based options consume the saved game's random stream.
  *
  * @param {object} option - The chosen option from the decision
  * @param {{ [statName]: number }} currentStats
  * @returns {{ nextStats: object, consequenceFlags: string[], outcome: string, wasSuccess: boolean|null }}
  */
-export function resolveFlipOption(option, currentStats) {
+export function resolveFlipOption(option, currentStats, random) {
   const clampStat = (val) => Math.min(100, Math.max(0, val));
 
   // Chance-based option
   if (option.chance !== undefined) {
-    const roll = Math.random();
+    const roll = random();
     const success = roll < option.chance;
 
     const effects = success ? option.successStatEffects : option.failureStatEffects;
