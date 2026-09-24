@@ -29,31 +29,6 @@ The current compiler configuration uses `allowJs: true` and `checkJs: false`. Pa
 
 The saved checkpoint passed typecheck, lint, production build, and **95 unit tests**. These results apply to that checkpoint; the latest synergy corrections still need browser verification and independent review. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Measurable production-code reduction remains unfinished.
 
-## Run locally
-
-The checkpoint was verified with **Node.js 22.23.2** and **npm 10.9.8**. The unit-test command uses Node's experimental TypeScript stripping.
-
-```bash
-git clone https://github.com/goldbar123467/lords-ledger-typescript-rewrite.git
-cd lords-ledger-typescript-rewrite
-npm ci
-npm run dev -- --host 127.0.0.1 --port 5180 --strictPort
-```
-
-Open [http://127.0.0.1:5180](http://127.0.0.1:5180).
-
-| Command | Purpose |
-| --- | --- |
-| `npm run typecheck` | Check migrated TypeScript using `tsconfig.json` |
-| `npm run test:unit` | Run engine and save regression tests |
-| `npm run lint` | Run ESLint |
-| `npm run build` | Produce the application in `dist/` |
-| `npm run preview` | Serve an existing production build locally |
-| `npx playwright test --project=gameplay --workers=1` | Run browser gameplay tests |
-| `npx playwright test --workers=1` | Run the full browser suite, including visual checks |
-
-Before the first browser run, install Chromium with `npx playwright install chromium`. Playwright starts its own isolated Vite server at `127.0.0.1:5182`; `LL_TEST_PORT` can override the port. It does not reuse an existing server. Historical Windows visual baselines are incomplete, so a successful build or unit suite does not establish a passing full browser suite.
-
 ## Code map
 
 | Location | Rewrite responsibility |
