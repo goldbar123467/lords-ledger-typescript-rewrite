@@ -38,6 +38,9 @@ test('all nine authored stories preserve their complete content and references',
       for (const decision of flip.decisions) {
         options += decision.options.length;
         for (const option of decision.options) {
+          for (const flag of Object.values(option.consequenceFlags ?? {}).flat()) {
+            assert.ok(Object.hasOwn(flip.consequences.flags, flag), `${id}: unknown consequence flag ${flag}`);
+          }
           const effects = option.chance === undefined
             ? [option.statEffects] : [option.successStatEffects, option.failureStatEffects];
           for (const effect of effects) for (const stat of Object.keys(effect)) {

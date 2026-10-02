@@ -1,4 +1,4 @@
-import type { LinearFlip } from './flipTypes.ts';
+import type { InvalidLinearReferences, LinearFlip } from './flipTypes.ts';
 
 /**
  * perspectiveFlips.ts
@@ -761,6 +761,12 @@ export const PERSPECTIVE_FLIPS = {
     scribesNote:
       "Knights were the backbone of medieval armies, but the feudal military system was deeply flawed. Knights served at their own expense for exactly 40 days, then could legally leave. Equipment cost a fortune. Tournaments were both sport and economic necessity. As kings needed longer campaigns, they shifted to paid armies \u2014 ending the age of the feudal knight. The chivalric ideal was beautiful. The economic reality was brutal.",
   },
-} satisfies Record<string, LinearFlip>;
+} as const satisfies Record<string, LinearFlip>;
+
+type AssertNever<T extends never> = T;
+export type LinearReferenceCheck = AssertNever<{
+  [Id in keyof typeof PERSPECTIVE_FLIPS]: InvalidLinearReferences<(typeof PERSPECTIVE_FLIPS)[Id]>
+    | Exclude<(typeof PERSPECTIVE_FLIPS)[Id]['id'], Id>
+}[keyof typeof PERSPECTIVE_FLIPS]>;
 
 export default PERSPECTIVE_FLIPS;

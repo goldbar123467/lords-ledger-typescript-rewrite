@@ -20,7 +20,7 @@ export type FlipOption = {
   chance?: undefined;
   statEffects: FlipStats;
   outcome: string;
-  consequenceFlags?: string[];
+  consequenceFlags?: readonly string[];
 } | {
   text: string;
   chance: number;
@@ -28,13 +28,13 @@ export type FlipOption = {
   failureStatEffects: FlipStats;
   successOutcome: string;
   failureOutcome: string;
-  consequenceFlags?: string[] | { success?: string[]; failure?: string[] };
+  consequenceFlags?: readonly string[] | { success?: readonly string[]; failure?: readonly string[] };
 };
 
 export interface FlipDecision {
   title: string;
   description: string;
-  options: FlipOption[];
+  options: readonly FlipOption[];
   scribesNote?: string;
 }
 
@@ -52,7 +52,7 @@ export interface FlipBase {
 export interface LinearFlip extends FlipBase {
   type?: undefined;
   characterStats: Partial<Record<FlipStatId, FlipStatDefinition>>;
-  decisions: FlipDecision[];
+  decisions: readonly FlipDecision[];
   consequences: { base: FlipEffects; flags: Record<string, FlipEffects> };
 }
 
@@ -60,7 +60,7 @@ export type CyoaNode = {
   isEnding?: false;
   title: string;
   description: string;
-  options: Array<{ text: string; goto: string }>;
+  options: ReadonlyArray<{ text: string; goto: string }>;
 } | {
   isEnding: true;
   endingType: FlipEnding;
@@ -78,3 +78,17 @@ export interface CyoaFlip extends FlipBase {
 }
 
 export type FlipDefinition = LinearFlip | CyoaFlip;
+
+// Shape contracts permit different stories to define their own names. Authoring
+// checks bind the literal references to each parent story rather than a global list.
+type NodeTargets<Node> = Node extends { options: ReadonlyArray<{ goto: infer Id }> } ? Id : never;
+export type InvalidCyoaReferences<Story extends CyoaFlip> =
+  Exclude<Story['startNode'] | NodeTargets<Story['nodes'][keyof Story['nodes']]>, keyof Story['nodes']>;
+
+type FlagNames<Flags> = Flags extends readonly string[] ? Flags[number]
+  : Flags extends { success?: readonly string[]; failure?: readonly string[] }
+    ? NonNullable<Flags['success']>[number] | NonNullable<Flags['failure']>[number] : never;
+type OptionFlags<Option> = Option extends { consequenceFlags: infer Flags } ? FlagNames<Flags> : never;
+export type InvalidLinearReferences<Story extends LinearFlip> = Exclude<
+  OptionFlags<Story['decisions'][number]['options'][number]>, keyof Story['consequences']['flags']
+>;

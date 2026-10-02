@@ -2,6 +2,15 @@
 
 This file records verification chronologically. The latest independent-repository run is below; older sections retain the original worktree results. [checkpoint.md](checkpoint.md) describes the historical repository-creation snapshot.
 
+## 2026-10-02 perspective authoring-reference correction
+
+G-FTS-01 is closed for the authored registries at fingerprint `8FC8850B13550E7E96CB6B9AF2F73AA67DD483C20119E2316022908F487F92A8` (HEAD `b29c237` plus correction), unchanged through both reviews. Literal registry types now check starting nodes, every destination, registry IDs, and deterministic/chance flags against each parent story. Generic `CyoaNode`/`FlipOption` shapes still support arbitrary story names; they are not standalone validators. Runtime content tests also check every consequence flag. Readonly array narrowing preserves evaluator behavior.
+
+- Primary: typecheck, lint, production build, 103/103 units, ten compiler probes (two valid and eight deliberately invalid registries), and archived evaluator parity for 612 choices, 932 consequences, and 2,000 triggers all pass. Full authored hash stays `9DBE64D5FC380E2D9D1256D0D6B306613E732EF590A9D3E7136E171127D399D9`. Evidence: `artifacts/v2/flip-reference-fix/` and the preserved `flip-types-preflight/compare.mjs` results.
+- Tester independently passed eleven compiler outcomes, seven runtime flag parity vectors, four content units, and project typecheck. Grader independently passed ten compiler outcomes, 204 option/40 draw/52 consequence/5,000 trigger parity cases, four units, and typecheck. Both accepted the exact correction with no new scoped P0-P3. Reports: `artifacts/v2/{tester,grader}-flip-reference-fix/report.md`.
+- No UI changed; this correction did not repeat browser campaigns or visual review. Prior evidence applies at its recorded fingerprint. The preview was checked against the current production index and asset `index-CGqJtSmw.js`.
+- Census before this documentation update: implementation 31,651; data/contracts 13,963; styles 1,164; production **46,778 (+1,431 baseline)**; tests 7,454; inclusive text 68,568. Full migration, nested saves, interface review, and overall reduction remain incomplete.
+
 ## 2026-10-02 perspective data/evaluator TypeScript checkpoint
 
 Reviewed HEAD `f5f6ebd` plus conversion at fingerprint `A134874178418412D06BFAC0C25F86AF1AD3CF7AF5F8BB89BAE16581A7D63FA5`, unchanged through both reviews. Two registries and evaluator are now TypeScript with shared contracts, finite character-stat and ending unions, discriminated chance choices, explicit trigger input, and preserved injected random draws. Save/reducer import paths use the converted modules. No narrative choice, text, value, or edge changed; full exported content hash remains `9DBE64D5FC380E2D9D1256D0D6B306613E732EF590A9D3E7136E171127D399D9`.

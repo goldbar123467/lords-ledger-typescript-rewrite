@@ -1,4 +1,4 @@
-import type { CyoaFlip } from './flipTypes.ts';
+import type { CyoaFlip, InvalidCyoaReferences } from './flipTypes.ts';
 
 /**
  * cyoaFlips.ts
@@ -1009,7 +1009,13 @@ export const CYOA_FLIPS = {
     scribesNote:
       "Serfs were bound to the land but were not slaves. They had legal rights, customary protections, and community bonds that sustained them. Understanding serfdom means understanding both its restrictions and its humanity.",
   },
-} satisfies Record<string, CyoaFlip>;
+} as const satisfies Record<string, CyoaFlip>;
+
+type AssertNever<T extends never> = T;
+export type CyoaReferenceCheck = AssertNever<{
+  [Id in keyof typeof CYOA_FLIPS]: InvalidCyoaReferences<(typeof CYOA_FLIPS)[Id]>
+    | Exclude<(typeof CYOA_FLIPS)[Id]['id'], Id>
+}[keyof typeof CYOA_FLIPS]>;
 
 /*
  * Structure summary:

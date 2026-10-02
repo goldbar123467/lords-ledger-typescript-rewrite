@@ -186,7 +186,7 @@ export function getInitialFlipStats(flipId: string | null | undefined): FlipStat
  * @returns {{ nextStats: object, consequenceFlags: string[], outcome: string, wasSuccess: boolean|null }}
  */
 export function resolveFlipOption(option: FlipOption, currentStats: FlipStats, random: () => number): {
-  nextStats: FlipStats; consequenceFlags: string[]; outcome: string; wasSuccess: boolean | null;
+  nextStats: FlipStats; consequenceFlags: readonly string[]; outcome: string; wasSuccess: boolean | null;
 } {
 
   // Chance-based option
@@ -199,12 +199,12 @@ export function resolveFlipOption(option: FlipOption, currentStats: FlipStats, r
 
     const nextStats = applyStatEffects(currentStats, effects);
 
-    let flags: string[] = [];
+    let flags: readonly string[] = [];
     if (option.consequenceFlags) {
-      if (typeof option.consequenceFlags === "object" && !Array.isArray(option.consequenceFlags)) {
-        flags = success ? (option.consequenceFlags.success || []) : (option.consequenceFlags.failure || []);
-      } else if (Array.isArray(option.consequenceFlags)) {
+      if (isFlagList(option.consequenceFlags)) {
         flags = option.consequenceFlags;
+      } else {
+        flags = success ? (option.consequenceFlags.success || []) : (option.consequenceFlags.failure || []);
       }
     }
 
@@ -214,7 +214,7 @@ export function resolveFlipOption(option: FlipOption, currentStats: FlipStats, r
   // Deterministic option
   const nextStats = applyStatEffects(currentStats, option.statEffects);
 
-  const flags = Array.isArray(option.consequenceFlags) ? option.consequenceFlags : [];
+  const flags = option.consequenceFlags && isFlagList(option.consequenceFlags) ? option.consequenceFlags : [];
 
   return {
     nextStats,
@@ -222,6 +222,10 @@ export function resolveFlipOption(option: FlipOption, currentStats: FlipStats, r
     outcome: option.outcome,
     wasSuccess: null,
   };
+}
+
+function isFlagList(flags: NonNullable<FlipOption['consequenceFlags']>): flags is readonly string[] {
+  return Array.isArray(flags);
 }
 
 function applyStatEffects(current: FlipStats, effects: FlipStats): FlipStats {
