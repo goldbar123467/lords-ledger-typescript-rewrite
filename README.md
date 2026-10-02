@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 checkpoint types military definitions and helpers while preserving all 13 data exports and sampled calculations. Typecheck, lint, build, 114 unit tests and 13 companion/raid browser cases pass. Independent reviews confirmed content and gameplay parity; a minor fortification-level type gap is queued for correction. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,072 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 checkpoint types military definitions and helpers while preserving all 13 data exports and sampled calculations. Typecheck, lint, build, 114 unit tests and 13 companion/raid browser cases pass. Independent reviews confirmed content and gameplay parity, then verified the correction restricting fortification state to its authored level ranges. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,071 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Tighten military level contracts, then migrate and improve the resource dashboard.
+1. Migrate and improve the resource dashboard.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

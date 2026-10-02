@@ -16,8 +16,7 @@
 export type SoldierType = 'levy' | 'menAtArms' | 'knights';
 export type Garrison = Record<SoldierType, number>;
 export type FortificationTrack = 'walls' | 'gate' | 'moat';
-export type FortificationLevels = Record<FortificationTrack, number>;
-type AuthoredLevels = { walls: 0 | 1 | 2 | 3 | 4; gate: 0 | 1 | 2 | 3 | 4; moat: 0 | 1 | 2 | 3 };
+export type FortificationLevels = { walls: 0 | 1 | 2 | 3 | 4; gate: 0 | 1 | 2 | 3 | 4; moat: 0 | 1 | 2 | 3 };
 
 interface SoldierDefinition<Id extends SoldierType> {
   readonly id: Id;
@@ -36,12 +35,12 @@ interface SoldierDefinition<Id extends SoldierType> {
 }
 
 interface FortificationDefinition<Track extends FortificationTrack = FortificationTrack> {
-  readonly level: AuthoredLevels[Track];
+  readonly level: FortificationLevels[Track];
   readonly name: string;
   readonly cost: number;
   readonly defense: number;
   readonly description: string;
-  readonly requires?: Readonly<Partial<AuthoredLevels>>;
+  readonly requires?: Readonly<Partial<FortificationLevels>>;
 }
 
 export interface MilitaryDefenseState extends FortificationLevels {

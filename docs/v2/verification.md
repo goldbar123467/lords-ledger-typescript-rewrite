@@ -1,5 +1,11 @@
 # 2.0 verification record
 
+## 2026-10-02 military state-level type correction
+
+Baseline `483ed69`; frozen fingerprint `28B748C2F92A2628FE6C47070F84A76D0696D59B26ABCD4BD85E290AE519C42C`. Shared `FortificationLevels` now bounds walls/gate to 0..4 and moat to 0..3 for both state and authored definitions. No executable expression changed. Primary typecheck/lint/build and 13 military/raid/companion units pass. Bundle asset names/hashes match the preceding checkpoint. Original grader `walls: 999` fixture now fails TS2322. A persistent compile-time bound assertion protects the state interface without suppression directives.
+
+Both independent reviewers close G-MIL-01 at the type boundary, with legal endpoint fixtures accepted and six/seven invalid assignments rejected. Each reran typecheck and three military units; grader also repeated all 20,780 parity cases and the 13-export hash. Reports: `artifacts/v2/{tester,grader}-military-levels/report.md`. No browser rerun needed for unchanged runtime. Nested military JSON validation remains open. Production decreases one line to 46,418 (+1,071 baseline); tests add five net lines. Full migration remains incomplete.
+
 ## 2026-10-02 military data/helper TypeScript checkpoint
 
 Baseline `1ab60fd`, frozen full tracked/nonignored fingerprint `FCC68CB03A975EBB4BFF97C5CF971CA84B93CBD463E5D386DD1F28408422F5A3`. Preview `index-BzG-V-Q_.js`, data `game-data-DnuNCLTJ.js`. Candidate source remained unchanged through both reviews; documentation follows review. Evidence: `artifacts/v2/military-{preflight,ts}/` and `{tester,grader}-military-ts/`.

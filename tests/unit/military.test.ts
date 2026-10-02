@@ -3,6 +3,11 @@ import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import * as military from '../../src/data/military.ts';
 
+type Assert<T extends true> = T;
+export type MilitaryLevelContract = Assert<military.MilitaryDefenseState extends {
+  walls: 0 | 1 | 2 | 3 | 4; gate: 0 | 1 | 2 | 3 | 4; moat: 0 | 1 | 2 | 3;
+} ? true : false>;
+
 test('military definitions, narrative and tuning match the original exports', () => {
   const data = Object.fromEntries(Object.entries(military).filter(([, value]) => typeof value !== 'function'));
   assert.equal(createHash('sha256').update(JSON.stringify(data)).digest('hex'),
@@ -15,7 +20,7 @@ test('military definitions, narrative and tuning match the original exports', ()
 test('defense preserves fortification, morale and flat bonus ordering', () => {
   const initial = military.getInitialMilitaryState();
   assert.equal(military.calculateDefenseRating(initial), 15);
-  const fortified = { ...initial, garrison: { levy: 5, menAtArms: 3, knights: 1 }, walls: 4, gate: 4, moat: 3, morale: 100 };
+  const fortified: military.MilitaryDefenseState = { ...initial, garrison: { levy: 5, menAtArms: 3, knights: 1 }, walls: 4, gate: 4, moat: 3, morale: 100 };
   assert.equal(military.calculateDefenseRating(fortified, 5), 130);
   assert.equal(military.getDefenseBreakdown(fortified, 5, 3).total, 133);
   assert.equal(military.getTotalGarrison(fortified.garrison), 9);
