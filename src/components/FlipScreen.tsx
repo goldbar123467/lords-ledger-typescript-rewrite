@@ -1,7 +1,7 @@
 /** Perspective-story introduction, choices, outcomes, and estate consequences. */
 import type { ReactNode } from 'react';
 import { FLIP_STAT_IDS, type FlipDefinition, type FlipEffects, type FlipStats, type LinearFlip } from '../data/flipTypes.ts';
-import { translateEffects } from '../engine/meterUtils.js';
+import { translateEffects } from '../engine/meterUtils.ts';
 
 interface FlipScreenProps {
   phase: 'flip_intro' | 'flip_decision' | 'flip_outcome' | 'flip_summary';

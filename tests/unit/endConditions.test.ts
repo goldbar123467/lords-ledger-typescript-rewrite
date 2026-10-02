@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BANKRUPTCY_SEASONS, famineSeasonsForDifficulty } from '../../src/engine/endConditions.ts';
-import { checkGameOver } from '../../src/engine/meterUtils.js';
+import { checkGameOver } from '../../src/engine/meterUtils.ts';
 
 test('bankruptcy ends at the executable six season boundary', () => {
   assert.equal(BANKRUPTCY_SEASONS, 6);

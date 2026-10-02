@@ -4,6 +4,7 @@ import randomEvents from '../data/randomEvents.js';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
+import type { GameOverReason } from '../engine/meterUtils.ts';
 import { isGambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
 import { isStrangerEncounterType, type StrangerEncounterType } from '../engine/tavernEncounter.ts';
@@ -59,7 +60,7 @@ export interface GameSnapshot {
   inventory: Inventory;
   buildings: Array<BuildingInstance | BuildingId>;
   garrison: number;
-  gameOverReason: { type: 'depopulation' | 'bankruptcy' | 'famine'; reason: string } | null;
+  gameOverReason: GameOverReason | null;
   activeTab: string;
   tavern: {
     pendingStrangerEncounter?: StrangerEncounterType | null;

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import seasonalEvents from '../../src/data/seasonalEvents.js';
 import gameReducer from '../../src/engine/gameReducer.js';
-import { checkGameOver } from '../../src/engine/meterUtils.js';
+import { checkGameOver } from '../../src/engine/meterUtils.ts';
 
 const fixtureUrl = new URL('../fixtures/legacy-normal-turn1.json', import.meta.url);
 const legacyRaw = await readFile(fixtureUrl, 'utf8');

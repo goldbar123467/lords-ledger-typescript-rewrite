@@ -15,7 +15,7 @@ import {
   translateEffects,
   applyResourceEffects,
   checkGameOver,
-} from "./meterUtils.js";
+} from "./meterUtils.ts";
 
 import {
   selectSeasonalEvent,
