@@ -1,11 +1,7 @@
-/**
- * TutorialHint.jsx
- *
- * Contextual hint banners shown during the first few turns to guide new players.
- * Disappears automatically after the relevant turn passes.
- */
+import type { TabId } from './tabs.ts';
 
-const HINTS = {
+interface Hint { readonly maxTurn: number; readonly text: string }
+export const HINTS: Partial<Record<TabId, readonly Hint[]>> = {
   estate: [
     { maxTurn: 2, text: "Start by building a Strip Farm or Pasture — they produce food to keep your people alive and attract new settlers." },
     { maxTurn: 4, text: "Watch your Net income at the top. If it's negative, you're losing money each season. Build wisely!" },
@@ -26,27 +22,3 @@ const HINTS = {
     { maxTurn: 2, text: "This is the history of your reign. Every action, event, and season is recorded here." },
   ],
 };
-
-export default function TutorialHint({ tab, turn }) {
-  const tabHints = HINTS[tab];
-  if (!tabHints) return null;
-
-  const activeHint = tabHints.find((h) => turn <= h.maxTurn);
-  if (!activeHint) return null;
-
-  return (
-    <div
-      className="rounded-md border p-3 mb-4 text-sm"
-      style={{
-        backgroundColor: "rgba(196, 162, 74, 0.08)",
-        borderColor: "#8a7a3a",
-        color: "#a89070",
-      }}
-    >
-      <span className="font-heading font-bold uppercase text-xs tracking-wider mr-1.5" style={{ color: "#c4a24a" }}>
-        {"\u2756"} Tip:
-      </span>
-      {activeHint.text}
-    </div>
-  );
-}

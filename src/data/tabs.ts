@@ -1,11 +1,4 @@
-/**
- * Plain-JS tab configuration shared between TabBar.jsx and E2E specs.
- *
- * Kept in a separate .js file (no JSX, no React imports) so test specs
- * can import it from Node without a Vite/JSX transform.
- *
- * TabBar.jsx pairs each entry with its lucide-react Icon.
- */
+/** Navigation IDs and labels, shared by views, guidance, and browser tests. */
 export const TAB_CONFIG = [
   { id: "estate",    label: "Estate" },
   { id: "map",       label: "Map" },
@@ -16,4 +9,6 @@ export const TAB_CONFIG = [
   { id: "chapel",    label: "Chapel" },
   { id: "forge",     label: "Forge" },
   { id: "chronicle", label: "Chronicle" },
-];
+] as const;
+
+export type TabId = typeof TAB_CONFIG[number]['id'];

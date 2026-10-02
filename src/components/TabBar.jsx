@@ -7,10 +7,10 @@
 
 import { Landmark, Map, Store, Shield, Users, ScrollText, Scale, Church, Hammer } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
-import { TAB_CONFIG as TAB_LABELS } from "./tabConfig.js";
+import { TAB_CONFIG as TAB_LABELS } from "../data/tabs.ts";
 
 // Re-export the plain tab list for any JSX consumers that want it from here.
-export { TAB_CONFIG } from "./tabConfig.js";
+export { TAB_CONFIG } from "../data/tabs.ts";
 
 const TAB_ICONS = {
   estate: Landmark,

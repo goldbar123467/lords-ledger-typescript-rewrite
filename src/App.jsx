@@ -434,6 +434,7 @@ export default function App() {
       {showTutorial && (
         <TutorialPopup
           tab={displayTab}
+          fallbackFocusRef={phaseActionRef}
           onDismiss={() => handleDismissTutorial(displayTab)}
         />
       )}
