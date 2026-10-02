@@ -83,6 +83,33 @@ for (const width of [390, 640, 1024, 1366]) {
   });
 }
 
+test('the active section stays revealed when the navigation resizes', async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await page.getByRole('button', { name: /Normal.*standard experience/i }).click();
+  await page.getByRole('button', { name: 'I Understand', exact: true }).click();
+  const chronicle = page.getByRole('button', { name: /^Chronicle tab/ });
+  await chronicle.click();
+  await page.getByRole('button', { name: 'I Understand', exact: true }).click();
+  const simulate = page.getByRole('button', { name: 'Simulate this season' });
+  await simulate.focus(); // The browser must not reveal the tab merely because it is focused.
+  for (const width of [320, 640, 1024, 1366, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(chronicle).toHaveAttribute('aria-current', 'page');
+    await expectVisibleTab(chronicle);
+    await expect(simulate).toBeFocused();
+    await page.screenshot({ path: info.outputPath(`chronicle-resized-${width}.png`) });
+  }
+  await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+  await expectVisibleTab(chronicle); // Observe a growing active button as well as the container.
+  await expect(simulate).toBeFocused();
+  await page.screenshot({ path: info.outputPath('chronicle-enlarged.png') });
+  expect(errors).toEqual([]);
+});
+
 test('a seasonal decision is brought into view after a narrow-screen management tab', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');

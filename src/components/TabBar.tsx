@@ -15,11 +15,19 @@ export default function TabBar({ activeTab, onSetTab, disabled }: TabBarProps) {
   useLayoutEffect(() => {
     const bar = barRef.current;
     const active = activeRef.current;
-    if (!bar || !active || bar.scrollWidth <= bar.clientWidth) return;
-    const viewport = bar.getBoundingClientRect();
-    const target = active.getBoundingClientRect();
-    if (target.left < viewport.left) bar.scrollLeft -= viewport.left - target.left;
-    else if (target.right > viewport.right) bar.scrollLeft += target.right - viewport.right;
+    if (!bar || !active) return;
+    const revealActive = () => {
+      if (bar.scrollWidth <= bar.clientWidth) return;
+      const viewport = bar.getBoundingClientRect();
+      const target = active.getBoundingClientRect();
+      if (target.left < viewport.left) bar.scrollLeft -= viewport.left - target.left;
+      else if (target.right > viewport.right) bar.scrollLeft += target.right - viewport.right;
+    };
+    revealActive();
+    const observer = new ResizeObserver(revealActive);
+    observer.observe(bar);
+    observer.observe(active); // Font changes can resize the button without resizing the container.
+    return () => observer.disconnect();
   }, [activeTab]);
 
   return (

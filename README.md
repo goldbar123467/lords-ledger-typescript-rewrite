@@ -20,14 +20,14 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military-rule, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Migrate remaining registries |
-| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial and navigation views; modal keyboard containment and focus return | Repair active-tab reveal after resizing; migrate app entry points and remaining views; complete interface review |
+| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial and navigation views; modal keyboard containment, focus return and resize-aware tab reveal | Migrate app entry points and remaining views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 checkpoint types navigation and shares its icon map with the tutorials. Labels are larger and clearer, and ten focused navigation/tutorial/event browser cases pass alongside typecheck, lint, build and the content-preservation unit. Independent review found an inherited resize issue still to correct: narrowing the window can leave the active tab off-screen. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,009 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 section types navigation and shares its icon map with the tutorials. Labels are larger and clearer, and ten focused navigation/tutorial/event browser cases pass alongside typecheck, lint, build and the content-preservation unit. Both reviewers accepted the subsequent resize correction with six navigation cases each. A timing gap in the text-growth regression still needs correction; independent awaited probes confirm that product behavior. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,017 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Keep the active navigation tab visible after the window resizes.
+1. Await actual font growth in the navigation regression, then continue the military/resource contracts and dashboard migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

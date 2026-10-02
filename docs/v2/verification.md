@@ -1,5 +1,13 @@
 # 2.0 verification record
 
+## 2026-10-02 active navigation resize correction
+
+Baseline `5a87be2`, full reviewed fingerprint `188F5026799DDE0B5952A686A9C0D87D129A0C7BF1E0356B5972E626515D15FB`. ResizeObserver watches the navigation and active button; cleanup disconnects it. Both independently close G-TAB-01 / T-TAB01 after reproducing wide-to-narrow, reverse sizes, tab changes and retained Simulate focus. The primary original probe now measures Chronicle x220-319.58 inside320 with scrollLeft420. Opened before/current images confirm the selected marker is visible.
+
+- Persistent resize regression first failed. Six primary navigation browsers then passed. The first named callback failed TypeScript null narrowing; an equivalent arrow callback closes that diagnostic without assertion or suppression. Exact final typecheck/lint/build and the focused resize case pass; both independent six-case suites pass. Reports: `artifacts/v2/{tester,grader}-tab-bar-resize/report.md`. Fingerprints stayed unchanged and ports were freed. Preview asset `index-Cmo0BI1E.js`; CSS unchanged.
+- **Open P3 G-TAB-R01:** the new test's addStyleTag returns before its computed font changes, so its immediate visibility check and enlarged screenshot can still show root16px/label14px. Primary found this by opening the image, and both reviewers confirmed it. Those captures do not prove enlargement. Separate awaited probes verify root32px/label28px, active Chronicle x198.48-389.64 inside390, focus retained and no page errors; their actual enlarged images were opened. Add these explicit font-size waits to the persistent test in a separate correction commit. Full enlarged-game layout remains crowded and outside this tab-reveal check; this is CSS text scaling, not browser zoom.
+- Pre-documentation census: implementation30,955, data/contracts14,250, styles1,159, production **46,364 (+1,017 baseline; +8 correction)**; tests8,233, tooling1,893, docs3,089, other text9,455; inclusive69,034. Thirty-nine src JS/JSX remain. No new campaign, full-suite or overall-completion claim.
+
 ## 2026-10-02 navigation migration checkpoint
 
 Baseline `57f77a6`; full reviewed fingerprint `69B42961C53A1D756DE68DE65119630D9957DC8DAD50C72EB661A2A94A999325`. TabBar became TSX with finite TabId props, native refs, a shared tutorial icon map, CSS state styling and one label per button. A named navigation landmark replaces the plain container. All nine authored IDs/labels/icons, native disabled behavior and event-phase ownership are preserved. Label size is 14px; inactive contrast improves from 2.91:1 to 6.36:1.
