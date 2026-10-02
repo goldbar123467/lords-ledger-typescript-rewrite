@@ -1,5 +1,15 @@
 # 2.0 verification record
 
+## 2026-10-02 event-choice and continuation views
+
+Baseline `be3cbb1`, frozen full tracked/nonignored source fingerprint `290B9E52304DC753B101C19CA34B7DD5E351CB567A03AEACC328CC29C8DB1E93`. `EventCard.jsx` and `ResolveScreen.jsx` became checked TSX; finite resource/direction maps and CSS hover classes replace repeated view data and imperative style writes. Text, choices, indicator order, and game effects are unchanged.
+
+- Primary typecheck, lint, build, all 110 units, and 18 event-view/save browsers pass. `artifacts/v2/event-view/` contains logs, immutable JSX archives, and actual before/after 390/1366 captures and full decoded save records. Saved pending/resolved/random states, accessible labels, idle styles, and existing note focus sequence compare exactly equal. Opened phone seasonal and laptop resolution pairs; both reviewers also opened the full paired sets. No new campaign run for this view-only change.
+- Both independent reports (`artifacts/v2/{tester,grader}-event-view/report.md`) accepted the converted paths. Each ran two focused browser cases on its own strict port and typecheck. Tester also passed lint and drove a saved random second-choice settlement; grader measured idle/hover colors and focus outlines. Legacy bytes stayed unchanged, with no page errors. Their source fingerprints remained frozen. Grader investigated transient blank screenshots during background focus repaint; waited captures showed the note content, so no persistent blank-note regression was established.
+- **Open inherited P2 T-EVW01 / EV-ADJ-01:** unchanged Scribe's Note lacks modal semantics/initial focus/containment. Tab reaches background Save and Load. Tester pressed Enter on hidden focused Load at 390px and restored the saved pending event, undoing the unsaved choice. Evidence: `tester-event-view/note-escape-results.json` and opened note captures. This will be repaired in a separate committed correction; the focused conversion test intentionally used visible note dismissal and makes no modal-accessibility claim.
+- First-attempt evidence is retained: a patch format was rejected before content edits; the first new test typecheck rejected nullable storage passed to the decoder, then passed with an explicit missing-save guard. Browser tests passed on their first run. Tester corrected its initial probe's mistaken uppercase DOM-text expectation, preserving that failure.
+- Pre-documentation census: implementation 31,330; data/contracts 14,006; styles 1,164; production **46,500 (+1,153 baseline; -28 this section)**; tests 7,845; selected tooling 1,893; docs 3,036; other text 9,455; inclusive text 68,729. Forty-four src JS/JSX files remain. Line changes include style consolidation and formatting; bundle/performance improvement is not claimed. The full rewrite remains IN PROGRESS.
+
 This file records verification chronologically. The latest independent-repository run is below; older sections retain the original worktree results. [checkpoint.md](checkpoint.md) describes the historical repository-creation snapshot.
 
 ## 2026-10-02 event category/gate correction

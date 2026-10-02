@@ -20,14 +20,14 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military-rule, synergy, perspective-story, and seasonal/random event definitions; checked category/gate relationship | Migrate remaining registries |
-| React interface | Typed Market, Tavern companion, synergy notification, and perspective-story views; shared story controls and clearer chance/result labels | Migrate the app entry points and most views; complete interface review |
+| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, and continuation views; shared story controls and clearer chance/result labels | Fix Scribe's Note keyboard containment; migrate the app entry points and remaining views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 event checkpoint passed typecheck, lint, production build, **110 unit tests**, **16 save browser cases**, and two saved event browser flows. Both independent reviewers accepted unchanged content and selection behavior, then verified the category/gate type correction with positive and negative compiler probes. That correction also passed 25 focused unit tests and preserved every emitted asset hash. The latest 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; all recorded results and random cursors match the preceding checkpoint. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; current production is 1,181 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 event-view checkpoint passed typecheck, lint, production build, **110 unit tests**, and **18 focused browser cases**. Both independent reviewers accepted the converted views at phone and laptop sizes and reproduced an inherited Scribe's Note focus leak, scheduled for the next correction. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; recorded results and random cursors matched the prior checkpoint. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The event-view conversion removed 28 physical production lines; current production is 1,153 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate event presentation using the checked definitions and verify keyboard continuation through choices and historical notes.
+1. Fix Scribe's Note dialog semantics, keyboard containment, and focus return, then verify saved choice continuation.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
