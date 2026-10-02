@@ -59,8 +59,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct the reviewed singular/plural wording in the bankruptcy warning.
-2. Type the remaining resource-effect boundary and continue reducing duplicated reducer logic.
+1. Type the remaining resource-effect boundary, preserving legacy numeric translations and indicator labels.
+2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.

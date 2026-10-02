@@ -193,7 +193,7 @@ function ResourceWarningBanner({ denarii, food, population, garrison, bankruptcy
   }
   if (denarii <= 0) {
     const turnsLeft = BANKRUPTCY_SEASONS - (bankruptcyTurns || 0);
-    warnings.push(`Treasury is empty! ${turnsLeft > 0 ? `${turnsLeft} more seasons and creditors seize your estate.` : "Creditors are at the gate!"} Sell goods or cut spending.`);
+    warnings.push(`Treasury is empty! ${turnsLeft > 0 ? `${turnsLeft} more season${turnsLeft === 1 ? '' : 's'} and creditors seize your estate.` : "Creditors are at the gate!"} Sell goods or cut spending.`);
   }
   if (garrison <= 0) {
     warnings.push("No garrison! Your fortifications must carry the defense; a breach brings extra losses.");

@@ -2,6 +2,12 @@
 
 This file records verification chronologically. The latest independent-repository run is below; older sections retain the original worktree results. [checkpoint.md](checkpoint.md) describes the historical repository-creation snapshot.
 
+## 2026-10-02 bankruptcy warning copy
+
+T-FSET-01 P3 is closed at full fingerprint `454F64AAC6EE7E90EE1C37C084E200C8BFF9DA9811E1E7D0EFB511FD000E34EA` (HEAD `1934328` plus one Dashboard expression), unchanged through both reviews. The warning now says "1 more season" at bankruptcy count five and "2 more seasons" at four; counters and timing are unchanged. A temporary exact-text assertion first reproduced the old wording, with evidence preserved under `artifacts/v2/bankruptcy-copy/red/`; persistent gameplay tests are unchanged.
+
+Primary typecheck/lint/build and four live browser checks pass. Opened original/current phone warning captures. Both reviewers independently loaded the controlled saved states at 390x844 and 1366x768, opened original/current images, and confirmed exact wording, initial-viewport visibility, no overflow, and no page exceptions. Reports: `artifacts/v2/{tester,grader}-bankruptcy-copy/report.md`. Preview matched the current build, asset `index-BfKhVXCd.js`. No unit suite, broad browser suite, or campaign was repeated for this copy-only correction; prior results retain their recorded scope. Production remains 46,483 lines, 1,136 above baseline.
+
 ## 2026-10-02 story morale and bankruptcy settlement
 
 At HEAD `0dcdbb2` plus correction, full fingerprint `5672E65959B0A4332D605F4B24E8421867A83AEC6354E7E610751CB27D3A8C7B` stayed unchanged through both reviews. Roster reconciliation now starts from the already-applied military effects, preserving morale. Story return preserves elapsed bankruptcy seasons when denarii is zero and clears the streak when solvent; it does not increment the season counter. The six-season threshold and authored effects are unchanged.
