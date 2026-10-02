@@ -1,5 +1,11 @@
 # 2.0 verification record
 
+## 2026-10-02 navigation font-test timing correction
+
+Baseline `4c18065`; full reviewed fingerprint `3F609DD843EAC31CE6301AFB4E68F58FFA9C3B708E0AFA95490993152267B632`. The only executable diff adds two awaited CSS assertions: root32px and Chronicle label28px before the enlarged geometry check. Primary and both independent exact resize cases pass 1/1 on first attempt; primary typecheck passes. All opened the actual enlarged screenshot, which now visibly contains larger text and a revealed selected Chronicle. Both close G-TAB-R01 with unchanged fingerprints and freed ports. Reports: `artifacts/v2/{tester,grader}-tab-bar-font-test/report.md`; root logs/captures in `tab-bar-font-test/`.
+
+Production/build is unchanged from the reviewed ResizeObserver correction; production remains46,364 (+1,017 baseline), tests gain two lines. No repeated full suite/build/campaign was required. The image also shows unrelated Dashboard label crowding under enlarged text; that is queued for the Dashboard migration after typing its military dependency. Actual browser zoom, whole-HUD responsive acceptance and full rewrite completion remain open.
+
 ## 2026-10-02 active navigation resize correction
 
 Baseline `5a87be2`, full reviewed fingerprint `188F5026799DDE0B5952A686A9C0D87D129A0C7BF1E0356B5972E626515D15FB`. ResizeObserver watches the navigation and active button; cleanup disconnects it. Both independently close G-TAB-01 / T-TAB01 after reproducing wide-to-narrow, reverse sizes, tab changes and retained Simulate focus. The primary original probe now measures Chronicle x220-319.58 inside320 with scrollLeft420. Opened before/current images confirm the selected marker is visible.

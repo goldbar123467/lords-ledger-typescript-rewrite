@@ -104,6 +104,8 @@ test('the active section stays revealed when the navigation resizes', async ({ p
     await page.screenshot({ path: info.outputPath(`chronicle-resized-${width}.png`) });
   }
   await page.addStyleTag({ content: 'html { font-size: 200%; }' });
+  await expect(page.locator('html')).toHaveCSS('font-size', '32px');
+  await expect(chronicle.locator('span')).toHaveCSS('font-size', '28px');
   await expectVisibleTab(chronicle); // Observe a growing active button as well as the container.
   await expect(simulate).toBeFocused();
   await page.screenshot({ path: info.outputPath('chronicle-enlarged.png') });

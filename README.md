@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 section types navigation and shares its icon map with the tutorials. Labels are larger and clearer, and ten focused navigation/tutorial/event browser cases pass alongside typecheck, lint, build and the content-preservation unit. Both reviewers accepted the subsequent resize correction with six navigation cases each. A timing gap in the text-growth regression still needs correction; independent awaited probes confirm that product behavior. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,017 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 section types navigation and shares its icon map with the tutorials. Labels are larger and clearer, and ten focused navigation/tutorial/event browser cases pass alongside typecheck, lint, build and the content-preservation unit. Both reviewers accepted the subsequent resize correction and the exact text-growth regression fix. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,017 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Await actual font growth in the navigation regression, then continue the military/resource contracts and dashboard migration.
+1. Type the military definitions and helpers, then migrate and improve the resource dashboard.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
