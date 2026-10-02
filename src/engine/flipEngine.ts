@@ -1,18 +1,52 @@
 /**
- * flipEngine.js
+ * flipEngine.ts
  *
  * Pure functions for perspective-flip logic.
- * No side effects, no I/O. Math.random() used for chance-based options.
+ * No side effects or I/O. Chance-based options consume an explicit random draw.
  */
 
-import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.js";
-import { CYOA_FLIPS } from "../data/cyoaFlips.js";
-import { getBuildingType } from "./economyEngine.ts";
+import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.ts";
+import { CYOA_FLIPS } from "../data/cyoaFlips.ts";
+import { FLIP_STAT_IDS, type FlipDefinition, type FlipEffects, type FlipEnding,
+  type FlipOption, type FlipStatId, type FlipStats, type LinearFlip } from "../data/flipTypes.ts";
+import { getBuildingType, type BuildingEntry } from "./buildingActions.ts";
+import type { TAX_RATES } from "../data/economy.ts";
 
-export const ALL_FLIPS = { ...PERSPECTIVE_FLIPS, ...CYOA_FLIPS };
+export type LinearFlipId = keyof typeof PERSPECTIVE_FLIPS;
+export type CyoaFlipId = keyof typeof CYOA_FLIPS;
+export type FlipId = LinearFlipId | CyoaFlipId;
+export const ALL_FLIPS: Record<FlipId, FlipDefinition> = { ...PERSPECTIVE_FLIPS, ...CYOA_FLIPS };
+const linearFlips: Record<LinearFlipId, LinearFlip> = PERSPECTIVE_FLIPS;
+
+export function isFlipId(value: unknown): value is FlipId {
+  return typeof value === 'string' && Object.hasOwn(ALL_FLIPS, value);
+}
+
+function isLinearFlipId(value: unknown): value is LinearFlipId {
+  return typeof value === 'string' && Object.hasOwn(linearFlips, value);
+}
+
+function isFlipStat(value: string): value is FlipStatId {
+  return FLIP_STAT_IDS.some(id => id === value);
+}
+
+interface FlipTriggerState {
+  turn: number;
+  perspectiveFlips?: Partial<Record<FlipId, boolean>>;
+  taxRate?: keyof typeof TAX_RATES;
+  population?: number;
+  buildings?: BuildingEntry[];
+  tradeCount?: number;
+  castleLevel?: number;
+  militaryEventEverFired?: boolean;
+  garrison?: number;
+  lastFlipTurn?: number;
+  denarii?: number;
+  chapel?: { faith?: number; piety?: number };
+}
 
 /** Priority order for trigger evaluation */
-const FLIP_PRIORITY = [
+const FLIP_PRIORITY: readonly FlipId[] = [
   "serf_week", "merchant_day", "noble_dilemma", "knight_gamble",
   "cyoa_lord", "cyoa_merchant", "cyoa_monk", "cyoa_knight", "cyoa_serf",
 ];
@@ -25,7 +59,7 @@ const FLIP_PRIORITY = [
  *   meters, buildings, tradeCount, castleLevel, militaryEventEverFired, garrison)
  * @returns {string|null} flipId or null
  */
-export function checkFlipTriggers(state) {
+export function checkFlipTriggers(state: FlipTriggerState): FlipId | null {
   const {
     turn,
     perspectiveFlips = {},
@@ -127,16 +161,17 @@ export function checkFlipTriggers(state) {
  * @param {string} flipId
  * @returns {{ [statName]: number }}
  */
-export function getInitialFlipStats(flipId) {
+export function getInitialFlipStats(flipId: string | null | undefined): FlipStats {
+  if (!isFlipId(flipId)) return {};
   const flip = ALL_FLIPS[flipId];
   if (!flip) return {};
 
   // CYOA flips have no character stats
   if (flip.type === "cyoa" || !flip.characterStats) return {};
 
-  const stats = {};
+  const stats: FlipStats = {};
   for (const [key, config] of Object.entries(flip.characterStats)) {
-    stats[key] = config.initial;
+    if (isFlipStat(key)) stats[key] = config.initial;
   }
   return stats;
 }
@@ -150,8 +185,9 @@ export function getInitialFlipStats(flipId) {
  * @param {{ [statName]: number }} currentStats
  * @returns {{ nextStats: object, consequenceFlags: string[], outcome: string, wasSuccess: boolean|null }}
  */
-export function resolveFlipOption(option, currentStats, random) {
-  const clampStat = (val) => Math.min(100, Math.max(0, val));
+export function resolveFlipOption(option: FlipOption, currentStats: FlipStats, random: () => number): {
+  nextStats: FlipStats; consequenceFlags: string[]; outcome: string; wasSuccess: boolean | null;
+} {
 
   // Chance-based option
   if (option.chance !== undefined) {
@@ -161,14 +197,9 @@ export function resolveFlipOption(option, currentStats, random) {
     const effects = success ? option.successStatEffects : option.failureStatEffects;
     const outcome = success ? option.successOutcome : option.failureOutcome;
 
-    const nextStats = { ...currentStats };
-    for (const [stat, delta] of Object.entries(effects || {})) {
-      if (nextStats[stat] !== undefined) {
-        nextStats[stat] = clampStat(nextStats[stat] + delta);
-      }
-    }
+    const nextStats = applyStatEffects(currentStats, effects);
 
-    let flags = [];
+    let flags: string[] = [];
     if (option.consequenceFlags) {
       if (typeof option.consequenceFlags === "object" && !Array.isArray(option.consequenceFlags)) {
         flags = success ? (option.consequenceFlags.success || []) : (option.consequenceFlags.failure || []);
@@ -181,12 +212,7 @@ export function resolveFlipOption(option, currentStats, random) {
   }
 
   // Deterministic option
-  const nextStats = { ...currentStats };
-  for (const [stat, delta] of Object.entries(option.statEffects || {})) {
-    if (nextStats[stat] !== undefined) {
-      nextStats[stat] = clampStat(nextStats[stat] + delta);
-    }
-  }
+  const nextStats = applyStatEffects(currentStats, option.statEffects);
 
   const flags = Array.isArray(option.consequenceFlags) ? option.consequenceFlags : [];
 
@@ -198,13 +224,24 @@ export function resolveFlipOption(option, currentStats, random) {
   };
 }
 
+function applyStatEffects(current: FlipStats, effects: FlipStats): FlipStats {
+  const next = { ...current };
+  for (const [stat, delta] of Object.entries(effects)) {
+    if (!isFlipStat(stat)) continue;
+    const value = next[stat];
+    if (value !== undefined) next[stat] = Math.min(100, Math.max(0, value + delta));
+  }
+  return next;
+}
+
 /**
  * Returns true if the given flip ID is a CYOA-style flip.
  *
  * @param {string} flipId
  * @returns {boolean}
  */
-export function isCyoaFlip(flipId) {
+export function isCyoaFlip(flipId: string | null | undefined): flipId is CyoaFlipId {
+  if (!isFlipId(flipId)) return false;
   const flip = ALL_FLIPS[flipId];
   return flip?.type === "cyoa";
 }
@@ -216,7 +253,8 @@ export function isCyoaFlip(flipId) {
  * @param {string} endingType - "good" | "medium" | "bad"
  * @returns {{ treasury?: number, people?: number }}
  */
-export function computeCyoaConsequences(flipId, endingType) {
+export function computeCyoaConsequences(flipId: string | null | undefined, endingType: FlipEnding | null | undefined): FlipEffects {
+  if (!isFlipId(flipId) || !endingType) return {};
   const flip = ALL_FLIPS[flipId];
   if (!flip || flip.type !== "cyoa") return {};
   return flip.consequences?.[endingType] || {};
@@ -230,15 +268,16 @@ export function computeCyoaConsequences(flipId, endingType) {
  * @param {string[]} flags - Accumulated consequence flags from all decisions
  * @returns {{ treasury?: number, people?: number, military?: number, faith?: number }}
  */
-export function computeFlipConsequences(flipId, flags = []) {
-  const flip = PERSPECTIVE_FLIPS[flipId];
+export function computeFlipConsequences(flipId: string | null | undefined, flags: readonly string[] = []): FlipEffects {
+  if (!isLinearFlipId(flipId)) return {};
+  const flip = linearFlips[flipId];
   if (!flip || !flip.consequences) return {};
 
-  const result = {};
+  const result: FlipEffects = {};
 
   // Apply base consequences
   for (const [meter, delta] of Object.entries(flip.consequences.base || {})) {
-    result[meter] = (result[meter] || 0) + delta;
+    if (isEffectMeter(meter)) result[meter] = (result[meter] || 0) + delta;
   }
 
   // Apply flag-triggered consequences (deduplicate flags)
@@ -247,10 +286,14 @@ export function computeFlipConsequences(flipId, flags = []) {
     const flagEffects = flip.consequences.flags?.[flag];
     if (flagEffects) {
       for (const [meter, delta] of Object.entries(flagEffects)) {
-        result[meter] = (result[meter] || 0) + delta;
+        if (isEffectMeter(meter)) result[meter] = (result[meter] || 0) + delta;
       }
     }
   }
 
   return result;
+}
+
+function isEffectMeter(value: string): value is keyof FlipEffects {
+  return value === 'treasury' || value === 'people' || value === 'military' || value === 'faith';
 }

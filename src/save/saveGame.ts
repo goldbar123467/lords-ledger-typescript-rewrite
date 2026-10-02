@@ -1,8 +1,8 @@
 /** Browser storage boundary. The legacy key is read only during explicit import. */
 import seasonalEvents from '../data/seasonalEvents.js';
 import randomEvents from '../data/randomEvents.js';
-import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.js';
-import { CYOA_FLIPS } from '../data/cyoaFlips.js';
+import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
+import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
 import { isGambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';

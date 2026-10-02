@@ -45,8 +45,8 @@ import {
   STARTING_TOTAL_PLOTS,
   SEASON_DEGRADE_MULTIPLIERS,
 } from "../data/economy.ts";
-import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.js";
-import { ALL_FLIPS, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.js";
+import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.ts";
+import { ALL_FLIPS, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.ts";
 import { checkSynergies, advanceSynergyCounters, applySynergyMeterEffects } from "./synergyEngine.ts";
 import { SYNERGY_TIER_MAP } from "../data/synergies.ts";
 import { getInitialRaidState, checkForRaid, resolveRaid, buildRaidChronicleText } from "./raidEngine.ts";

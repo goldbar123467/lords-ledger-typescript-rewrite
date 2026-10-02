@@ -1,5 +1,7 @@
+import type { CyoaFlip } from './flipTypes.ts';
+
 /**
- * cyoaFlips.js
+ * cyoaFlips.ts
  *
  * Content data for the five "CYOA perspective flip" branching narratives.
  * Each flip casts the player as a different historical character and guides
@@ -1007,7 +1009,7 @@ export const CYOA_FLIPS = {
     scribesNote:
       "Serfs were bound to the land but were not slaves. They had legal rights, customary protections, and community bonds that sustained them. Understanding serfdom means understanding both its restrictions and its humanity.",
   },
-};
+} satisfies Record<string, CyoaFlip>;
 
 /*
  * Structure summary:

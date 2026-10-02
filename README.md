@@ -18,8 +18,8 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 | Area | Included in the checkpoint | Remaining work |
 | --- | --- | --- |
-| Domain logic | Typed economy, raids, event selection, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
-| Content definitions | Typed resource, building, Market, decree, military-rule, and synergy definitions | Migrate the remaining registries and validate their references |
+| Domain logic | Typed economy, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
+| Content definitions | Typed resource, building, Market, decree, military-rule, synergy, and perspective-story definitions | Strengthen story reference checks and migrate remaining registries |
 | React interface | Typed Market, Tavern companion, and synergy notification views; targeted navigation, layout, and interaction repairs | Migrate the app entry points and most views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
@@ -59,8 +59,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Type the nine perspective-story definitions and their evaluator, preserving all authored text, choices, triggers, and random draw counts.
-2. Verify content parity and saved story continuation, then migrate the presentation and remaining reducer boundaries.
+1. Close the reviewed story-reference type gap: reject missing destinations and consequence flags against each story's own registry.
+2. Migrate the story presentation and remaining reducer boundaries after the reference correction is verified.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.
