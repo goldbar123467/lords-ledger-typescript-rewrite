@@ -2,6 +2,14 @@
 
 This file records verification chronologically. The latest independent-repository run is below; older sections retain the original worktree results. [checkpoint.md](checkpoint.md) describes the historical repository-creation snapshot.
 
+## 2026-10-02 event category/gate correction
+
+G-EVT-01 is closed at full fingerprint `B6C5EB5C8E7DE1AE1E6FE72145827F4CCAEA58B852B996672D4BE592B3C63829` (HEAD `c0a07d0` plus correction), unchanged through both retests. `RandomEvent` is now a correlated union enforcing the original category/gate convention. The persistent compile-only regression `tests/types/eventGates.ts` exercises every pairing: four accepted and eight rejected. Against the prior schema it first produced eight TS2344 failures; after correction the project typecheck passes. The grader's original two declarations now produce exactly two TS1360 diagnostics. No selector, authored value, save behavior, or style changed.
+
+Primary typecheck/lint/build and 25 focused content/selector/save units pass. The archived content hash remains `3c1c9f2d…`; 420 seasonal/84 random selections and all 148 option translations match. Every emitted asset name and SHA-256 hash is identical before/after build, recorded in `artifacts/v2/event-gate-fix/emitted-asset-hashes.txt`. No new browser or campaign run was needed for this erased type correction; preceding executions retain their recorded fingerprints.
+
+Both reviewers independently reject the original economic/faith and religious/null cases and accept the complete four-positive/eight-negative direct authoring matrix. Grader also passes 25 focused units and 630 archived selector comparisons. Tester passes five focused units and confirms all 26 category/gate pairs plus eligibility counts 13/19/26 at turns 1/3/5. Its initial standalone compiler command omitted `--ignoreConfig`; corrected checks passed. Neither reran browsers or claims visual review. Reports: `artifacts/v2/{tester,grader}-event-gate-fix/report.md`. Production is 46,528 lines (+1,181 baseline; +2 this correction); tests 7,782 including 24 compile-only regression lines; inclusive text 68,686 before documentation. Forty-six src JS/JSX files and the broader rewrite gates remain open.
+
 ## 2026-10-02 seasonal/random event TypeScript checkpoint
 
 At HEAD `9a979f9` plus conversion, full fingerprint `AB5C433FDC5DC17BA7151AB1B3EF453A18667D6AEFDCA084D59DE079DCBA10CF` stayed unchanged through both reviews. The two registries use `as const satisfies` with checked parent seasons, effects/indicators, nonempty choices, nullable notes, and finite categories/gates; IDs retain their literal unions. Selection changes only its gate type, including the original null value; save maps use the common authored event contract. Full JSON remains byte-identical to the archived exports, SHA256 `3c1c9f2d3f8b0ee896fd81209e8a9b852b16045918ae3a75059555005760d3cc`: 28 seasonal events, 26 random events, 148 choices, 40 notes, 54 unique IDs.

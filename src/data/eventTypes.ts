@@ -27,7 +27,9 @@ export interface SeasonalEvent<S extends EventSeason = EventSeason> extends Even
 /** Each seasonal array may contain only events for that parent season. */
 export type SeasonalEventRegistry = { readonly [S in EventSeason]: readonly SeasonalEvent<S>[] };
 
-export interface RandomEvent extends EventDefinition {
-  readonly category: 'economic' | 'social' | 'military' | 'religious';
-  readonly requiresMeter: EventMeterGate;
-}
+/** Economic/social events are ungated; military and religious events unlock later. */
+export type RandomEvent = EventDefinition & (
+  | { readonly category: 'economic' | 'social'; readonly requiresMeter: null }
+  | { readonly category: 'military'; readonly requiresMeter: 'military' }
+  | { readonly category: 'religious'; readonly requiresMeter: 'faith' }
+);
