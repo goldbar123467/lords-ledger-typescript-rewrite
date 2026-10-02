@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-import seasonalEvents from '../../src/data/seasonalEvents.js';
+import seasonalEvents from '../../src/data/seasonalEvents.ts';
 import gameReducer from '../../src/engine/gameReducer.js';
 import { checkGameOver } from '../../src/engine/meterUtils.ts';
 

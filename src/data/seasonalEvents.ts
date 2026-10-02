@@ -13,6 +13,8 @@
  * scribesNote — 2–3 sentences of real medieval history at 6th grade level.
  */
 
+import type { SeasonalEventRegistry } from './eventTypes.ts';
+
 const seasonalEvents = {
 
   // ─────────────────────────────────────────────────────────────
@@ -1328,6 +1330,8 @@ const seasonalEvents = {
     },
 
   ],
-};
+} as const satisfies SeasonalEventRegistry;
+
+export type SeasonalEventId = typeof seasonalEvents[keyof typeof seasonalEvents][number]['id'];
 
 export default seasonalEvents;

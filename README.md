@@ -19,7 +19,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | Area | Included in the checkpoint | Remaining work |
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
-| Content definitions | Typed resource, building, Market, decree, military-rule, synergy, and perspective-story definitions; parent-specific story reference checks | Migrate remaining registries |
+| Content definitions | Typed resource, building, Market, decree, military-rule, synergy, perspective-story, and seasonal/random event definitions | Tighten event category/gate correlation; migrate remaining registries |
 | React interface | Typed Market, Tavern companion, synergy notification, and perspective-story views; shared story controls and clearer chance/result labels | Migrate the app entry points and most views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 candidate passed typecheck, lint, production build, **108 unit tests**, and **23 focused story/save browser cases**. Both independent reviewers accepted the resource-effect helper migration, including comparisons against the archived JavaScript. The latest 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; all recorded results and random cursors match the preceding mechanics checkpoint. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; the current total remains 1,136 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 candidate passed typecheck, lint, production build, **110 unit tests**, **16 save browser cases**, and two saved event browser flows. Both independent reviewers accepted unchanged event content and selection behavior. A minor authoring-contract gap remains: the event type permits mismatched categories and turn gates; existing events are correct. The latest 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; all recorded results and random cursors match the preceding checkpoint. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; current production is 1,179 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Type the seasonal/random event registries and their choice contracts, preserving all 54 events and 148 options.
+1. Close the event category/gate type gap, then migrate event presentation and keyboard continuation using the checked definitions.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

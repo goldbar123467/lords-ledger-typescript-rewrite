@@ -1,9 +1,10 @@
 /** Event selection keeps content order and used-ID behavior from the legacy game. */
+import type { EventMeterGate } from '../data/eventTypes.ts';
 export type RandomSource = () => number;
 
 export interface SelectableEvent {
   id: string;
-  requiresMeter?: string;
+  requiresMeter?: EventMeterGate;
 }
 
 export interface SeasonalEvent extends SelectableEvent {

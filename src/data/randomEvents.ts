@@ -15,6 +15,8 @@
  *   Included on at least 8 events per specification.
  */
 
+import type { RandomEvent } from './eventTypes.ts';
+
 const randomEvents = [
 
   // ──────────────────────────────────────────────
@@ -1283,6 +1285,8 @@ const randomEvents = [
       "and their people had no one to lead them.",
   },
 
-];
+] as const satisfies readonly RandomEvent[];
+
+export type RandomEventId = typeof randomEvents[number]['id'];
 
 export default randomEvents;

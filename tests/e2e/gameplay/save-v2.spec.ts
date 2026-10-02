@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
-import seasonalEvents from '../../../src/data/seasonalEvents.js';
+import seasonalEvents from '../../../src/data/seasonalEvents.ts';
 
 const legacyKey = 'lords-ledger-save';
 const currentKey = 'lords-ledger-v2-save';

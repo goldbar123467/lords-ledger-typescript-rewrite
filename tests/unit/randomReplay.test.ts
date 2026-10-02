@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-import seasonalEventData from '../../src/data/seasonalEvents.js';
-import randomEvents from '../../src/data/randomEvents.js';
+import seasonalEventData from '../../src/data/seasonalEvents.ts';
+import randomEvents from '../../src/data/randomEvents.ts';
 
 const events = { seasonalEvents: Object.values(seasonalEventData).flat(), randomEvents };
 

@@ -21,7 +21,7 @@ test('random event gates stay closed until their actual turn thresholds', () => 
     { id: 'ordinary' },
     { id: 'military', requiresMeter: 'military' },
     { id: 'faith', requiresMeter: 'faith' },
-  ];
+  ] as const;
   assert.equal(selectRandomEvent(['ordinary'], 2, events, () => 0), events[0]);
   assert.equal(selectRandomEvent(['ordinary'], 3, events, () => 0), events[1]);
   assert.equal(selectRandomEvent(['ordinary', 'military'], 5, events, () => 0), events[2]);

@@ -4,7 +4,7 @@ import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
 import { nextCompanionContent } from '../../src/engine/tavernCompanion.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { calculateDefenseRating } from '../../src/data/military.js';
-import seasonalEventData from '../../src/data/seasonalEvents.js';
+import seasonalEventData from '../../src/data/seasonalEvents.ts';
 
 test('Marta and Aldric cannot resolve an offer that was never displayed', () => {
   const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 1 } });

@@ -1,6 +1,7 @@
 /** Browser storage boundary. The legacy key is read only during explicit import. */
-import seasonalEvents from '../data/seasonalEvents.js';
-import randomEvents from '../data/randomEvents.js';
+import seasonalEvents from '../data/seasonalEvents.ts';
+import randomEvents from '../data/randomEvents.ts';
+import type { EventDefinition } from '../data/eventTypes.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -24,8 +25,8 @@ export const SAVE_VERSION = 2;
 
 const resourceIds = ALL_RESOURCES;
 
-const seasonalEventById = new Map(Object.values(seasonalEvents).flat().map(event => [event.id, event]));
-const randomEventById = new Map(randomEvents.map(event => [event.id, event]));
+const seasonalEventById = new Map<string, EventDefinition>(Object.values(seasonalEvents).flat().map(event => [event.id, event]));
+const randomEventById = new Map<string, EventDefinition>(randomEvents.map(event => [event.id, event]));
 const flipById = new Map<string, unknown>(Object.entries({ ...PERSPECTIVE_FLIPS, ...CYOA_FLIPS }));
 
 export type ResourceId = AuthoredResourceId;
