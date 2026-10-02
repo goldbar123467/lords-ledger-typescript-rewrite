@@ -1,9 +1,14 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { TAB_CONFIG } from '../../../src/data/tabs.ts';
 import { TUTORIALS } from '../../../src/data/tutorials.ts';
 
 const legacy = readFileSync('tests/fixtures/legacy-normal-turn1.json', 'utf8');
+
+async function expectInitialPresentation(guide: Locator) {
+  await expect.soft(guide.getByRole('heading', { level: 2 })).toHaveCSS('font-family', /Cinzel Decorative/, { timeout: 1000 });
+  await expect.soft(guide.getByRole('button', { name: 'I Understand', exact: true })).toBeInViewport({ ratio: 1, timeout: 1000 });
+}
 
 for (const width of [390, 1366]) {
   test(`first-visit tutorial contains keyboard input at ${width}px`, async ({ page }, info) => {
@@ -16,6 +21,7 @@ for (const width of [390, 1366]) {
     await page.getByRole('button', { name: 'Import old save' }).click();
     const acknowledge = page.getByRole('button', { name: 'I Understand', exact: true });
     await expect(acknowledge).toBeVisible();
+    await expectInitialPresentation(page.getByRole('dialog', { name: 'The Estate', exact: true }));
     for (let i = 0; i < 3; i++) await page.keyboard.press('Tab');
     await expect(acknowledge).toBeFocused();
     const tutorial = page.getByRole('dialog', { name: 'The Estate', exact: true });
@@ -31,6 +37,8 @@ for (const width of [390, 1366]) {
       await opener.click();
       const guide = page.getByRole('dialog', { name: TUTORIALS[id].title, exact: true });
       await expect(guide.getByRole('heading', { name: TUTORIALS[id].title, exact: true })).toBeFocused();
+      await expectInitialPresentation(guide);
+      await page.screenshot({ path: info.outputPath(`${id}-tutorial-start.png`) });
       for (const section of TUTORIALS[id].sections) await expect(guide.getByText(section.text, { exact: true })).toBeVisible();
       await expect(guide.getByText(TUTORIALS[id].tip, { exact: true })).toBeVisible();
       await guide.getByRole('heading', { name: TUTORIALS[id].title, exact: true }).click();

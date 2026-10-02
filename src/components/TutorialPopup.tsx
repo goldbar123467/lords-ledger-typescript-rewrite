@@ -32,12 +32,13 @@ export default function TutorialPopup({ tab, onDismiss, fallbackFocusRef }: Tuto
         if (event.target === event.currentTarget && (event.clientX < box.left || event.clientX > box.right
           || event.clientY < box.top || event.clientY > box.bottom)) onDismiss();
       }}>
-      <div className="px-6 pt-6 pb-4 text-center border-b border-[#3a3228] bg-[linear-gradient(180deg,rgba(196,162,74,0.08)_0%,transparent_100%)]">
-        <div className="flex justify-center mb-3" aria-hidden="true">
-          <div className="rounded-full p-3 bg-gold/10 border border-tan-dark"><Icon size={28} className="text-gold" strokeWidth={1.5} /></div>
+      <div className="px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 text-center border-b border-[#3a3228] bg-[linear-gradient(180deg,rgba(196,162,74,0.08)_0%,transparent_100%)]">
+        <div className="flex justify-center mb-2 sm:mb-3" aria-hidden="true">
+          <div className="rounded-full p-2 sm:p-3 bg-gold/10 border border-tan-dark"><Icon size={28} className="text-gold" strokeWidth={1.5} /></div>
         </div>
         <h2 ref={headingRef} id={titleId} tabIndex={-1}
-          className="font-display text-2xl font-bold uppercase tracking-widest text-gold-bright [text-shadow:0_0_12px_rgba(196,162,74,0.3)]">{tutorial.title}</h2>
+          style={{ fontFamily: 'var(--font-display)' }}
+          className="text-2xl font-bold uppercase tracking-widest text-gold-bright [text-shadow:0_0_12px_rgba(196,162,74,0.3)]">{tutorial.title}</h2>
         <p id={subtitleId} className="text-sm mt-1 italic text-tan">{tutorial.subtitle}</p>
       </div>
       <div className="px-6 py-4 space-y-3">
