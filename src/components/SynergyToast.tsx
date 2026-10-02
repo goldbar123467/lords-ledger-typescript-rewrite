@@ -1,41 +1,75 @@
 /**
- * SynergyToast.jsx
+ * SynergyToast.tsx
  *
  * Three-tier notification system for synergy unlocks.
  * Tier 1: small toast at bottom. Tier 2: slide-in card from right. Tier 3: full overlay.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { SynergyTierId } from "../data/synergies.ts";
 
-function Tier1Toast({ notification, onDismiss }) {
-  const [opacity, setOpacity] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
+interface SynergyNotification {
+  tierId: SynergyTierId;
+  tier: 1 | 2 | 3;
+  title: string;
+  description: string;
+  pathName: string;
+  pathIcon: string;
+  pathColor: string;
+  scribesNote?: string | null;
+}
+
+interface NotificationProps {
+  notification: SynergyNotification;
+  onDismiss: () => void;
+}
+
+interface NotificationTimers {
+  closed: boolean;
+  reveal?: number;
+  expiry?: number;
+  finish?: number;
+}
+
+/** A queued item owns its reveal, expiry, and dismissal callbacks. */
+function useTimedNotification({ notification, onDismiss }: NotificationProps, lifetime: number) {
+  const [visible, setVisible] = useState(false);
   const onDismissRef = useRef(onDismiss);
-
+  const timersRef = useRef<NotificationTimers>({ closed: false });
   useEffect(() => { onDismissRef.current = onDismiss; }, [onDismiss]);
 
-  useEffect(() => {
-    // Fade in
-    const fadeInTimer = setTimeout(() => setOpacity(1), 50);
-    // Auto-dismiss after 5s
-    const dismissTimer = setTimeout(() => {
-      setOpacity(0);
-      setDismissed(true);
-      setTimeout(() => onDismissRef.current(), 400);
-    }, 5000);
-    return () => {
-      clearTimeout(fadeInTimer);
-      clearTimeout(dismissTimer);
-    };
+  const dismiss = useCallback(() => {
+    const timers = timersRef.current;
+    if (timers.closed) return;
+    timers.closed = true;
+    window.clearTimeout(timers.reveal);
+    window.clearTimeout(timers.expiry);
+    setVisible(false);
+    timers.finish = window.setTimeout(() => onDismissRef.current(), 400);
   }, []);
 
-  if (dismissed) return null;
+  useEffect(() => {
+    const timers: NotificationTimers = {
+      closed: false,
+      reveal: window.setTimeout(() => setVisible(true), 50),
+      expiry: window.setTimeout(dismiss, lifetime),
+    };
+    timersRef.current = timers;
+    return () => {
+      timers.closed = true;
+      window.clearTimeout(timers.reveal);
+      window.clearTimeout(timers.expiry);
+      window.clearTimeout(timers.finish);
+    };
+  }, [notification, lifetime, dismiss]);
 
-  const dismiss = () => {
-    setOpacity(0);
-    setDismissed(true);
-    setTimeout(onDismiss, 400);
-  };
+  return { visible, dismiss };
+}
+
+function Tier1Toast(props: NotificationProps) {
+  const { notification } = props;
+  const { visible, dismiss } = useTimedNotification(props, 5000);
+  const opacity = visible ? 1 : 0;
 
   return (
     <div
@@ -73,24 +107,9 @@ function Tier1Toast({ notification, onDismiss }) {
   );
 }
 
-function Tier2Card({ notification, onDismiss }) {
-  const [translateX, setTranslateX] = useState("100%");
-  const onDismissRef = useRef(onDismiss);
-
-  useEffect(() => { onDismissRef.current = onDismiss; }, [onDismiss]);
-
-  useEffect(() => {
-    const slideTimer = setTimeout(() => setTranslateX("0"), 50);
-    // Auto-dismiss after 10s
-    const dismissTimer = setTimeout(() => {
-      setTranslateX("100%");
-      setTimeout(() => onDismissRef.current(), 400);
-    }, 10000);
-    return () => {
-      clearTimeout(slideTimer);
-      clearTimeout(dismissTimer);
-    };
-  }, []);
+function Tier2Card(props: NotificationProps) {
+  const { notification } = props;
+  const { visible, dismiss } = useTimedNotification(props, 10000);
 
   return (
     <div
@@ -103,11 +122,11 @@ function Tier2Card({ notification, onDismiss }) {
         backgroundColor: "#1a1610",
         borderColor: notification.pathColor || "#c4a24a",
         boxShadow: `0 8px 24px rgba(0,0,0,0.2)`,
-        transform: `translateX(${translateX})`,
+        transform: `translateX(${visible ? "0" : "100%"})`,
         transition: "transform 0.4s ease-out",
-        pointerEvents: "auto",
+        pointerEvents: visible ? "auto" : "none",
       }}
-      onClick={onDismiss}
+      onClick={dismiss}
       role="status"
       aria-live="polite"
     >
@@ -143,7 +162,7 @@ function Tier2Card({ notification, onDismiss }) {
   );
 }
 
-function Tier3Overlay({ notification, onDismiss }) {
+function Tier3Overlay({ notification, onDismiss }: NotificationProps) {
   const [opacity, setOpacity] = useState(0);
 
   useEffect(() => {
@@ -239,14 +258,17 @@ function Tier3Overlay({ notification, onDismiss }) {
   );
 }
 
-export default function SynergyToast({ notification, onDismiss }) {
+export default function SynergyToast({ notification, onDismiss }: {
+  notification: SynergyNotification | null;
+  onDismiss: () => void;
+}) {
   if (!notification) return null;
 
   if (notification.tier === 3) {
-    return <Tier3Overlay notification={notification} onDismiss={onDismiss} />;
+    return <Tier3Overlay key={notification.tierId} notification={notification} onDismiss={onDismiss} />;
   }
   if (notification.tier === 2) {
-    return <Tier2Card notification={notification} onDismiss={onDismiss} />;
+    return <Tier2Card key={notification.tierId} notification={notification} onDismiss={onDismiss} />;
   }
-  return <Tier1Toast notification={notification} onDismiss={onDismiss} />;
+  return <Tier1Toast key={notification.tierId} notification={notification} onDismiss={onDismiss} />;
 }

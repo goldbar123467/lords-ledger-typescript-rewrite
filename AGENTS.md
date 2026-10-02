@@ -50,6 +50,10 @@ Do not treat an assertion-free campaign, a skipped save assertion, a passing bui
 
 ## Current status and next slice
 
+Notification loop completed at full fingerprint `EF9A18BAC66B783B5DE1C4F415EB8C646DDF712F504913413790978E373539A4`. `SynergyToast.tsx` owns/cancels reveal, expiry, and dismissal timers per notification and keys tier views by authored ID. Typecheck/lint/build, 97 units, and 11 focused browsers pass; both reviewers independently accepted T-SYN-R01/G-SYN-R01 at 390/1366 with unchanged fingerprints. Reports: `artifacts/v2/{tester,grader}-synergy-notifications/report.md`. Keyboard/screen-reader coverage remains open. Production total is 46,712 lines versus 45,347 baseline. Next section: remove repeated Hall snapshots/trust decay and market/forge price rerolls on `DISMISS_FLIP_SUMMARY`, reproduced for both linear and CYOA flips in `artifacts/v2/flip-boundary-preflight/results.json`.
+
+The following paragraph records the preceding rule/reward loop; its notification P3 is now fixed by the loop above.
+
 Resumed 2026-10-02. At full source fingerprint AA16921C472474EE87F84AD9CBB44741BC2913BA78DFBAF5BBD73162D095BB57, both reviewers independently accepted the original synergy condition/reward/save/overlap corrections. Primary checks: typecheck, lint, build, 97 units, 35 adjacent browser cases, and 100 seeded reducer campaigns (52 victories, 48 losses, zero save failures). Both reviewers found a new P3: two queued tier-one notifications hide the second until reload. Next loop: fix notification identity and timer cleanup, migrate the notification view to TypeScript, and retest the original queue reproduction. The separate duplicate Hall seasonal-reset path during flip dismissal still needs an audit. Reports: artifacts/v2/{tester,grader}-synergy-resume/report.md. Production is 46,690 lines versus 45,347 baseline; full typing, interface coverage, and reduction remain open.
 
 ### Historical implementation checkpoints

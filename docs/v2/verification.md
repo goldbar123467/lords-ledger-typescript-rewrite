@@ -4,6 +4,19 @@ This file records verification chronologically. The latest independent-repositor
 
 ## 2026-10-02 resumed synergy correction retest
 
+### Subsequent notification lifecycle correction
+
+At HEAD `629ae71` plus the notification conversion, both reviewers accepted T-SYN-R01/G-SYN-R01 at full tracked/untracked fingerprint `EF9A18BAC66B783B5DE1C4F415EB8C646DDF712F504913413790978E373539A4`, unchanged during review. `SynergyToast.jsx` became checked TSX; keyed tier views and owned reveal/expiry/finish timers prevent hidden second announcements and stale dismissal after Load. Authored copy and rewards are unchanged. `App.jsx` remains unchecked JavaScript, so this is not a statically enforced whole-app notification boundary.
+
+- The new two-unlock click regression first failed against the old view (`artifacts/v2/synergy-notifications/red`). After the fix, the first 11-case run passed ten and failed because reloading also restored the tutorial, blocking the test's Save click. The test now dismisses that tutorial; this first attempt remains under `green/`. The final `retest/` run passed 11/11 with one worker and zero retries. The screenshot test explicitly waits for full overlay opacity.
+- Typecheck, lint, build, and 97/97 unit tests pass. Browser coverage includes 390/1366 click and automatic queue progression, same-ID Load during a 400ms outgoing dismissal, higher-tier sequential presentation, and the existing lawful tithe/save/reload and malformed-save cases. Tier-two/three use a rendering fixture, not a natural achievement claim. The 100-seed engine results above were not rerun for this view-only change.
+- Opened before and after queue images, both current widths, and phone Merchant, Patron, and tier-three screenshots. The second toast is visible above the season action. Tester independently exercised click/automatic progression and the Load race; grader independently reproduced the original queue failure and reviewed timer/type behavior. Each also passed 11/11 strict browser tests. Reports: `artifacts/v2/{tester,grader}-synergy-notifications/report.md`. No new scoped P0-P3; keyboard/screen-reader behavior and wider UI acceptance remain unreviewed.
+- Census under `artifacts/v2/synergy-notifications/code-census.json`: implementation 31,695; data 13,853; styles 1,164; production **46,712**, still **1,365 above baseline**. The extra timer/type code is counted; reduction remains open.
+
+Next preflight: actual `ADVANCE_TURN` followed by saved linear `serf_week` or branching `cyoa_lord` traversal shows trust 48 -> 46, meter-history turns `[7]` -> `[7,8]`, and both market/forge quotes rerolled solely by `DISMISS_FLIP_SUMMARY`. The source of these repeated side effects is the duplicated season reset block. Evidence: `artifacts/v2/flip-boundary-preflight/`; the first exploratory fixture used invalid tax `normal` and was correctly rejected, then corrected to authored `medium`. This next correction is not included in the notification review.
+
+### Prior rule and reward correction
+
 The user resumed the complete rewrite in the independent `lords-ledger-typescript-rewrite` repository on `main`. Original `LordsLedger/main` remains clean at `47570f9caa5696c7369d88a42ae87171b78cd68b`. Reviewed candidate: HEAD `3ab5b1b` plus new unit/browser regressions, full tracked/untracked SHA-256 `AA16921C472474EE87F84AD9CBB44741BC2913BA78DFBAF5BBD73162D095BB57`, unchanged through both reviews. Manifest: `artifacts/v2/synergy-resume/fingerprint-manifest.txt`.
 
 - `npm run typecheck`, `npm run lint`, and `npm run build`: pass. `npm run test:unit`: 97/97, zero skipped. The two added domain tests exercise all five tier-one meter rewards/clamping/input immutability and a complete saved linear perspective flip with exact counter/reward/notification assertions.

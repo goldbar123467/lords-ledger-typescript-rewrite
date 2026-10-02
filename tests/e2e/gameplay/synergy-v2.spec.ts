@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 import { playOneTurn } from '../helpers.js';
+import { SYNERGY_TIER_MAP } from '../../../src/data/synergies.ts';
 
 function newGame() {
   return gameReducer(createInitialState(17), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
@@ -68,6 +69,59 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
   });
 }
 
+test('loading the same notification cancels the outgoing dismissal timer', async ({ page }) => {
+  let state = newGame();
+  state = gameReducer(state, { type: 'BUILD_BUILDING', payload: { buildingId: 'pasture' } });
+  state = gameReducer(gameReducer(state,
+    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+  await loadScenario(page, writeV2Save(state));
+  const first = page.getByRole('status').filter({ hasText: "Shepherd's Promise" });
+  await expect(first).toHaveCSS('opacity', '1');
+  await first.click();
+  await page.getByRole('button', { name: 'Load saved game' }).click();
+  await dismissTutorial(page);
+  await expect(first).toHaveCSS('opacity', '1');
+  // Deliberately cross the old callback's 400ms deadline; this is a timer-race regression.
+  await page.waitForTimeout(650);
+  await expect(first).toHaveCSS('opacity', '1');
+  await saveState(page);
+  const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+  expect(JSON.parse(raw ?? '{}').state.pendingSynergyNotifications.map((item: { tierId: string }) => item.tierId))
+    .toEqual(['wool_baron_1']);
+});
+
+test('tier-two cards and a tier-three overlay advance without dropping authored text', async ({ page }, testInfo) => {
+  const state = newGame();
+  state.synergies.activated = ['wool_baron_1', 'wool_baron_2', 'wool_baron_3', 'pious_lord_1', 'pious_lord_2'];
+  // Rendering fixture for higher tiers; this does not claim natural achievement.
+  state.pendingSynergyNotifications = ['wool_baron_2', 'pious_lord_2', 'wool_baron_3'].map(tierId => {
+    const entry = SYNERGY_TIER_MAP[tierId];
+    if (!entry) throw new Error(`Missing authored tier ${tierId}`);
+    return { tierId, tier: entry.tier.tier, title: entry.tier.title, description: entry.tier.description,
+      pathName: entry.path.name, pathIcon: entry.path.icon, pathColor: entry.path.color,
+      scribesNote: entry.tier.scribesNote ?? null };
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await loadScenario(page, writeV2Save(state));
+  for (const title of ['Merchant of Fleece', 'Patron of the Parish']) {
+    const card = page.getByRole('status').filter({ hasText: title });
+    await expect(card).toBeVisible();
+    await expect(card).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    await page.screenshot({ path: testInfo.outputPath(`tier-two-${title.replaceAll(' ', '-')}.png`) });
+    await card.click();
+  }
+  const overlay = page.getByRole('dialog', { name: 'Strategy path mastered' });
+  await expect(overlay.getByRole('heading', { name: 'Baron of the Golden Fleece' })).toBeVisible();
+  await expect(overlay.locator(':scope > div')).toHaveCSS('opacity', '1');
+  await page.screenshot({ path: testInfo.outputPath('tier-three-390.png') });
+  await overlay.getByRole('button', { name: 'Continue Your Reign' }).click();
+  await expect(overlay).toHaveCount(0);
+  await saveState(page);
+  const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+  expect(JSON.parse(raw ?? '{}').state.pendingSynergyNotifications).toEqual([]);
+});
+
 test('Herb Garden needs a real tithe before Pious unlock and persists its reward', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -114,4 +168,38 @@ for (const source of ['v2', 'legacy']) {
     expect(await page.evaluate(key => localStorage.getItem(key), key)).toBe(raw);
     await expect(page.getByRole('heading', { name: "The Lord's Ledger", exact: true })).toBeVisible();
   });
+}
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 }]) {
+  for (const dismissal of ['click', 'automatic']) {
+    test(`two tier-one unlocks advance by ${dismissal} at ${viewport.width}px`, async ({ page }, testInfo) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.setViewportSize(viewport);
+      let state = newGame();
+      for (const buildingId of ['pasture', 'herb_garden']) {
+        state = gameReducer(state, { type: 'BUILD_BUILDING', payload: { buildingId } });
+      }
+      state = gameReducer(state, { type: 'CHAPEL_PAY_TITHE', payload: { amount: 50 } });
+      state = gameReducer(gameReducer(state,
+        { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+      expect(state.pendingSynergyNotifications.map((entry: { tierId: string }) => entry.tierId))
+        .toEqual(['wool_baron_1', 'pious_lord_1']);
+      await loadScenario(page, writeV2Save(state));
+      const first = page.getByRole('status').filter({ hasText: "Shepherd's Promise" });
+      await expect(first).toHaveCSS('opacity', '1');
+      if (dismissal === 'click') await first.click();
+      else await expect(first).toHaveCount(0, { timeout: 7000 });
+      const second = page.getByRole('status').filter({ hasText: 'Keeper of Herbs' });
+      await expect(second).toHaveCSS('opacity', '1');
+      await page.screenshot({ path: testInfo.outputPath(`second-tier-one-${viewport.width}.png`) });
+      await second.click();
+      await expect(page.getByRole('status').filter({ hasText: 'Path Unlocked' })).toHaveCount(0);
+      const saved = await saveState(page);
+      expect(saved.synergies.activated).toEqual(['wool_baron_1', 'pious_lord_1']);
+      const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+      expect(JSON.parse(raw ?? '{}').state.pendingSynergyNotifications).toEqual([]);
+      expect(errors).toEqual([]);
+    });
+  }
 }

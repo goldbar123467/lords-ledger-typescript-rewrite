@@ -20,9 +20,9 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, raids, event selection, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military-rule, and synergy definitions | Migrate the remaining registries and validate their references |
-| React interface | Typed `MarketSquare.tsx` and `TavernCompanion.tsx`; targeted navigation, layout, and interaction repairs | Migrate the app entry points and most views; complete interface review |
+| React interface | Typed Market, Tavern companion, and synergy notification views; targeted navigation, layout, and interaction repairs | Migrate the app entry points and most views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
-| Strategy synergies | Typed definitions and evaluator; corrections for live requirements, seasonal rewards, counters, saved tier order, and toast placement | Fix the independently reproduced queue bug that hides a second tier-one announcement |
+| Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
@@ -59,8 +59,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Fix and type the notification view so every queued unlock appears and obsolete timers cannot dismiss another notification.
-2. Independently retest queued notifications at phone and laptop sizes, then audit duplicated seasonal resets around perspective flips.
+1. Remove duplicated seasonal resets when returning from a perspective flip; the audit reproduced extra trust decay, history snapshots, and price rerolls.
+2. Verify saved linear and branching flip continuation, then obtain independent review.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.
