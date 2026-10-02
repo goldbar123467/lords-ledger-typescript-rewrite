@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The 2026-10-02 candidate passed typecheck, lint, production build, **97 unit tests**, and **35 focused browser cases**. Both independent reviewers accepted the earlier synergy rule, reward, save, and placement corrections and found a remaining notification queue bug. The 100-seed reducer run completed with 52 victories, 48 losses, and no save failures; this is separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Measurable production-code reduction remains unfinished.
+The latest 2026-10-02 candidate passed typecheck, lint, production build, **99 unit tests**, and **13 focused browser cases**. Both independent reviewers accepted the notification queue correction and removal of duplicated season work on perspective-story return. The latest 100-seed reducer run completed with 49 victories, 51 losses, and no save failures; this is separate from browser campaign evidence. Removing extra random draws changes later seeded outcomes. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Production code remains 1,274 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,8 +59,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Remove duplicated seasonal resets when returning from a perspective flip; the audit reproduced extra trust decay, history snapshots, and price rerolls.
-2. Verify saved linear and branching flip continuation, then obtain independent review.
+1. Type the nine perspective-story definitions and their evaluator, preserving all authored text, choices, triggers, and random draw counts.
+2. Verify content parity and saved story continuation, then migrate the presentation and remaining reducer boundaries.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.

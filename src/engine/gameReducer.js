@@ -2398,93 +2398,6 @@ function reduceGame(state, action, random) {
         };
       }
 
-      // BUG-02 FIX: Apply seasonal state resets (matching ADVANCE_TURN logic)
-      const flipMkt = state.market ?? {};
-      const flipForeignTrader = FOREIGN_TRADERS[state.season];
-      const flipMarketReset = {
-        ...flipMkt,
-        currentForeignTrader: state.season,
-        activeHaggle: null,
-        activeMarketEvent: null,
-        tradesThisSeason: 0,
-      };
-      if (flipForeignTrader && flipMkt.currentForeignTrader !== state.season) {
-        nextChronicle = addChronicle(nextChronicle, flipForeignTrader.arrivalText, flipSeason, flipYear, turn, "event");
-      }
-
-      const flipPrevHall = state.greatHall ?? {};
-      const flipHallWasActive = flipPrevHall.hasFeastedThisSeason
-        || flipPrevHall.decreeSlotsUsed > 0
-        || (flipPrevHall.disputesResolved || 0) > 0;
-      const flipTrustDecay = flipHallWasActive ? 0 : -2;
-      const flipAdvanceTrust = Math.max(0, Math.min(100, (flipPrevHall.stewardTrust || 50) + flipTrustDecay));
-      const flipAdvanceRep = computeReputation(flipPrevHall.rulingHistory || []);
-      const flipPrevMeterHistory = flipPrevHall.meterHistory || [];
-      const flipMeterSnapshot = {
-        turn: state.turn,
-        season: state.season,
-        year: state.year,
-        meters: { ...(flipPrevHall.meters || { people: 50, treasury: 50, church: 50, military: 50 }) },
-      };
-      const flipAdvanceCompoundFlags = computeCompoundFlags(flipPrevHall.rulingHistory || []);
-      const flipAdvMeters = flipPrevHall.meters || { people: 50, treasury: 50, church: 50, military: 50 };
-      const flipAdvCrisis = { ...(flipPrevHall.crisisTriggered || {}) };
-      const flipAdvPeak = { ...(flipPrevHall.peakTriggered || {}) };
-      let flipSeasonHallEvent = null;
-      for (const [key, val] of Object.entries(flipAdvMeters)) {
-        if (val < 20 && !flipAdvCrisis[key] && CRISIS_EVENTS[key]) {
-          flipSeasonHallEvent = { ...CRISIS_EVENTS[key], meter: key, type: "crisis" };
-          flipAdvCrisis[key] = true;
-        }
-        if (val > 80 && !flipAdvPeak[key] && PEAK_EVENTS[key]) {
-          flipSeasonHallEvent = { ...PEAK_EVENTS[key], meter: key, type: "peak" };
-          flipAdvPeak[key] = true;
-        }
-        if (val >= 20) flipAdvCrisis[key] = false;
-        if (val <= 80) flipAdvPeak[key] = false;
-      }
-      const flipAdvanceHall = {
-        ...flipPrevHall,
-        decreeSlotsUsed: 0,
-        hasFeastedThisSeason: false,
-        stewardTrust: flipAdvanceTrust,
-        reputation: flipAdvanceRep.title,
-        reputationTrack: flipAdvanceRep.track,
-        reputationScores: flipAdvanceRep.scores,
-        meterHistory: [...flipPrevMeterHistory, flipMeterSnapshot],
-        compoundFlags: flipAdvanceCompoundFlags,
-        pendingHallEvent: flipSeasonHallEvent || flipPrevHall.pendingHallEvent || null,
-        crisisTriggered: flipAdvCrisis,
-        peakTriggered: flipAdvPeak,
-      };
-
-      const flipTavernReset = {
-        ...state.tavern,
-        gambitRoundsThisSeason: 0,
-        ratsPlayedThisSeason: false,
-        strangerAppearedThisSeason: false,
-        pendingStrangerEncounter: null,
-      };
-
-      const flipWtReset = {
-        ...(state.watchtower ?? {}),
-        scannedThisSeason: false,
-        lastScanResult: null,
-        warnings: {
-          criminalRaidBonus: 0,
-          scottishRaidBonus: 0,
-          raidRequirementReduction: 0,
-          merchantPreview: null,
-        },
-      };
-
-      const flipPrevBs = state.blacksmith ?? {};
-      const flipBsReset = {
-        ...flipPrevBs,
-        salesThisSeason: 0,
-        marketPrices: generateForgeMarketPrices(state.season, random),
-      };
-
       // ADVANCE_TURN already counted this completed season before the flip.
       const flipUpdatedSynergies = state.synergies ?? {};
       const flipStateForSynergyCheck = { ...newState, synergies: flipUpdatedSynergies };
@@ -2515,7 +2428,8 @@ function reduceGame(state, action, random) {
       }
 
       const flipBonuses = applySynergyMeterEffects(
-        flipAdvanceHall.meters, state.chapel?.faith ?? 50, flipNewSynergyIds,
+        state.greatHall?.meters ?? { people: 50, treasury: 50, church: 50, military: 50 },
+        state.chapel?.faith ?? 50, flipNewSynergyIds,
       );
 
       const zeroDeltas = { denarii: 0, food: 0, population: 0, garrison: 0 };
@@ -2530,7 +2444,6 @@ function reduceGame(state, action, random) {
         year: flipYear,
         chronicle: nextChronicle,
         causeChain: nextCauseChain,
-        marketPrices: generateMarketPrices(random),
         perspectiveFlips: nextPerspectiveFlips,
         activeTab: "estate",
         seasonReport: [],
@@ -2545,13 +2458,9 @@ function reduceGame(state, action, random) {
         currentFlipOutcome: null,
         currentCyoaNodeId: null,
         cyoaEndingType: null,
-        // BUG-02 FIX: seasonal state resets
-        market: flipMarketReset,
-        greatHall: { ...flipAdvanceHall, meters: flipBonuses.meters },
+        // Seasonal work belongs to SIMULATE_SEASON and ADVANCE_TURN, not story dismissal.
+        greatHall: { ...state.greatHall, meters: flipBonuses.meters },
         chapel: { ...state.chapel, faith: flipBonuses.faith },
-        tavern: flipTavernReset,
-        watchtower: flipWtReset,
-        blacksmith: flipBsReset,
         synergies: flipSynergiesAfterCheck,
         pendingSynergyNotifications: [...(state.deferredSynergyNotifications ?? []), ...flipSynNotifications],
         deferredSynergyNotifications: [],
