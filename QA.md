@@ -3,8 +3,9 @@
 ## Overview
 
 This document preserves the persona-based QA scenarios. For the active 2.0
-worktree, `AGENTS.md` and `docs/v2/verification.md` define the execution
-and evidence gates. The worktree is not being merged to `main`.
+repository, `AGENTS.md` and `docs/v2/verification.md` define the execution
+and evidence gates. Rewrite sections are committed on the independent
+`lords-ledger-typescript-rewrite/main`; the original game's `main` is protected.
 
 ## Playwright Quick Reference
 

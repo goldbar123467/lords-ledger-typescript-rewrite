@@ -1,5 +1,7 @@
 # Lord's Ledger TypeScript Rewrite checkpoint
 
+This is the historical repository-creation snapshot. Development resumed on 2026-10-02; see [current verification](verification.md#2026-10-02-resumed-synergy-correction-retest) and [migration ledger](migration-ledger.md) for subsequent work.
+
 This repository preserves the paused rewrite from `C:\Users\thecl\Documents\The-Lords-Ledger-v2`, branch `codex/lords-ledger-v2`. It retains the original Git history through baseline `47570f9caa5696c7369d88a42ae87171b78cd68b`. The user requested a separate repository and checkpoint commit. This does not declare the refactor complete or resume the paused development goal.
 
 All 224 existing tracked or nonignored source-worktree files were copied byte-for-byte before repository-specific documentation was updated. Dependencies, build output, browser reports, and ignored local evidence were excluded. The original checkout and both rewrite worktrees were left in place.

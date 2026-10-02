@@ -4,7 +4,7 @@ import BUILDINGS from '../../src/data/buildings.ts';
 import { FOOD_BUILDING_IDS, SYNERGY_PATHS, SYNERGY_PATH_LIST, SYNERGY_TIER_MAP } from '../../src/data/synergies.ts';
 import type { SynergyConditions } from '../../src/data/synergies.ts';
 import {
-  advanceSynergyCounters, checkSynergies, checkTierConditions, getActiveSynergyDisplay, getSynergyBuildings,
+  advanceSynergyCounters, applySynergyMeterEffects, checkSynergies, checkTierConditions, getActiveSynergyDisplay, getSynergyBuildings,
   getSynergyMeterEffects, getSynergyPassiveIncome, getSynergyTradePriceBonus,
   getSynergyVictoryTitle, getSynergyWoolSellBonus, hasSynergyPopulationBonus,
 } from '../../src/engine/synergyEngine.ts';
@@ -126,4 +126,59 @@ test('synergy counters reset below live thresholds and old saves may omit them',
   const corrupted = structuredClone(old);
   corrupted.state.greatHall.meters.people = '65';
   assert.equal(readV2Save(JSON.stringify(corrupted)).ok, false);
+});
+
+test('all five meter-only tier-one rewards affect live values without mutating inputs', () => {
+  const meters = { treasury: 50, people: 50, military: 50, church: 50 };
+  const active = ['breadbasket_1', 'fortress_1', 'pious_lord_1', 'peoples_lord_1', 'iron_lord_1'];
+  assert.deepEqual(applySynergyMeterEffects(meters, 60, active), {
+    meters: { treasury: 50, people: 52, military: 52, church: 50 }, faith: 61,
+  });
+  assert.deepEqual(meters, { treasury: 50, people: 50, military: 50, church: 50 });
+  assert.deepEqual(applySynergyMeterEffects({ ...meters, people: 99, military: 100 }, 100, active), {
+    meters: { treasury: 50, people: 100, military: 100, church: 50 }, faith: 100,
+  });
+});
+
+test('a season followed by a complete perspective flip counts and rewards synergies once', () => {
+  const started = gameReducer(createInitialState(17),
+    { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
+  const built = gameReducer(started, { type: 'BUILD_BUILDING', payload: { buildingId: 'herb_garden' } });
+  // Fixture-assisted turn-seven boundary; all subsequent transitions use production actions.
+  const boundary = {
+    ...built, turn: 7, season: 'autumn', year: 2, taxRate: 'high',
+    chapel: { ...built.chapel, faith: 62 },
+    greatHall: { ...built.greatHall, meters: { ...built.greatHall.meters, people: 65 } },
+    synergies: { ...built.synergies, activated: ['peoples_lord_1'], highFaithTurns: 2, highPeopleTurns: 3 },
+  };
+  const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
+  const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+  assert.equal(entered.phase, 'flip_intro');
+  assert.equal(entered.currentFlipId, 'serf_week');
+  assert.equal(entered.turn, 8);
+  assert.deepEqual([entered.synergies.highFaithTurns, entered.synergies.highPeopleTurns], [3, 4]);
+  assert.equal(entered.chapel.faith, 63);
+  assert.equal(entered.greatHall.meters.people, 66);
+  assert.deepEqual(entered.deferredSynergyNotifications.map((entry: { tierId: string }) => entry.tierId), ['pious_lord_1']);
+  const serialized = readV2Save(writeV2Save(entered));
+  if (!serialized.ok) throw new Error(serialized.error);
+  let flip = gameReducer(serialized.state, { type: 'DISMISS_FLIP_INTRO' });
+  for (let decision = 0; decision < 12 && flip.phase !== 'flip_summary'; decision++) {
+    assert.equal(flip.phase, 'flip_decision');
+    flip = gameReducer(flip, { type: 'SELECT_FLIP_OPTION', payload: { optionIndex: 0 } });
+    assert.equal(flip.phase, 'flip_outcome');
+    flip = gameReducer(flip, { type: 'CONTINUE_FLIP' });
+  }
+  assert.equal(flip.phase, 'flip_summary');
+  const resumed = gameReducer(flip, { type: 'DISMISS_FLIP_SUMMARY' });
+  assert.equal(resumed.phase, 'management');
+  assert.equal(resumed.turn, 8);
+  assert.deepEqual(resumed.synergies, entered.synergies);
+  assert.equal(resumed.chapel.faith, 63);
+  assert.equal(resumed.greatHall.meters.people, 66);
+  assert.deepEqual(resumed.pendingSynergyNotifications.map((entry: { tierId: string }) => entry.tierId), ['pious_lord_1']);
+  assert.deepEqual(resumed.deferredSynergyNotifications, []);
+  assert.equal(gameReducer(resumed, { type: 'DISMISS_FLIP_SUMMARY' }), resumed);
+  assert.equal(gameReducer(resumed, { type: 'ADVANCE_TURN' }), resumed);
+  assert.equal(readV2Save(writeV2Save(resumed)).ok, true);
 });

@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** Development is currently paused. The repository contains a working checkpoint, but the full TypeScript migration and final verification are incomplete. Start with the [checkpoint report](docs/v2/checkpoint.md) and [migration ledger](docs/v2/migration-ledger.md).
+**Status: work in progress.** Development resumed on 2026-10-02. The repository contains a working checkpoint, but the full TypeScript migration and final verification are incomplete. Start with the [checkpoint report](docs/v2/checkpoint.md) and [migration ledger](docs/v2/migration-ledger.md).
 
 ## Rewrite goals
 
@@ -22,12 +22,12 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | Content definitions | Typed resource, building, Market, decree, military-rule, and synergy definitions | Migrate the remaining registries and validate their references |
 | React interface | Typed `MarketSquare.tsx` and `TavernCompanion.tsx`; targeted navigation, layout, and interaction repairs | Migrate the app entry points and most views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
-| Strategy synergies | Typed definitions and evaluator; corrections for live requirements, seasonal rewards, counters, saved tier order, and toast placement | Verify corrected behavior in the browser and obtain independent retests |
+| Strategy synergies | Typed definitions and evaluator; corrections for live requirements, seasonal rewards, counters, saved tier order, and toast placement | Fix the independently reproduced queue bug that hides a second tier-one announcement |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The saved checkpoint passed typecheck, lint, production build, and **95 unit tests**. These results apply to that checkpoint; the latest synergy corrections still need browser verification and independent review. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Measurable production-code reduction remains unfinished.
+The 2026-10-02 candidate passed typecheck, lint, production build, **97 unit tests**, and **35 focused browser cases**. Both independent reviewers accepted the earlier synergy rule, reward, save, and placement corrections and found a remaining notification queue bug. The 100-seed reducer run completed with 52 victories, 48 losses, and no save failures; this is separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Measurable production-code reduction remains unfinished.
 
 ## Code map
 
@@ -57,10 +57,10 @@ Keep these commits separate so progress and regressions can be traced. A checkpo
 
 The original history is retained through baseline `47570f9`, with the rewrite checkpoint at `ee66330` and the repository-initialization merge at `9b561d9`. See the [commit history](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commits/main/).
 
-## Next work when development resumes
+## Next rewrite sections
 
-1. Verify synergy counter and reward timing across normal seasons and perspective flips.
-2. Inspect the corrected notification at 390x844 and 1366x768, run affected save and gameplay browser tests, and obtain independent retests.
+1. Fix and type the notification view so every queued unlock appears and obsolete timers cannot dismiss another notification.
+2. Independently retest queued notifications at phone and laptop sizes, then audit duplicated seasonal resets around perspective flips.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.
