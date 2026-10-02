@@ -1040,11 +1040,6 @@ input[type="range"].labor-slider::-moz-range-thumb {
     height: 13px;
   }
 
-  .tab-nav .text-xs {
-    font-size: 0.65rem !important;
-    letter-spacing: 0.02em;
-  }
-
   .sticky.top-0 > .flex button[aria-label="Save game"],
   .sticky.top-0 > .flex button[aria-label="Load saved game"],
   .sticky.top-0 > .flex button[aria-label$="music"] {

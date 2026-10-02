@@ -1,13 +1,8 @@
 import { useId, type RefObject } from 'react';
-import { Landmark, Map, Store, Shield, Users, Scale, Church, Hammer, ScrollText, type LucideIcon } from 'lucide-react';
 import { TUTORIALS } from '../data/tutorials.ts';
 import type { TabId } from '../data/tabs.ts';
 import { useNoticeDialog } from '../hooks/useNoticeDialog.ts';
-
-const TAB_ICONS = {
-  estate: Landmark, map: Map, market: Store, military: Shield, people: Users,
-  hall: Scale, chapel: Church, forge: Hammer, chronicle: ScrollText,
-} satisfies Record<TabId, LucideIcon>;
+import { TAB_ICONS } from './tabIcons.ts';
 
 interface TutorialPopupProps {
   tab: TabId;

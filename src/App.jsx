@@ -535,7 +535,6 @@ export default function App() {
           <TabBar
             activeTab={displayTab}
             onSetTab={handleSetTab}
-            turn={turn}
             disabled={isEventPhase}
           />
         )}
