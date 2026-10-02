@@ -2300,7 +2300,7 @@ function reduceGame(state, action, random) {
 
       // Reconcile typed garrison
       const flipGarrisonDelta = applied.garrison - state.garrison;
-      let flipMilitary = state.military;
+      let flipMilitary = applied.military || state.military;
       if (flipGarrisonDelta !== 0 && flipMilitary) {
         const mg = { ...flipMilitary.garrison };
         if (flipGarrisonDelta > 0) {
@@ -2311,13 +2311,9 @@ function reduceGame(state, action, random) {
         }
       }
 
-      // BUG-03: Track bankruptcy after flip consequences
-      let flipBankruptcyTurns = state.bankruptcyTurns || 0;
-      if (applied.denarii <= 0) {
-        flipBankruptcyTurns += 1;
-      } else {
-        flipBankruptcyTurns = 0;
-      }
+      // SIMULATE_SEASON owns elapsed bankruptcy seasons. A story can restore
+      // solvency, but returning to management does not complete another season.
+      const flipBankruptcyTurns = applied.denarii > 0 ? 0 : (state.bankruptcyTurns || 0);
 
       const newState = {
         ...state,

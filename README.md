@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 candidate passed typecheck, lint, production build, **103 unit tests**, and **six focused story browser cases**. Both independent reviewers accepted the typed story view, saved chance replay, and sampled branching endings at phone/laptop widths. The preceding content conversion preserved all 100 seeded campaign records: 49 victories, 51 losses, and no save failures. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; the total remains 1,140 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 candidate passed typecheck, lint, production build, **105 unit tests**, and **seven focused story browser cases**. Both independent reviewers accepted the typed story view and subsequent morale/bankruptcy settlement fixes. The latest 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; one terminal random cursor differs from the preceding run. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; the current total remains 1,136 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct reproduced story-settlement defects: an extra bankruptcy count and an ignored morale consequence.
+1. Correct the reviewed singular/plural wording in the bankruptcy warning.
 2. Type the remaining resource-effect boundary and continue reducing duplicated reducer logic.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
