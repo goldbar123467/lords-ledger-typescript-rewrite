@@ -20,14 +20,14 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military-rule, synergy, and perspective-story definitions; parent-specific story reference checks | Migrate remaining registries |
-| React interface | Typed Market, Tavern companion, and synergy notification views; targeted navigation, layout, and interaction repairs | Migrate the app entry points and most views; complete interface review |
+| React interface | Typed Market, Tavern companion, synergy notification, and perspective-story views; shared story controls and clearer chance/result labels | Migrate the app entry points and most views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 candidate passed typecheck, lint, production build, and **103 unit tests**. Both independent reviewers accepted the story-reference correction after rejecting invalid destinations, IDs, and consequence flags in isolated compiler probes. The preceding content conversion passed **13 focused browser cases** and preserved all 100 seeded campaign records: 49 victories, 51 losses, and no save failures. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Production code remains 1,431 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 candidate passed typecheck, lint, production build, **103 unit tests**, and **six focused story browser cases**. Both independent reviewers accepted the typed story view, saved chance replay, and sampled branching endings at phone/laptop widths. The preceding content conversion preserved all 100 seeded campaign records: 49 victories, 51 losses, and no save failures. These are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). The story view consolidation removed 291 production lines; the total remains 1,140 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,8 +59,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate the story presentation, consolidating repeated choices, notes, and summary controls.
-2. Continue the remaining reducer boundaries after the story view is verified.
+1. Correct reproduced story-settlement defects: an extra bankruptcy count and an ignored morale consequence.
+2. Type the remaining resource-effect boundary and continue reducing duplicated reducer logic.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
 5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.

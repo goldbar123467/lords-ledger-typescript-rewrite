@@ -563,7 +563,6 @@ export default function App() {
             onContinue={handleContinueFlip}
             onDismissSummary={handleDismissFlipSummary}
             currentCyoaNodeId={currentCyoaNodeId}
-            isCyoa={currentFlipId ? isCyoaFlip(currentFlipId) : false}
           />
         )}
 
