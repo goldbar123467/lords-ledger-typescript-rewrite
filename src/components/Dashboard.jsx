@@ -7,7 +7,7 @@
  */
 
 import { Coins, Wheat, Users, Swords, Cross, Church, Heart } from "lucide-react";
-import { getMoraleLevel } from "../data/military.js";
+import { getMoraleLevel } from "../data/military.ts";
 import { BANKRUPTCY_SEASONS } from "../engine/endConditions.ts";
 
 const RESOURCE_THEMES = {

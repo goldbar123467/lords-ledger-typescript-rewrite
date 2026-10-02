@@ -14,7 +14,7 @@ import {
   getMoraleLevel, getMilitaryUpkeep,
   calculateDefenseRating, getDefenseBreakdown, canUpgradeFortification,
   MILITARY_TOOLTIPS,
-} from "../data/military.js";
+} from "../data/military.ts";
 import { getAldricDrillBonus, getRecruitmentCapacity } from "../data/militaryRules.ts";
 
 // ─── Shared styles ───────────────────────────────────────────────

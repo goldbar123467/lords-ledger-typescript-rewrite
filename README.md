@@ -19,7 +19,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | Area | Included in the checkpoint | Remaining work |
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
-| Content definitions | Typed resource, building, Market, decree, military-rule, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Migrate remaining registries |
+| Content definitions | Typed resource, building, Market, decree, military, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Migrate remaining registries |
 | React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial and navigation views; modal keyboard containment, focus return and resize-aware tab reveal | Migrate app entry points and remaining views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 section types navigation and shares its icon map with the tutorials. Labels are larger and clearer, and ten focused navigation/tutorial/event browser cases pass alongside typecheck, lint, build and the content-preservation unit. Both reviewers accepted the subsequent resize correction and the exact text-growth regression fix. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,017 lines above baseline, so the overall reduction requirement is unfinished.
+The latest 2026-10-02 checkpoint types military definitions and helpers while preserving all 13 data exports and sampled calculations. Typecheck, lint, build, 114 unit tests and 13 companion/raid browser cases pass. Independent reviews confirmed content and gameplay parity; a minor fortification-level type gap is queued for correction. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,072 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Type the military definitions and helpers, then migrate and improve the resource dashboard.
+1. Tighten military level contracts, then migrate and improve the resource dashboard.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

@@ -1,8 +1,5 @@
 import { MAX_GARRISON } from './economy.ts';
-import { SOLDIER_TYPES } from './military.js';
-
-type SoldierType = keyof typeof SOLDIER_TYPES;
-type Garrison = Record<SoldierType, number>;
+import { SOLDIER_TYPES, type SoldierType, type Garrison } from './military.ts';
 
 interface RecruitmentState {
   denarii: number;

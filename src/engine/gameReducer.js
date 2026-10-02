@@ -57,7 +57,7 @@ import {
   getMoraleLevel, getTotalGarrison, getMilitaryUpkeep,
   calculateDefenseRating, canUpgradeFortification, removeFromGarrison,
   getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
-} from "../data/military.js";
+} from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
 import {

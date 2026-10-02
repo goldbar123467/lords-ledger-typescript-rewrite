@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { RAID_TYPES } from "../data/raids.js";
-import { CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD, calculateDefenseRating } from "../data/military.js";
+import { CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD, calculateDefenseRating } from "../data/military.ts";
 import { Skull, Swords } from "lucide-react";
 
 // ---------------------------------------------------------------------------

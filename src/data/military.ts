@@ -1,5 +1,5 @@
 /**
- * military.js — Military data definitions for the expanded Military tab
+ * military.ts — Military data definitions for the expanded Military tab
  *
  * Soldier types, fortification upgrade tracks (walls/gate/moat), morale
  * levels, defense calculation helpers, historical tooltips, and scribe's
@@ -12,6 +12,51 @@
  */
 
 // ─── Soldier Types ────────────────────────────────────────────────
+
+export type SoldierType = 'levy' | 'menAtArms' | 'knights';
+export type Garrison = Record<SoldierType, number>;
+export type FortificationTrack = 'walls' | 'gate' | 'moat';
+export type FortificationLevels = Record<FortificationTrack, number>;
+type AuthoredLevels = { walls: 0 | 1 | 2 | 3 | 4; gate: 0 | 1 | 2 | 3 | 4; moat: 0 | 1 | 2 | 3 };
+
+interface SoldierDefinition<Id extends SoldierType> {
+  readonly id: Id;
+  readonly name: string;
+  readonly subtitle: string;
+  readonly icon: string;
+  readonly recruitCost: number;
+  readonly upkeep: number;
+  readonly defenseValue: number;
+  readonly max: number | null;
+  readonly borderColor: string;
+  readonly description: string;
+  readonly recruitButtons: readonly number[];
+  readonly dismissButtons: readonly number[];
+  readonly minPopulation?: number;
+}
+
+interface FortificationDefinition<Track extends FortificationTrack = FortificationTrack> {
+  readonly level: AuthoredLevels[Track];
+  readonly name: string;
+  readonly cost: number;
+  readonly defense: number;
+  readonly description: string;
+  readonly requires?: Readonly<Partial<AuthoredLevels>>;
+}
+
+export interface MilitaryDefenseState extends FortificationLevels {
+  garrison: Garrison;
+  morale: number;
+}
+
+type DefenseModifier = { label: string; value: string } & (
+  | { numericMod: number; numericAdd?: never }
+  | { numericAdd: number; numericMod?: never }
+);
+
+type FortificationUpgrade =
+  | { canUpgrade: false; reason: string }
+  | { canUpgrade: true; reason: null; next: FortificationDefinition };
 
 export const SOLDIER_TYPES = {
   levy: {
@@ -57,7 +102,7 @@ export const SOLDIER_TYPES = {
     dismissButtons: [1],
     minPopulation: 10,
   },
-};
+} as const satisfies { [Id in SoldierType]: SoldierDefinition<Id> };
 
 // ─── Fortification Tracks ─────────────────────────────────────────
 
@@ -67,7 +112,7 @@ export const WALLS_TRACK = [
   { level: 2, name: "Stone Curtain Wall", cost: 120, defense: 15, description: "Quarried stone, mortared and stacked. Resists fire, requires siege engines to breach. Takes months to build." },
   { level: 3, name: "Curtain Wall with Towers", cost: 250, defense: 25, description: "Flanking towers allow defenders to fire along the wall face. Attackers have no blind spots. The classic medieval defense." },
   { level: 4, name: "Concentric Walls", cost: 500, defense: 40, description: "Walls within walls. If attackers breach the outer ring, they're trapped in a killing ground. Edward I's masterpiece design.", requires: { walls: 3 } },
-];
+] as const satisfies readonly FortificationDefinition<'walls'>[];
 
 export const GATE_TRACK = [
   { level: 0, name: "Open Entrance", cost: 0, defense: 0, description: "No gate. You may as well hang a sign: 'Come right in.'" },
@@ -75,14 +120,14 @@ export const GATE_TRACK = [
   { level: 2, name: "Iron-Bound Gate with Bar", cost: 60, defense: 7, description: "Iron plating over oak, with a heavy timber bar. Requires serious effort to break." },
   { level: 3, name: "Gatehouse with Portcullis", cost: 150, defense: 12, description: "A fortified gatehouse with an iron portcullis \u2014 a sliding grid of iron bars.", requires: { walls: 2 } },
   { level: 4, name: "Barbican with Murder Holes", cost: 300, defense: 18, description: "An extended gatehouse corridor. Attackers who enter are funneled through a narrow passage with 'murder holes' above.", requires: { gate: 3 } },
-];
+] as const satisfies readonly FortificationDefinition<'gate'>[];
 
 export const MOAT_TRACK = [
   { level: 0, name: "None", cost: 0, defense: 0, description: "Dry ground all around. Attackers walk right up to the walls." },
   { level: 1, name: "Dry Ditch", cost: 40, defense: 4, description: "A deep trench around the walls. Slows attackers, prevents siege towers from reaching the wall." },
   { level: 2, name: "Water-Filled Moat", cost: 100, defense: 10, description: "The ditch flooded with diverted stream water. Attackers can't cross in armor without drowning.", requires: { walls: 2 } },
   { level: 3, name: "Moat with Drawbridge", cost: 200, defense: 15, description: "A proper drawbridge \u2014 the only way across. When raised, the castle is an island." },
-];
+] as const satisfies readonly FortificationDefinition<'moat'>[];
 
 // ─── Morale System ────────────────────────────────────────────────
 
@@ -92,7 +137,7 @@ export const MORALE_LEVELS = [
   { min: 41, max: 60, label: "Adequate", modifier: 0, desertionChance: 0, color: "#a8a8b0" },
   { min: 61, max: 80, label: "Good", modifier: 0.10, desertionChance: 0, color: "#4a8a3a" },
   { min: 81, max: 100, label: "Fierce", modifier: 0.25, desertionChance: 0, color: "#c4a24a" },
-];
+] as const;
 
 // ─── Constants ────────────────────────────────────────────────────
 
@@ -112,17 +157,17 @@ export const KNIGHT_NAMES = [
 // ─── Helper Functions ─────────────────────────────────────────────
 
 /** Look up the morale bracket for a given morale value (0-100). */
-export function getMoraleLevel(morale) {
+export function getMoraleLevel(morale: number) {
   return MORALE_LEVELS.find(l => morale >= l.min && morale <= l.max) || MORALE_LEVELS[2];
 }
 
 /** Total headcount across all soldier types. */
-export function getTotalGarrison(garrison) {
+export function getTotalGarrison(garrison: Partial<Garrison>): number {
   return (garrison.levy || 0) + (garrison.menAtArms || 0) + (garrison.knights || 0);
 }
 
 /** Total denarii upkeep per season for the entire garrison. */
-export function getMilitaryUpkeep(garrison) {
+export function getMilitaryUpkeep(garrison: Partial<Garrison>): number {
   return (garrison.levy || 0) * SOLDIER_TYPES.levy.upkeep +
     (garrison.menAtArms || 0) * SOLDIER_TYPES.menAtArms.upkeep +
     (garrison.knights || 0) * SOLDIER_TYPES.knights.upkeep;
@@ -132,7 +177,7 @@ export function getMilitaryUpkeep(garrison) {
  * Calculate the overall defense rating from garrison, fortifications,
  * morale, and optional watchtower bonus.
  */
-export function calculateDefenseRating(military, watchtowerBonus = 0) {
+export function calculateDefenseRating(military: MilitaryDefenseState, watchtowerBonus = 0): number {
   const { garrison, walls, gate, moat, morale } = military;
 
   const garrisonDefense =
@@ -155,7 +200,7 @@ export function calculateDefenseRating(military, watchtowerBonus = 0) {
  * Produce a structured breakdown of all defense contributions for
  * display in the UI (garrison lines, fortification lines, modifiers).
  */
-export function getDefenseBreakdown(military, watchtowerBonus = 0, drillBonus = 0) {
+export function getDefenseBreakdown(military: MilitaryDefenseState, watchtowerBonus = 0, drillBonus = 0) {
   const { garrison, walls, gate, moat, morale } = military;
 
   const garrisonItems = [];
@@ -176,7 +221,7 @@ export function getDefenseBreakdown(military, watchtowerBonus = 0, drillBonus = 
 
   const moraleLevel = getMoraleLevel(morale);
   const moraleMod = 1 + moraleLevel.modifier;
-  const modifierItems = [
+  const modifierItems: DefenseModifier[] = [
     { label: `Morale (${moraleLevel.label})`, value: moraleLevel.modifier !== 0 ? `${moraleLevel.modifier > 0 ? "+" : ""}${Math.round(moraleLevel.modifier * 100)}%` : "+0%", numericMod: moraleLevel.modifier },
   ];
   if (watchtowerBonus > 0) {
@@ -196,9 +241,9 @@ export function getDefenseBreakdown(military, watchtowerBonus = 0, drillBonus = 
  * prerequisites (e.g. concentric walls require curtain wall with towers).
  * Returns { canUpgrade, reason, next }.
  */
-export function canUpgradeFortification(track, currentLevels) {
+export function canUpgradeFortification(track: FortificationTrack, currentLevels: FortificationLevels): FortificationUpgrade {
   const { walls, gate, moat } = currentLevels;
-  let trackData, currentLevel;
+  let trackData: readonly FortificationDefinition[], currentLevel: number;
 
   if (track === "walls") { trackData = WALLS_TRACK; currentLevel = walls; }
   else if (track === "gate") { trackData = GATE_TRACK; currentLevel = gate; }
@@ -211,7 +256,9 @@ export function canUpgradeFortification(track, currentLevels) {
 
   // Check prerequisites
   if (next.requires) {
-    for (const [req, reqLevel] of Object.entries(next.requires)) {
+    for (const req of ['walls', 'gate', 'moat'] as const) {
+      const reqLevel = next.requires[req];
+      if (reqLevel === undefined) continue;
       const current = currentLevels[req] || 0;
       if (current < reqLevel) {
         const reqTrack = req === "walls" ? WALLS_TRACK : req === "gate" ? GATE_TRACK : MOAT_TRACK;
@@ -227,7 +274,7 @@ export function canUpgradeFortification(track, currentLevels) {
  * Remove soldiers from the garrison, prioritizing levy first,
  * then men-at-arms, then knights.
  */
-export function removeFromGarrison(garrison, count) {
+export function removeFromGarrison(garrison: Garrison, count: number): Garrison {
   let remaining = count;
   const newGarrison = { ...garrison };
 
@@ -288,11 +335,22 @@ export const MILITARY_SCRIBES_NOTES = {
 
 // ─── Initial State Factory ────────────────────────────────────────
 
+export interface MilitaryState extends MilitaryDefenseState {
+  lastRaidOutcome: 'victory' | 'defeat' | null;
+  idleSeasons: number;
+  totalRecruitmentSpending: number;
+  totalUpkeepSpending: number;
+  totalFortificationSpending: number;
+  soldiersLostToRaids: number;
+  soldiersLostToDesertion: number;
+  scribesNoteSeen: Record<keyof typeof MILITARY_SCRIBES_NOTES, boolean>;
+}
+
 /**
  * Produce the initial military sub-state for a new game.
  * Starting garrison defaults to 5 levy (fyrd peasants).
  */
-export function getInitialMilitaryState(startingGarrison = 5) {
+export function getInitialMilitaryState(startingGarrison = 5): MilitaryState {
   return {
     garrison: { levy: startingGarrison, menAtArms: 0, knights: 0 },
     walls: 1,    // Start with palisade (Motte-and-Bailey includes basic walls)

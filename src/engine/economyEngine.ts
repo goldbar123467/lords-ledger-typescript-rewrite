@@ -122,7 +122,7 @@ export function getTotalBuildingUpkeep(buildings: BuildingEntry[]): number {
 export function getGarrisonUpkeep(garrison: number, military?: Military): number {
   if (military?.garrison) {
     const g = military.garrison;
-    // Must match SOLDIER_TYPES upkeep values in data/military.js
+    // Must match SOLDIER_TYPES upkeep values in data/military.ts
     return (g.levy || 0) * 1 + (g.menAtArms || 0) * 4 + (g.knights || 0) * 8;
   }
   // Legacy fallback for when typed garrison isn't available
