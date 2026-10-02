@@ -18,10 +18,14 @@ test('a loaded raid warning resolves through the real reducer and resumes the se
   await page.getByRole('button', { name: 'Load saved game' }).click();
   await expect(page.getByRole('button', { name: 'Defend the Estate' })).toBeVisible();
   await page.getByRole('button', { name: 'Defend the Estate' }).click();
+  const note = page.getByRole('dialog', { name: "Scribe's Note" });
+  await expect(note.getByRole('heading')).toBeFocused();
+  await page.keyboard.press('Escape');
   const raidResult = page.locator('div.fixed.inset-0.z-50').filter({
     has: page.getByRole('heading', { name: /RAID (REPELLED|SUCCESSFUL)/ }),
   });
   await expect(raidResult.getByRole('heading', { name: /RAID (REPELLED|SUCCESSFUL)/ })).toBeVisible();
+  await expect(raidResult.getByRole('button', { name: 'Continue', exact: true })).toBeFocused();
   await raidResult.getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('button', { name: 'See What Happens Next' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Defend the Estate' })).toHaveCount(0);
@@ -42,6 +46,7 @@ test('a zero-garrison partial defense describes the fortifications consistently'
   await page.goto('/');
   await page.getByRole('button', { name: 'Load saved game' }).click();
   await page.getByRole('button', { name: 'Defend the Estate' }).click();
+  await page.getByRole('dialog', { name: "Scribe's Note" }).getByRole('button', { name: 'Continue', exact: true }).click();
   const raidResult = page.locator('div.fixed.inset-0.z-50').filter({
     has: page.getByRole('heading', { name: 'RAID SUCCESSFUL' }),
   });
@@ -74,5 +79,6 @@ test('Aldric drill is visible in a third-season raid and changes its outcome', a
   await expect(overlay.getByText("Aldric's drill: +5 defense")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('aldric-drill-warning-390.png') });
   await page.getByRole('button', { name: 'Defend the Estate' }).click();
+  await page.getByRole('dialog', { name: "Scribe's Note" }).getByRole('button', { name: 'Continue', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'RAID REPELLED' })).toBeVisible();
 });

@@ -37,7 +37,7 @@ for (const width of [390, 1366]) {
     await page.keyboard.press('Enter');
     const note = page.locator('.fixed.inset-0.z-50').filter({ has: page.getByRole('heading', { name: "Scribe's Note" }) });
     await expect(note).toBeVisible();
-    // Modal focus is a separately reproduced issue; use its visible dismissal here.
+    // The separate Scribe's Note regression covers modal keyboard containment.
     await note.getByRole('button', { name: 'Continue', exact: true }).click();
     const after = await save(page);
     expect(after.phase).toBe('seasonal_resolve');

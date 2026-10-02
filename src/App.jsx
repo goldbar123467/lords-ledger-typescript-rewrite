@@ -90,6 +90,7 @@ export default function App() {
   } = state;
 
   const previousPhase = useRef(phase);
+  const phaseActionRef = useRef(null);
   useEffect(() => {
     if (previousPhase.current === phase) return;
     previousPhase.current = phase;
@@ -427,7 +428,7 @@ export default function App() {
       style={{ backgroundColor: "#0f0d0a" }}
     >
       {/* Scribe's Note overlay */}
-      <ScribesNote text={scribesNote} onDismiss={handleDismissScribesNote} />
+      <ScribesNote text={scribesNote} onDismiss={handleDismissScribesNote} fallbackFocusRef={phaseActionRef} />
 
       {/* Tutorial popup for first tab visit */}
       {showTutorial && (
@@ -445,6 +446,7 @@ export default function App() {
           military={state.military}
           onDefend={handleRaidDefend}
           onContinue={handleRaidContinue}
+          actionRef={phaseActionRef}
         />
       )}
 
@@ -673,6 +675,7 @@ export default function App() {
 
             {phase === "seasonal_resolve" && (
               <ResolveScreen
+                buttonRef={phaseActionRef}
                 onContinue={handleContinueToRandom}
                 buttonText="See What Happens Next"
               />
@@ -688,6 +691,7 @@ export default function App() {
 
             {phase === "random_resolve" && (
               <ResolveScreen
+                buttonRef={phaseActionRef}
                 onContinue={handleAdvanceTurn}
                 buttonText={turn >= 40 ? "See Your Legacy" : "Continue"}
               />
@@ -719,6 +723,7 @@ export default function App() {
         >
           <button
             onClick={handleSimulateSeason}
+            ref={phaseActionRef}
             disabled={isResolving}
             className={`px-10 py-3 rounded-md border-2 font-heading font-bold text-lg uppercase transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed${isResolving ? "" : " gold-glow"}`}
             style={{

@@ -171,7 +171,7 @@ function GainLine({ text, delay }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue }) {
+export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue, actionRef }) {
   const [showShake, setShowShake] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
@@ -269,6 +269,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
           >
             <button
               onClick={onDefend}
+              ref={actionRef}
               className="px-8 py-3 rounded-md border-2 font-bold text-lg uppercase tracking-wider cursor-pointer transition-all duration-200"
               style={{
                 background: `linear-gradient(135deg, ${borderColor}, #1a1610, ${borderColor})`,
@@ -404,6 +405,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
           >
             <button
               onClick={onContinue}
+              ref={actionRef}
               className="px-8 py-3 rounded-md border-2 font-bold text-base uppercase tracking-wider cursor-pointer transition-all duration-200"
               style={{
                 background: "linear-gradient(135deg, #2a2318, #1a1610)",

@@ -101,6 +101,7 @@ export default function RatsInCellar({
   const [floatTexts, setFloatTexts] = useState([]);
 
   const startTimeRef = useRef(null);
+  const introActionRef = useRef(null);
   const activeRatRef = useRef(null);
   const caughtRef = useRef(0);
   const ratTimerRef = useRef(null);
@@ -274,6 +275,7 @@ export default function RatsInCellar({
     return (
       <ScribesNote
         text={RATS_SCRIBES_NOTE}
+        fallbackFocusRef={introActionRef}
         onDismiss={() => {
           setShowScribesNote(false);
           onScribesNoteSeen();
@@ -297,6 +299,7 @@ export default function RatsInCellar({
         </p>
         <button
           onClick={onBack}
+          ref={introActionRef}
           className="px-6 py-2 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
           style={{
             backgroundColor: "#2a2318",
@@ -347,6 +350,7 @@ export default function RatsInCellar({
               setPhase(PHASE_COUNTDOWN);
               setCountdownNum(3);
             }}
+            ref={introActionRef}
             className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
             style={{
               backgroundColor: "#4a8a3a",
