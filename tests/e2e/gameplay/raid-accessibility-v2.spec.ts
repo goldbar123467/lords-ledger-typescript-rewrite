@@ -92,4 +92,35 @@ for (const type of ['criminal', 'scottish']) {
       await button.click();
     }
   });
+
+  test(`${type} scrolled defense comparison fits doubled phone text`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const state = { ...fixture, phase: 'raid_warning',
+      raids: { ...fixture.raids, activeRaid: { type, phase: 'warning' } } };
+    await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), JSON.stringify({ format: 'lords-ledger', version: 2, state }));
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Load saved game' }).click();
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({ content: 'html { font-size:200% !important; }' });
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe('32px');
+    const content = page.locator('.raid-modal .overflow-y-auto');
+    await content.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await page.screenshot({ path: testInfo.outputPath('scrolled-comparison-390.png') });
+    const bounds = await content.boundingBox();
+    if (!bounds) throw new Error('Missing raid scroll region');
+    for (const text of ['Defense Rating', 'Required']) {
+      const label = page.getByText(text, { exact: true });
+      const box = await label.boundingBox();
+      if (!box) throw new Error(`Missing ${text}`);
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+      expect(await label.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    for (const value of await page.locator('.raid-defense-values > div > span').all()) {
+      const box = await value.boundingBox();
+      if (!box) throw new Error('Missing defense value');
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    }
+  });
 }

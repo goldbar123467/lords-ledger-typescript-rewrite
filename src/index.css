@@ -1347,3 +1347,8 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .raid-title h2 { min-width: 0; overflow-wrap: anywhere; }
 .raid-footer { padding-inline: 1rem; }
 .raid-action { max-width: 100%; padding-inline: min(2rem, 6vw); overflow-wrap: anywhere; }
+.raid-defense { container: raid-defense / inline-size; overflow-wrap: anywhere; }
+.raid-defense-values { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 1rem; }
+@container raid-defense (max-width: 16rem) {
+  .raid-defense-values { grid-template-columns: 1fr; gap: 0.5rem; }
+}

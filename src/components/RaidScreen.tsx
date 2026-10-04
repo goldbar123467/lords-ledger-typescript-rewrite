@@ -31,18 +31,18 @@ function DefenseComparison({ defenseRating, threshold, drillBonus = 0 }: { defen
   const isReady = defenseRating >= threshold;
   return (
     <div
-      className="rounded-lg p-4 my-4 text-center"
+      className="raid-defense rounded-lg p-4 my-4 text-center"
       style={{
         backgroundColor: "rgba(0,0,0,0.3)",
         border: `2px solid ${isReady ? "#a4cd8c" : "#ffaba3"}`,
       }}
     >
-      <div className="flex items-center justify-center gap-4 text-3xl font-bold" style={{ fontFamily: "Cinzel, serif" }}>
+      <div className="raid-defense-values text-3xl font-bold" style={{ fontFamily: "Cinzel, serif" }}>
         <div>
           <div className="text-sm uppercase tracking-wider mb-1" style={{ color: "#a89070" }}>Defense Rating</div>
           <span style={{ color: isReady ? "#a4cd8c" : "#ffaba3" }}>{defenseRating}</span>
         </div>
-        <span style={{ color: "#6a5a42", fontSize: "1.5rem" }}>vs</span>
+        <span style={{ color: "#a89070", fontSize: "1.5rem" }}>vs</span>
         <div>
           <div className="text-sm uppercase tracking-wider mb-1" style={{ color: "#a89070" }}>Required</div>
           <span style={{ color: isReady ? "#a4cd8c" : "#ffaba3" }}>{threshold}</span>

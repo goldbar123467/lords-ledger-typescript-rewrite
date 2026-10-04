@@ -1,5 +1,13 @@
 # 2.0 verification record
 
+## 2026-10-04 Raid defense comparison correction
+
+Baseline5d6bfb3; frozen fingerprint123F54A0BB7E45A43E6003C978E0BB9790DE174661DEC99BFC7F68D53C0DDC80. Narrow comparison uses a content container and minmax grid, stacking below16rem; text wraps and vs has readable contrast. Numbers, thresholds and calculation expressions are unchanged. Two scrolled enlarged regressions fail baseline at label x-18.44 beyond region x22; both pass after correction. Primary strict/lint/build and9raid/accessibility browsers pass; final2cases additionally bound numeric values. Tester independently passes6accessibility tests and6scrolled phone probes, grader8warning matrix cases. Both close G-RAID-A03 with no new scoped P0–P2. Fingerprint independently checked; tester's initial JS ordinal hash differed only because primary uses PowerShell culture Sort-Object ordering. Exact raw manifest archived in raid-comparison/fingerprint-manifest.txt.
+
+Evidence artifacts/v2/raid-comparison/{red,green,final-values,settled}/ and {tester,grader}-raid-comparison/report.md. Primary opened both final comparison PNGs and settled Scottish warning; grader reopened clipped before and12independent after images. Tester waits actual36px Defend as well as32pxroot before captures; earlier primary test captures can race child text changes, so settled artifact captures/reviewer images establish typography. At enlarged size content is taller than available body and must be read sequentially; all comparison labels and numbers remain horizontally available. Status words can wrap within words. No actual browser-zoom, screen-reader, keyboard-only reading of long body, full campaign/suite or performance claim. Those limits remain explicit; preceding modal/save/Scribe behavior was not all rerun by grader for this CSS correction.
+
+Production46402 (+1055baseline; +5section), implementation30694/data14354/styles1354, tests8557/docs3154/tooling1893/other9455,inclusive69461 before this record.35srcJS/JSX remain. Next: terminal outcome data and screens, with remaining full state/action/save contracts and production reduction still open. Dashboard extreme currency P3 deferred.
+
 ## 2026-10-04 Raid modal, contrast and action checkpoint
 
 Baseline cf08987; frozen fingerprint 0E86E6B37950EE19674C586D0185B5E2018E9A0B0E556DAEBA0B6D9C23435D0E. Native mandatory dialog makes background inert and contains both visible actions; Escape preserves raid phase. It suspends for Scribe's Note, which returns focus to the raid action. In-dialog Save game with status preserves warning/result save access. Brighter threat, defense and outcome text; fixed screen gutters, wrapping title and bounded footer actions repair phone clipping. Engine/content unchanged.
