@@ -81,3 +81,12 @@ test('missing military substate retains the existing aggregate fallback', () => 
   assert.equal(change.patch.military.garrison.levy, 4);
   assert.equal(change.patch.garrison, 4);
 });
+
+test('valid zero morale stays zero on dismissal and earns only explicit upgrade bonuses', () => {
+  const before = state();
+  assert.ok(before.military);
+  const zero = { ...before, military: { ...before.military, morale: 0 } };
+  assert.equal(planMilitaryAction(zero, 'DISMISS_SOLDIERS', { count: 1 })?.patch.military.morale, 0);
+  assert.equal(planMilitaryAction(zero, 'RECRUIT_SOLDIERS', { count: 1, soldierType: 'knights' })?.patch.military.morale, 5);
+  assert.equal(planMilitaryAction(zero, 'UPGRADE_FORTIFICATION', { track: 'walls' })?.patch.military.morale, 10);
+});

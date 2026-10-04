@@ -63,6 +63,37 @@ for (const width of [390, 1366]) test.describe(`Military actions at ${width}px`,
     await page.getByRole('button', { name: 'Load saved game' }).click();
     expect((await savedState(page)).denarii).toBe(balance);
   });
+  test('zero morale reached through legal commands survives dismissal, bonuses and reload', async ({ page }, testInfo) => {
+    const levy = page.getByRole('heading', { name: 'Levy Peasants', exact: true }).locator('../../..');
+    for (let cycle = 0; cycle < 10; cycle += 1) {
+      await levy.getByRole('button', { name: 'Dismiss -1', exact: true }).click();
+      await levy.getByRole('button', { name: 'Recruit +1', exact: true }).click();
+    }
+    let state = await savedState(page);
+    expect(state.military.morale).toBe(0);
+    expect(state.denarii).toBe(950);
+    await levy.getByRole('button', { name: 'Dismiss -1', exact: true }).click();
+    state = await savedState(page);
+    await page.screenshot({ path: testInfo.outputPath('zero-morale-dismissal.png'), animations: 'disabled' });
+    expect(state.military.morale).toBe(0);
+    expect(state.military.garrison.levy).toBe(4);
+    const knights = page.getByRole('heading', { name: 'Knights', exact: true }).locator('../../..');
+    await knights.getByRole('button', { name: 'Recruit +1', exact: true }).click();
+    expect((await savedState(page)).military.morale).toBe(5);
+    const walls = page.getByRole('heading', { name: /^Walls:/ }).locator('..');
+    await walls.getByRole('button', { name: 'Upgrade (120d)', exact: true }).click();
+    state = await savedState(page);
+    expect(state.military.morale).toBe(15);
+    expect(state.denarii).toBe(780);
+    expect(state.garrison).toBe(5);
+    expect(state.military.garrison).toEqual({ levy: 4, menAtArms: 0, knights: 1 });
+    expect(state.castleLevel).toBe(2);
+    await page.reload();
+    await page.getByRole('button', { name: 'Load saved game' }).click();
+    const loaded = await savedState(page);
+    expect(loaded.military).toEqual(state.military);
+    expect(loaded.denarii).toBe(780);
+  });
   test('each fortification upgrades exactly one level with the authored debit', async ({ page }) => {
     let balance = 1000;
     for (const [label, track, next] of [

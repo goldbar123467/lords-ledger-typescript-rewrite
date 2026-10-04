@@ -61,8 +61,8 @@ export function planMilitaryAction(
     const cost = actual * definition.recruitCost;
     const garrison = { ...mil.garrison, [soldierType]: current + (recruiting ? actual : -actual) };
     const morale = recruiting
-      ? (soldierType === 'knights' ? Math.min(100, (mil.morale || 50) + 5) : mil.morale)
-      : Math.max(0, (mil.morale || 50) - 5);
+      ? (soldierType === 'knights' ? Math.min(100, (mil.morale ?? 50) + 5) : mil.morale)
+      : Math.max(0, (mil.morale ?? 50) - 5);
     return {
       patch: {
         ...(recruiting ? { denarii: state.denarii - cost } : {}),
@@ -85,7 +85,7 @@ export function planMilitaryAction(
   const next = upgrade.next;
   const military: CommandMilitaryState = {
     ...mil, [track]: next.level,
-    morale: Math.min(100, (mil.morale || 50) + 10),
+    morale: Math.min(100, (mil.morale ?? 50) + 10),
     totalFortificationSpending: (mil.totalFortificationSpending || 0) + next.cost,
   };
   let scribesNote: string | null = null;
