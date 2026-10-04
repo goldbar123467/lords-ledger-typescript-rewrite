@@ -21,7 +21,7 @@ test('a loaded raid warning resolves through the real reducer and resumes the se
   const note = page.getByRole('dialog', { name: "Scribe's Note" });
   await expect(note.getByRole('heading')).toBeFocused();
   await page.keyboard.press('Escape');
-  const raidResult = page.locator('div.fixed.inset-0.z-50').filter({
+  const raidResult = page.locator('.raid-modal').filter({
     has: page.getByRole('heading', { name: /RAID (REPELLED|SUCCESSFUL)/ }),
   });
   await expect(raidResult.getByRole('heading', { name: /RAID (REPELLED|SUCCESSFUL)/ })).toBeVisible();
@@ -47,7 +47,7 @@ test('a zero-garrison partial defense describes the fortifications consistently'
   await page.getByRole('button', { name: 'Load saved game' }).click();
   await page.getByRole('button', { name: 'Defend the Estate' }).click();
   await page.getByRole('dialog', { name: "Scribe's Note" }).getByRole('button', { name: 'Continue', exact: true }).click();
-  const raidResult = page.locator('div.fixed.inset-0.z-50').filter({
+  const raidResult = page.locator('.raid-modal').filter({
     has: page.getByRole('heading', { name: 'RAID SUCCESSFUL' }),
   });
   await expect(raidResult.getByText('Your fortifications slowed the raiders. Losses were reduced but not prevented.')).toBeVisible();
@@ -72,7 +72,7 @@ test('Aldric drill is visible in a third-season raid and changes its outcome', a
   });
   await page.goto('/');
   await page.getByRole('button', { name: 'Load saved game' }).click();
-  const overlay = page.locator('div.fixed.inset-0.z-50').filter({
+  const overlay = page.locator('.raid-modal').filter({
     has: page.getByRole('button', { name: 'Defend the Estate' }),
   });
   await expect(overlay.getByText('20', { exact: true })).toBeVisible();

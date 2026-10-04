@@ -5,7 +5,7 @@
  * Interrupts the season flow when a raid triggers.
  */
 
-import { useState, useEffect, type CSSProperties, type RefObject } from "react";
+import { useState, useEffect, useId, useRef, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
 import type { ActiveRaid } from "../engine/raidEngine.ts";
 import type { MilitaryDefenseState } from "../data/military.ts";
 import { RAID_TYPES } from "../data/raids.ts";
@@ -17,10 +17,13 @@ function raidStyle(style: RaidStyle): CSSProperties { return style; }
 
 interface RaidScreenProps {
   raidState: ActiveRaid | null;
+  suspended?: boolean;
   garrison: number;
   military?: MilitaryDefenseState | null;
   onDefend: () => void;
   onContinue: () => void;
+  onSave?: () => void;
+  saveStatus?: 'saved' | 'error' | null;
   actionRef?: RefObject<HTMLButtonElement | null>;
 }
 
@@ -31,23 +34,23 @@ function DefenseComparison({ defenseRating, threshold, drillBonus = 0 }: { defen
       className="rounded-lg p-4 my-4 text-center"
       style={{
         backgroundColor: "rgba(0,0,0,0.3)",
-        border: `2px solid ${isReady ? "#4a8a3a" : "#c62828"}`,
+        border: `2px solid ${isReady ? "#a4cd8c" : "#ffaba3"}`,
       }}
     >
       <div className="flex items-center justify-center gap-4 text-3xl font-bold" style={{ fontFamily: "Cinzel, serif" }}>
         <div>
           <div className="text-sm uppercase tracking-wider mb-1" style={{ color: "#a89070" }}>Defense Rating</div>
-          <span style={{ color: isReady ? "#4a8a3a" : "#c62828" }}>{defenseRating}</span>
+          <span style={{ color: isReady ? "#a4cd8c" : "#ffaba3" }}>{defenseRating}</span>
         </div>
         <span style={{ color: "#6a5a42", fontSize: "1.5rem" }}>vs</span>
         <div>
           <div className="text-sm uppercase tracking-wider mb-1" style={{ color: "#a89070" }}>Required</div>
-          <span style={{ color: isReady ? "#4a8a3a" : "#c62828" }}>{threshold}</span>
+          <span style={{ color: isReady ? "#a4cd8c" : "#ffaba3" }}>{threshold}</span>
         </div>
       </div>
       <div
         className="mt-2 text-sm font-bold uppercase tracking-wider"
-        style={{ color: isReady ? "#4a8a3a" : "#c62828" }}
+        style={{ color: isReady ? "#a4cd8c" : "#ffaba3" }}
       >
         {isReady ? "\u2713 DEFENSES HOLD" : "\u2717 DEFENSES INSUFFICIENT"}
       </div>
@@ -98,9 +101,9 @@ function GoldParticles() {
 function OutcomeLine({ text, delay, victory }: { text: string; delay: number; victory: boolean }) {
   return (
     <div
-      className="text-base font-semibold py-1"
+      className="raid-outcome text-base font-semibold py-1"
       style={{
-        color: victory ? "#4a8a3a" : "#c62828",
+        color: victory ? "#a4cd8c" : "#ffaba3",
         animation: `raid-${victory ? "fade-in" : "drop-in"} 0.3s ease-out ${delay}ms both`,
       }}
     >
@@ -113,7 +116,25 @@ function OutcomeLine({ text, delay, victory }: { text: string; delay: number; vi
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue, actionRef }: RaidScreenProps) {
+export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue, onSave, saveStatus, actionRef, suspended = false }: RaidScreenProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const localActionRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = actionRef ?? localActionRef;
+  const titleId = useId();
+  function containFocus(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== 'Tab') return;
+    event.preventDefault();
+    const actions = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+    const index = actions.findIndex(action => action === document.activeElement);
+    const next = (index + (event.shiftKey ? -1 : 1) + actions.length) % actions.length;
+    actions[next]?.focus();
+  }
+  const saveAction = onSave && (
+    <div className="mt-2">
+      <button onClick={onSave} className="raid-save min-h-[44px] rounded border border-gold px-3 text-sm text-gold-bright cursor-pointer">Save game</button>
+      <span role="status" className="block text-sm text-tan-light">{saveStatus === 'saved' ? 'Saved!' : saveStatus === 'error' ? 'Save error' : ''}</span>
+    </div>
+  );
   const [showShake, setShowShake] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
@@ -123,6 +144,14 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
   const result = raidState?.result;
   const def = type ? RAID_TYPES[type] : null;
   const isVictory = result?.victory ?? false;
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!phase || suspended || !dialog) return;
+    dialog.showModal();
+    buttonRef.current?.focus();
+    return () => { dialog.close(); };
+  }, [phase, suspended, buttonRef]);
 
   // Trigger visual effects when result phase appears
   useEffect(() => {
@@ -152,13 +181,17 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
   const isCriminal = type === "criminal";
   const isScottish = type === "scottish";
   const glowColor = isCriminal ? "rgba(138, 106, 42, 0.5)" : "rgba(139, 26, 26, 0.6)";
+  const titleColor = isCriminal ? "#e8c44a" : "#ffaba3";
   const borderColor = isCriminal ? "#8a6a2a" : "#8b1a1a";
   const RaidIcon = isCriminal ? Skull : Swords;
 
   // --- WARNING PHASE ---
   if (phase === "warning") {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+      <dialog ref={dialogRef} aria-modal="true" aria-labelledby={titleId}
+        className="raid-modal fixed inset-0 z-50 flex items-center justify-center p-4"
+        onCancel={event => event.preventDefault()}
+        onKeyDown={containFocus}>
         <div
           className="w-full max-w-lg rounded-lg raid-pulse-border relative flex flex-col"
           style={raidStyle({
@@ -166,21 +199,21 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             border: `3px solid ${borderColor}`,
             borderLeft: `6px solid ${borderColor}`,
             "--raid-glow": glowColor,
-            maxHeight: "calc(100vh - 2rem)",
+            maxHeight: "calc(100dvh - 32px)",
           })}
         >
           {/* Scrollable content area */}
           <div className="px-6 pt-6 pb-3 overflow-y-auto flex-1 min-h-0">
             {/* Header */}
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <RaidIcon size={isScottish ? 28 : 24} color={borderColor} />
-              <h2
+            <div className="raid-title flex items-center justify-center gap-3 mb-4">
+              <RaidIcon size={isScottish ? 28 : 24} color={titleColor} />
+              <h2 id={titleId}
                 className={`font-bold uppercase tracking-widest text-center ${isScottish ? "text-2xl" : "text-xl"}`}
-                style={{ fontFamily: "Cinzel Decorative, Cinzel, serif", color: borderColor }}
+                style={{ fontFamily: "Cinzel Decorative, Cinzel, serif", color: titleColor }}
               >
                 {def.warningTitle}
               </h2>
-              <RaidIcon size={isScottish ? 28 : 24} color={borderColor} />
+              <RaidIcon size={isScottish ? 28 : 24} color={titleColor} />
             </div>
 
             {/* Description */}
@@ -202,7 +235,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
 
           {/* Sticky action row — always visible at bottom of overlay */}
           <div
-            className="px-6 py-3 text-center shrink-0"
+            className="raid-footer px-6 py-3 text-center shrink-0"
             style={{
               backgroundColor: "#1a1610",
               borderTop: `1px solid ${borderColor}`,
@@ -212,8 +245,8 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
           >
             <button
               onClick={onDefend}
-              ref={actionRef}
-              className="px-8 py-3 rounded-md border-2 font-bold text-lg uppercase tracking-wider cursor-pointer transition-all duration-200"
+              ref={buttonRef}
+              className="raid-action px-8 py-3 rounded-md border-2 font-bold text-lg uppercase tracking-wider cursor-pointer transition-all duration-200"
               style={{
                 background: `linear-gradient(135deg, ${borderColor}, #1a1610, ${borderColor})`,
                 borderColor: "#c4a24a",
@@ -226,9 +259,10 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             >
               Defend the Estate
             </button>
+            {saveAction}
           </div>
         </div>
-      </div>
+      </dialog>
     );
   }
 
@@ -253,7 +287,10 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
     const resultBg = isVictory ? "#282318" : "#281a18";
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
+      <dialog ref={dialogRef} aria-modal="true" aria-labelledby={titleId}
+        className="raid-modal fixed inset-0 z-50 flex items-center justify-center p-4"
+        onCancel={event => event.preventDefault()}
+        onKeyDown={containFocus}>
         {/* Red vignette flash for defeat */}
         {!isVictory && (
           <div
@@ -284,7 +321,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             backgroundColor: "#1a1610",
             border: `3px solid ${resultBorder}`,
             background: `linear-gradient(135deg, #1a1610 0%, ${resultBg} 50%, #1a1610 100%)`,
-            maxHeight: "calc(100vh - 2rem)",
+            maxHeight: "calc(100dvh - 32px)",
           }}
         >
           {/* Particles for victory */}
@@ -293,15 +330,15 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
           {/* Scrollable content */}
           <div className="px-6 pt-6 pb-3 overflow-y-auto flex-1 min-h-0">
             {/* Header */}
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <RaidIcon size={24} color={resultBorder} />
-              <h2
+            <div className="raid-title flex items-center justify-center gap-3 mb-3">
+              <RaidIcon size={24} color={isVictory ? "#e8c44a" : "#ffaba3"} />
+              <h2 id={titleId}
                 className="text-xl font-bold uppercase tracking-widest text-center"
-                style={{ fontFamily: "Cinzel Decorative, Cinzel, serif", color: resultBorder }}
+                style={{ fontFamily: "Cinzel Decorative, Cinzel, serif", color: isVictory ? "#e8c44a" : "#ffaba3" }}
               >
                 {isVictory ? "RAID REPELLED" : "RAID SUCCESSFUL"}
               </h2>
-              <RaidIcon size={24} color={resultBorder} />
+              <RaidIcon size={24} color={isVictory ? "#e8c44a" : "#ffaba3"} />
             </div>
 
             {/* Partial defense note */}
@@ -334,7 +371,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
 
           {/* Sticky action row */}
           <div
-            className="px-6 py-3 text-center shrink-0"
+            className="raid-footer px-6 py-3 text-center shrink-0"
             style={{
               backgroundColor: "#1a1610",
               borderTop: `1px solid ${resultBorder}`,
@@ -344,8 +381,8 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
           >
             <button
               onClick={onContinue}
-              ref={actionRef}
-              className="px-8 py-3 rounded-md border-2 font-bold text-base uppercase tracking-wider cursor-pointer transition-all duration-200"
+              ref={buttonRef}
+              className="raid-action px-8 py-3 rounded-md border-2 font-bold text-base uppercase tracking-wider cursor-pointer transition-all duration-200"
               style={{
                 background: "linear-gradient(135deg, #2a2318, #1a1610)",
                 borderColor: "#c4a24a",
@@ -357,9 +394,10 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
             >
               Continue
             </button>
+            {saveAction}
           </div>
         </div>
-      </div>
+      </dialog>
     );
   }
 

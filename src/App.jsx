@@ -443,10 +443,13 @@ export default function App() {
       {isRaidPhase && state.raids?.activeRaid && (
         <RaidScreen
           raidState={state.raids.activeRaid}
+          suspended={Boolean(scribesNote)}
           garrison={state.garrison}
           military={state.military}
           onDefend={handleRaidDefend}
           onContinue={handleRaidContinue}
+          onSave={handleSaveGame}
+          saveStatus={saveFlash === "saved" || saveFlash === "error" ? saveFlash : null}
           actionRef={phaseActionRef}
         />
       )}

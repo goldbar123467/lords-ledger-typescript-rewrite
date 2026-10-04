@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest checkpoint types raid content and presentation while preserving authored exports, 4,544 outcome/draw-count cases and 4,320 chronicle comparisons. Strict checks, build, 115 unit tests and 19 raid/save browser tests pass. Independent reviewers accepted conversion preservation, but found inherited raid focus, contrast and enlarged-phone action defects; repairs are next. The recorded 100 seeded campaigns completed with 49 victories, 51 losses and no save failures; no new campaign run is claimed. Historical results and limits are recorded in [verification notes](docs/v2/verification.md). Current production is 990 lines above baseline, so the overall reduction requirement is unfinished.
+The latest raid checkpoints preserve authored content and calculations, add a native modal with a visible Save action, and improve contrast and enlarged phone actions. Strict checks/build and seven focused raid/accessibility tests pass; independent save/continuation and Scribe handoff checks pass. A scrolled enlarged defense comparison still clips its labels, and its repair is next. The preceding conversion passed115 units,4544 result/draw comparisons and4320 chronicle comparisons. No new campaign run is claimed. See [verification notes](docs/v2/verification.md) for scoped results and limits. Production remains1050 lines above baseline; overall migration and code reduction are unfinished.
 
 ## Code map
 

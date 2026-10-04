@@ -1327,3 +1327,23 @@ input[type="range"].labor-slider::-moz-range-thumb {
     .raid-shake {
       animation: raid-shake 0.2s ease-in-out;
     }
+
+/* Mandatory raid dialog: keep the estate inert until its action is resolved. */
+.raid-modal {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: 16px;
+  background: transparent;
+  color: #c8b090;
+}
+.raid-modal:not([open]) { display: none; }
+.raid-modal::backdrop { background: rgb(0 0 0 / 70%); }
+.raid-title { gap: 0.5rem; }
+.raid-title svg { flex-shrink: 0; }
+.raid-title h2 { min-width: 0; overflow-wrap: anywhere; }
+.raid-footer { padding-inline: 1rem; }
+.raid-action { max-width: 100%; padding-inline: min(2rem, 6vw); overflow-wrap: anywhere; }
