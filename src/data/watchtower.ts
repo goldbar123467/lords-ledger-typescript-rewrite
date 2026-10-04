@@ -1,5 +1,46 @@
+import type { FortificationLevels, Garrison } from './military.ts';
+import type { RaidType } from './raids.ts';
+
+export type AnomalyId = 'campfire' | 'dust' | 'signal' | 'wagon' | 'birds';
+export type WarningKey = 'criminalRaidBonus' | 'scottishRaidBonus' | 'raidRequirementReduction' | 'merchantPreview';
+export interface ScanDefinition {
+  id: AnomalyId;
+  name: string;
+  label: string;
+  description: string;
+  reward: string;
+  category: 'threat' | 'opportunity' | 'ambiguous';
+  warningKey: WarningKey | null;
+}
+export interface MerchantPreview { name: string; specialty: string }
+export interface ScanRating { min: number; max: number; label: string; denariiBonus: number; captainLine: string }
+
+/** Dialogue consumes a small view of state; this is not a persisted-state validator. */
+export interface RodericState {
+  turn: number;
+  garrison?: number;
+  castleLevel?: FortificationLevels['walls'];
+  food?: number;
+  denarii?: number;
+  military?: Partial<FortificationLevels> & { garrison?: Partial<Garrison>; morale?: number };
+  raids?: {
+    lastRaidType?: RaidType | null;
+    lastRaidTurn?: number;
+    activeRaid?: { result?: { victory: boolean } | null } | null;
+    totalCriminalRaids?: number;
+    totalScottishRaids?: number;
+    criminalCooldown?: number;
+    scottishCooldown?: number;
+  };
+  watchtower?: {
+    scannedThisSeason?: boolean;
+    warnings?: Partial<Record<Exclude<WarningKey, 'merchantPreview'>, number>>;
+  };
+}
+type RodericResponse = (state: RodericState) => string | null;
+
 /**
- * watchtower.js
+ * watchtower.ts
  *
  * Content data for the Watchtower:
  * flavor texts, Captain Roderic dialogue pools, anomaly definitions,
@@ -26,7 +67,7 @@ export const WATCHTOWER_SUBTITLES = [
 // Functions take game state, strings are static.
 // ---------------------------------------------------------------------------
 
-export const RODERIC_DEFENSE_ASSESSMENTS = [
+export const RODERIC_DEFENSE_ASSESSMENTS: readonly RodericResponse[] = [
   (state) => {
     const g = state.garrison ?? 0;
     if (g === 0) return "We have no garrison, my lord. None. If anyone attacks \u2014 bandits, raiders, a stiff wind \u2014 we fall. This must be your first priority.";
@@ -65,9 +106,9 @@ export const RODERIC_DEFENSE_ASSESSMENTS = [
   },
   (state) => {
     const wt = state.watchtower ?? {};
-    if (wt.warnings?.criminalRaidBonus > 0) return "Your scouting paid off. We know bandits are gathering. We\u2019ve positioned extra watchmen on the eastern approach. Effective garrison strength is boosted.";
-    if (wt.warnings?.scottishRaidBonus > 0) return "Your scouting paid off. Scottish riders have been spotted. We\u2019ve reinforced the northern defenses.";
-    if (wt.warnings?.raidRequirementReduction > 0) return "The signal fire from our allied lord confirms a military threat. I\u2019ve alerted the men. We\u2019re as ready as we can be.";
+    if ((wt.warnings?.criminalRaidBonus ?? 0) > 0) return "Your scouting paid off. We know bandits are gathering. We\u2019ve positioned extra watchmen on the eastern approach. Effective garrison strength is boosted.";
+    if ((wt.warnings?.scottishRaidBonus ?? 0) > 0) return "Your scouting paid off. Scottish riders have been spotted. We\u2019ve reinforced the northern defenses.";
+    if ((wt.warnings?.raidRequirementReduction ?? 0) > 0) return "The signal fire from our allied lord confirms a military threat. I\u2019ve alerted the men. We\u2019re as ready as we can be.";
     return null;
   },
 ];
@@ -94,7 +135,7 @@ export const RODERIC_HISTORICAL_LESSONS = [
 // Functions that return recommendations based on game state.
 // ---------------------------------------------------------------------------
 
-export const RODERIC_STRATEGIC_TIPS = [
+export const RODERIC_STRATEGIC_TIPS: readonly RodericResponse[] = [
   (state) => {
     const mil = state.military ?? {};
     const g = mil.garrison ?? {};
@@ -102,7 +143,7 @@ export const RODERIC_STRATEGIC_TIPS = [
     const gate = mil.gate ?? 0;
     const moat = mil.moat ?? 0;
     const garrisonDef = (g.levy || 0) * 1 + (g.menAtArms || 0) * 3 + (g.knights || 0) * 8;
-    const fortDef = [0,5,15,25,40][walls] + [0,3,7,12,18][gate] + [0,4,10,15][moat];
+    const fortDef = ([0,5,15,25,40] as const)[walls] + ([0,3,7,12,18] as const)[gate] + ([0,4,10,15] as const)[moat];
     const rating = Math.round((garrisonDef + fortDef) * (1 + (mil.morale ?? 50 > 60 ? 0.1 : 0)));
     if (rating < 25 && state.turn >= 4) {
       return `My recommendation: strengthen our defenses immediately. Our defense rating is ${rating} \u2014 we need 25 to repel outlaws. Recruit soldiers or upgrade fortifications.`;
@@ -116,7 +157,7 @@ export const RODERIC_STRATEGIC_TIPS = [
     const gate = mil.gate ?? 0;
     const moat = mil.moat ?? 0;
     const garrisonDef = (g.levy || 0) * 1 + (g.menAtArms || 0) * 3 + (g.knights || 0) * 8;
-    const fortDef = [0,5,15,25,40][walls] + [0,3,7,12,18][gate] + [0,4,10,15][moat];
+    const fortDef = ([0,5,15,25,40] as const)[walls] + ([0,3,7,12,18] as const)[gate] + ([0,4,10,15] as const)[moat];
     const rating = Math.round((garrisonDef + fortDef) * (1 + (mil.morale ?? 50 > 60 ? 0.1 : 0)));
     if (rating >= 25 && rating < 50 && state.turn >= 8) {
       return `We can handle bandits. But the Scots are a different beast. Our defense rating is ${rating} \u2014 we need 50 to hold against a border raid. Upgrade walls or recruit men-at-arms.`;
@@ -209,7 +250,7 @@ export const ANOMALY_TYPES = [
     category: "ambiguous",
     warningKey: null, // resolved at scan time
   },
-];
+] satisfies readonly ScanDefinition[];
 
 // ---------------------------------------------------------------------------
 // Horizon Scan — Scan Ratings
@@ -240,7 +281,7 @@ export const SCAN_RATINGS = [
     denariiBonus: 10,
     captainLine: "Nothing escapes your gaze. The enemy will find no surprise here.",
   },
-];
+] satisfies readonly ScanRating[];
 
 // ---------------------------------------------------------------------------
 // Horizon Scan — Configuration
@@ -260,4 +301,4 @@ export const FOREIGN_TRADERS = [
   { name: "Yvette of Lyon", specialty: "French wine" },
   { name: "Henrik of L\u00FCbeck", specialty: "Hanseatic goods" },
   { name: "Fatima of C\u00F3rdoba", specialty: "Moorish metalwork" },
-];
+] satisfies readonly MerchantPreview[];

@@ -2,21 +2,10 @@
 import {
   ANOMALY_TYPES, FOREIGN_TRADERS, SCAN_MAX_ANOMALIES,
   SCAN_MIN_ANOMALIES, SCAN_RATINGS,
-} from '../data/watchtower.js';
+  type ScanDefinition, type MerchantPreview, type ScanRating,
+} from '../data/watchtower.ts';
 
 type RandomSource = () => number;
-type WarningKey = 'criminalRaidBonus' | 'scottishRaidBonus' | 'raidRequirementReduction' | 'merchantPreview';
-
-interface ScanDefinition {
-  id: string;
-  name: string;
-  label: string;
-  description: string;
-  reward: string;
-  category: 'threat' | 'opportunity' | 'ambiguous';
-  warningKey: WarningKey | null;
-}
-
 export interface ScanAnomaly extends ScanDefinition {
   key: string;
   x: number;
@@ -24,8 +13,6 @@ export interface ScanAnomaly extends ScanDefinition {
   resolvedThreat: boolean;
 }
 
-interface MerchantPreview { name: string; specialty: string }
-interface ScanRating { min: number; max: number; label: string; denariiBonus: number; captainLine: string }
 
 export interface ScanPlan {
   anomalies: ScanAnomaly[];
@@ -51,22 +38,7 @@ export interface ScanReport {
   warnings: ScanWarnings;
 }
 
-function isScanDefinition(value: unknown): value is ScanDefinition {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-  const entry = value as Record<string, unknown>;
-  return typeof entry.id === 'string' && typeof entry.name === 'string' &&
-    typeof entry.label === 'string' && typeof entry.description === 'string' &&
-    typeof entry.reward === 'string' &&
-    (entry.category === 'threat' || entry.category === 'opportunity' || entry.category === 'ambiguous') &&
-    (entry.warningKey === null || entry.warningKey === 'criminalRaidBonus' ||
-      entry.warningKey === 'scottishRaidBonus' || entry.warningKey === 'raidRequirementReduction' ||
-      entry.warningKey === 'merchantPreview');
-}
-
-const definitions: readonly ScanDefinition[] = ANOMALY_TYPES.map((entry: unknown) => {
-  if (!isScanDefinition(entry)) throw new Error('Invalid authored Horizon Scan anomaly.');
-  return entry;
-});
+const definitions: readonly ScanDefinition[] = ANOMALY_TYPES;
 const traders: readonly MerchantPreview[] = FOREIGN_TRADERS;
 const ratings: readonly ScanRating[] = SCAN_RATINGS;
 

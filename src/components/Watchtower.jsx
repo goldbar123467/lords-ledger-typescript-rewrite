@@ -19,7 +19,7 @@ import {
   RODERIC_SCRIBES_NOTE,
   SCAN_SCRIBES_NOTE,
   SCAN_DURATION_SECONDS,
-} from "../data/watchtower";
+} from "../data/watchtower.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
