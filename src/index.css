@@ -1365,3 +1365,9 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .terminal-restart:hover { background: linear-gradient(135deg, #a02020, #6a1010); }
 @container terminal-card (max-width: 26rem) { .terminal-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container terminal-card (max-width: 14rem) { .terminal-resources { grid-template-columns: 1fr; } }
+.terminal-strategy-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: baseline; column-gap: 0.5rem; }
+.terminal-strategy-name { overflow-wrap: normal; }
+@container terminal-card (max-width: 26rem) {
+  .terminal-strategy-row { grid-template-columns: auto minmax(0, 1fr); }
+  .terminal-strategy-tier { grid-column: 2; }
+}

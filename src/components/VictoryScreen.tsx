@@ -95,10 +95,10 @@ export default function VictoryScreen({ state, onPlayAgain, activatedSynergies }
               </h4>
               <div className="space-y-1.5">
                 {synDisplay.map((s) => (
-                  <div key={s.pathName} className="flex items-center gap-2 text-sm">
+                  <div key={s.pathName} className="terminal-strategy-row text-sm">
                     <span className="text-base" style={{ color: s.pathColor }} aria-hidden="true">{s.pathIcon}</span>
-                    <span className="font-semibold" style={{ color: "#e8c44a" }}>{s.pathName}</span>
-                    <span style={{ color: "#a89070" }}>
+                    <span className="terminal-strategy-name font-semibold" style={{ color: "#e8c44a" }}>{s.pathName}</span>
+                    <span className="terminal-strategy-tier" style={{ color: "#a89070" }}>
                       {"—"} Tier {s.tierLevel}: {s.tierTitle}
                     </span>
                   </div>

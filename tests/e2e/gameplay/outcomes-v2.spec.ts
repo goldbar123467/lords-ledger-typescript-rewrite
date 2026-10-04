@@ -2,10 +2,42 @@ import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { readLegacySave, writeV2Save } from '../../../src/save/saveGame.ts';
 import { failureNarratives, victoryTitles } from '../../../src/data/endings.ts';
+import { SYNERGY_PATH_LIST } from '../../../src/data/synergies.ts';
 
 const imported = readLegacySave(await readFile(new URL('../../fixtures/legacy-normal-turn1.json', import.meta.url), 'utf8'));
 if (!imported.ok) throw new Error(imported.error);
 const base = imported.state;
+for (const path of SYNERGY_PATH_LIST) test(`${path.name} keeps strategy words intact on enlarged short phones`, async ({ page }, testInfo) => {
+  const state = { ...base, phase: 'victory' as const, turn: 40, year: 10, season: 'winter' as const,
+    synergies: { ...base.synergies, activated: path.tiers.map(tier => tier.id) } };
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(state));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Load saved game' }).click();
+  await page.addStyleTag({ content: 'html { font-size:200% !important; }' });
+  const panel = page.getByRole('heading', { name: 'Strategy Paths' }).locator('..');
+  const name = panel.getByText(path.name, { exact: true });
+  await expect(name).toHaveCSS('font-size', '28px');
+  await page.evaluate(() => document.fonts.ready);
+  await panel.scrollIntoViewIfNeeded();
+  await panel.screenshot({ path: testInfo.outputPath('strategy.png') });
+  const words = await name.evaluate(element => {
+    const text = element.firstChild;
+    if (!text) throw new Error('Missing strategy name text');
+    return Array.from((text.textContent ?? '').matchAll(/\S+/g), match => {
+      const range = document.createRange();
+      range.setStart(text, match.index);
+      range.setEnd(text, match.index + match[0].length);
+      return { word: match[0], lines: range.getClientRects().length };
+    });
+  });
+  for (const word of words) expect(word.lines, `Readable whole word: ${word.word}`).toBe(1);
+  const box = await panel.boundingBox();
+  if (!box) throw new Error('Missing strategy panel');
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(390);
+  await expect(panel).toContainText(`Tier 3: ${path.tiers[2]?.title}`);
+});
 function luminance(color: string) {
   const values = (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(value => {
     const channel = Number(value) / 255;
