@@ -1352,3 +1352,16 @@ input[type="range"].labor-slider::-moz-range-thumb {
 @container raid-defense (max-width: 16rem) {
   .raid-defense-values { grid-template-columns: 1fr; gap: 0.5rem; }
 }
+
+/* End-of-reign resources retain their full values at narrow widths. */
+.terminal-card { container: terminal-card / inline-size; overflow-wrap: anywhere; }
+.terminal-resources { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; }
+.terminal-resource { border-color: #6a5a42; background: #231e16; color: #c4a24a; min-width: 0; }
+.terminal-resource dt { font-size: 0.875rem; color: #c8b090; }
+.terminal-resource dd { color: #e8c44a; }
+.terminal-resource-low { border-color: #c62828; }
+.terminal-resource-low > div, .terminal-resource-low dd { color: #ffaba3; }
+.terminal-restart { background: linear-gradient(135deg, #8b1a1a, #4a0a0a); border-color: #c4a24a; color: #e8c44a; min-height: 44px; overflow-wrap: anywhere; }
+.terminal-restart:hover { background: linear-gradient(135deg, #a02020, #6a1010); }
+@container terminal-card (max-width: 26rem) { .terminal-resources { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container terminal-card (max-width: 14rem) { .terminal-resources { grid-template-columns: 1fr; } }

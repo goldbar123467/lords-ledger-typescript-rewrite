@@ -5,6 +5,36 @@
  * All text is written at 6th grade reading level with historical grounding.
  */
 
+import type { Inventory } from './economy.ts';
+import type { BuildingEntry } from '../engine/buildingActions.ts';
+import type { GameOverReason } from '../engine/meterUtils.ts';
+
+export interface OutcomeResources {
+  readonly denarii: number;
+  readonly food: number;
+  readonly population: number;
+  readonly garrison: number;
+}
+export interface ReignOutcomeState extends OutcomeResources {
+  readonly inventory: Readonly<Inventory>;
+  readonly buildings: readonly BuildingEntry[];
+  readonly castleLevel: number;
+}
+export interface VictoryNarrative {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly description: string;
+  readonly historianNote: string;
+}
+export type VictoryTitleId = 'wealthy' | 'populous' | 'military' | 'builder' | 'balanced';
+interface FailureNarrative {
+  readonly title: string;
+  readonly headline: string;
+  readonly narrative: string;
+  readonly historianLesson: string;
+  readonly chain: readonly string[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // VICTORY TITLES
 //
@@ -88,14 +118,15 @@ export const victoryTitles = {
       "at once: law, trade, military strength, and religious duty. History " +
       "remembers extremes, but stable eras are built by balance.",
   },
-};
+} as const satisfies Record<VictoryTitleId, VictoryNarrative>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FAILURE NARRATIVES
 //
-// Two failure modes:
+// Three failure modes:
 //   - "depopulation" — population reached 0
 //   - "bankruptcy" — denarii at 0 for 6+ consecutive turns
+//   - "famine" — empty granaries reach the difficulty-specific season limit
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const failureNarratives = {
@@ -170,7 +201,7 @@ export const failureNarratives = {
       "Three seasons of empty granaries sealed your estate's fate.",
     ],
   },
-};
+} as const satisfies Record<GameOverReason['type'], FailureNarrative>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VICTORY SUMMARY FUNCTION
@@ -181,11 +212,10 @@ export const failureNarratives = {
 /**
  * Returns the appropriate victory title based on final game state.
  *
- * @param {{ denarii: number, food: number, population: number, garrison: number,
- *           buildings: string[], inventory: object }} state
- * @returns {object} Victory title object
+ * State includes validated inventory and legacy IDs or structured building entries.
+ * Balanced selection precedes score ordering; ties retain the authored category order.
  */
-export function getVictoryTitle(state) {
+export function getVictoryTitle(state: ReignOutcomeState): VictoryNarrative {
   const { denarii, population, garrison, buildings, inventory } = state;
 
   // Calculate inventory value
@@ -202,7 +232,8 @@ export function getVictoryTitle(state) {
   if (isBalanced) return victoryTitles.balanced;
 
   // Score each category
-  const scores = [
+  type Score = { key: Exclude<VictoryTitleId, 'balanced'>; value: number };
+  const scores: [Score, ...Score[]] = [
     { key: "wealthy", value: totalWealth },
     { key: "populous", value: population * 30 },
     { key: "military", value: garrison * 50 + (state.castleLevel || 1) * 100 },
@@ -216,11 +247,9 @@ export function getVictoryTitle(state) {
 /**
  * Returns a narrative summary of the completed reign based on final state.
  *
- * @param {{ denarii: number, food: number, population: number, garrison: number,
- *           buildings: string[], inventory: object, castleLevel: number }} state
- * @returns {string}
+ * The stored balances and building count determine the authored tone and details.
  */
-export function victorySummary(state) {
+export function victorySummary(state: ReignOutcomeState): string {
   const { denarii, population, garrison, buildings, castleLevel } = state;
   const inventoryValue = Object.values(state.inventory || {}).reduce((sum, v) => sum + v * 5, 0);
   const totalWealth = denarii + inventoryValue;
@@ -232,7 +261,7 @@ export function victorySummary(state) {
   const buildScore = (buildings || []).length > 6 ? 2 : (buildings || []).length > 3 ? 1 : 0;
   const avg = (wealthScore + popScore + milScore + buildScore) / 4;
 
-  let overallTone;
+  let overallTone: 'strong' | 'solid' | 'difficult';
   if (avg >= 1.5) overallTone = "strong";
   else if (avg >= 0.75) overallTone = "solid";
   else overallTone = "difficult";

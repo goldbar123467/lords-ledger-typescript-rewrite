@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest raid checkpoints preserve authored content and calculations, add a native modal with a visible Save action, and improve contrast and enlarged phone actions. Strict checks/build and seven focused raid/accessibility tests pass; independent save/continuation and Scribe handoff checks pass. The defense comparison now stacks in narrow content areas; independent scrolled phone checks pass for both raid types. Terminal outcome definitions and screens are next. The preceding conversion passed115 units,4544 result/draw comparisons and4320 chronicle comparisons. No new campaign run is claimed. See [verification notes](docs/v2/verification.md) for scoped results and limits. Production remains1055 lines above baseline; overall migration and code reduction are unfinished.
+The terminal outcome definitions and screens now use checked TypeScript and shared resource/restart controls. Authored text and 16,000 title/summary cases are preserved; 117 units, five enlarged-phone tests and static/build checks pass. Independent review found G-END-01: enlarged Strategy Paths names fragment into narrow columns. Its correction is next. Production remains 1,047 lines above baseline; 32 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Type raid definitions and presentation, preserving their warning/result/save flow.
+1. Repair enlarged Strategy Paths readability, then continue the remaining view and reducer migrations.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

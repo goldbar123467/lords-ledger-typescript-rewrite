@@ -1,6 +1,19 @@
-import { failureNarratives } from "../data/endings";
+import { failureNarratives } from "../data/endings.ts";
 
-export default function GameOverScreen({ gameOverReason, causeChain, state, onPlayAgain }) {
+import type { OutcomeResources } from "../data/endings.ts";
+import type { GameOverReason } from "../engine/meterUtils.ts";
+import type { EconomySeason } from "../engine/foodRequirement.ts";
+import { FinalResourceCards, OutcomeRestart } from "./OutcomeScreenParts.tsx";
+
+interface CauseEntry { turn: number; season: EconomySeason; year: number; summary: string }
+interface GameOverScreenProps {
+  gameOverReason: GameOverReason | null;
+  causeChain?: readonly CauseEntry[] | null;
+  state?: OutcomeResources | null;
+  onPlayAgain: () => void;
+}
+
+export default function GameOverScreen({ gameOverReason, causeChain, state, onPlayAgain }: GameOverScreenProps) {
   if (!gameOverReason) return null;
 
   const narrative = failureNarratives[gameOverReason.type];
@@ -12,7 +25,7 @@ export default function GameOverScreen({ gameOverReason, causeChain, state, onPl
       data-gameover-reason={gameOverReason.type}
     >
       <div
-        className="w-full max-w-xl rounded-lg border-2 p-5 sm:p-8 shadow-2xl"
+        className="terminal-card w-full max-w-xl rounded-lg border-2 p-5 sm:p-8 shadow-2xl"
         style={{
           backgroundColor: "#1a1610",
           borderColor: "#8b1a1a",
@@ -20,10 +33,10 @@ export default function GameOverScreen({ gameOverReason, causeChain, state, onPl
         }}
       >
         <div className="text-center mb-4">
-          <div className="text-4xl mb-2" style={{ color: "#c62828" }}>{"\u2620"}</div>
+          <div className="text-4xl mb-2" style={{ color: "#ffaba3" }}>{"\u2620"}</div>
           <h2
             className="font-heading text-2xl sm:text-3xl font-bold"
-            style={{ color: "#c62828" }}
+            style={{ color: "#ffaba3" }}
           >
             {narrative.title}
           </h2>
@@ -49,7 +62,7 @@ export default function GameOverScreen({ gameOverReason, causeChain, state, onPl
           >
             <h3
               className="font-heading text-base font-bold uppercase tracking-wider mb-3"
-              style={{ color: "#c62828" }}
+              style={{ color: "#ffaba3" }}
             >
               {"\u2620"} Chronicle of Ruin
             </h3>
@@ -92,45 +105,9 @@ export default function GameOverScreen({ gameOverReason, causeChain, state, onPl
           </p>
         </div>
 
-        {/* Final resource values */}
-        {state && (
-          <div className="grid grid-cols-4 gap-2 mb-5 text-center text-sm">
-            {[
-              { key: "denarii", label: "Denarii", icon: "\u269C", value: `${state.denarii || 0}d` },
-              { key: "food", label: "Food", icon: "\u2727", value: state.food || 0 },
-              { key: "population", label: "Families", icon: "\u2302", value: state.population || 0 },
-              { key: "garrison", label: "Garrison", icon: "\u2694", value: state.garrison || 0 },
-            ].map((r) => (
-              <div key={r.key} className="py-2 rounded-md border" style={{ borderColor: "#6a5a42", backgroundColor: "#231e16" }}>
-                <div className="text-lg mb-0.5" style={{ color: "#c4a24a" }}>{r.icon}</div>
-                <div className="font-heading font-semibold uppercase" style={{ color: "#6a5a42" }}>
-                  {r.label}
-                </div>
-                <div className="text-lg font-bold" style={{ color: "#e8c44a" }}>
-                  {r.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {state && <FinalResourceCards state={state} />}
 
-        <button
-          onClick={onPlayAgain}
-          className="w-full py-3 rounded-md border-2 font-heading font-bold text-base uppercase tracking-wider cursor-pointer transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, #8b1a1a, #c62828)",
-            borderColor: "#c4a24a",
-            color: "#e8c44a",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "linear-gradient(135deg, #a02020, #d63030)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "linear-gradient(135deg, #8b1a1a, #c62828)";
-          }}
-        >
-          Try Again
-        </button>
+        <OutcomeRestart onRestart={onPlayAgain} defeat />
       </div>
     </div>
   );
