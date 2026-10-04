@@ -1,5 +1,5 @@
 /**
- * MilitaryTab.jsx
+ * MilitaryTab.tsx
  *
  * Expanded military management: garrison recruitment/dismissal across soldier
  * types, fortification upgrade tracks (walls/gate/moat), morale display,
@@ -7,7 +7,7 @@
  * access, and filtered military chronicle.
  */
 
-import { useState } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import {
   SOLDIER_TYPES, WALLS_TRACK, GATE_TRACK, MOAT_TRACK,
   CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
@@ -16,6 +16,32 @@ import {
   MILITARY_TOOLTIPS,
 } from "../data/military.ts";
 import { getAldricDrillBonus, getRecruitmentCapacity } from "../data/militaryRules.ts";
+
+import type { MilitaryDefenseState, FortificationLevels, SoldierType, FortificationTrack as FortificationId } from "../data/military.ts";
+import type { EconomySeason } from "../engine/foodRequirement.ts";
+
+interface MilitaryViewState {
+  denarii: number;
+  population: number;
+  garrison: number;
+  castleLevel: FortificationLevels['walls'];
+  military?: MilitaryDefenseState | null;
+  watchtower?: { defenseBonus?: number; scannedThisSeason?: boolean } | null;
+  tavern?: { aldricDrillActive?: number } | null;
+  chronicle?: readonly { text: string; season: EconomySeason; year: number }[];
+}
+interface MilitaryTabProps {
+  state: MilitaryViewState;
+  onRecruit: (type: SoldierType, amount: number) => void;
+  onDismiss: (type: SoldierType, amount: number) => void;
+  onUpgradeFortification: (track: FortificationId) => void;
+  onOpenWatchtower: () => void;
+}
+const FORTIFICATION_TRACKS = [
+  { id: 'walls', label: 'Walls', data: WALLS_TRACK },
+  { id: 'gate', label: 'Gate', data: GATE_TRACK },
+  { id: 'moat', label: 'Moat', data: MOAT_TRACK },
+] as const;
 
 // ─── Shared styles ───────────────────────────────────────────────
 
@@ -36,7 +62,7 @@ const headingFont = { fontFamily: "Cinzel, serif" };
 
 // ─── ActionButton ────────────────────────────────────────────────
 
-function ActionButton({ onClick, disabled, children, style }) {
+function ActionButton({ onClick, disabled, children, style }: { onClick: () => void; disabled: boolean; children: ReactNode; style?: CSSProperties }) {
   return (
     <button
       onClick={onClick}
@@ -53,9 +79,9 @@ function ActionButton({ onClick, disabled, children, style }) {
 
 // ─── Tooltip ─────────────────────────────────────────────────────
 
-function Tooltip({ text, children }) {
+function Tooltip({ text, children }: { text: string; children: ReactNode }) {
   const [visible, setVisible] = useState(false);
-  const [timerId, setTimerId] = useState(null);
+  const [timerId, setTimerId] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   function handleEnter() {
     const id = setTimeout(() => setVisible(true), 200);
@@ -96,7 +122,7 @@ function Tooltip({ text, children }) {
 
 // ─── Castle SVG ──────────────────────────────────────────────────
 
-function CastleSVG({ walls, gate, moat }) {
+function CastleSVG({ walls, gate, moat }: FortificationLevels) {
   const STONE = "#6a6a6a";
   const STONE_LIGHT = "#8a8a8a";
   const WOOD = "#6a4a2a";
@@ -249,18 +275,19 @@ function CastleSVG({ walls, gate, moat }) {
 
 // ─── Soldier Card ────────────────────────────────────────────────
 
-function SoldierCard({ type, typeData, count, state, onRecruit, onDismiss }) {
+function SoldierCard({ type, count, state, onRecruit, onDismiss }: Pick<MilitaryTabProps, 'state' | 'onRecruit' | 'onDismiss'> & { type: SoldierType; count: number }) {
+  const typeData = SOLDIER_TYPES[type];
   const { denarii, population } = state;
 
-  function getRecruitDisabledReason(amount) {
+  function getRecruitDisabledReason(amount: number) {
     if (denarii < typeData.recruitCost * amount) return "Not enough denarii";
     if (typeData.max !== null && count + amount > typeData.max) return "At maximum";
-    if (typeData.minPopulation && population < typeData.minPopulation) return `Need ${typeData.minPopulation} families`;
+    if ("minPopulation" in typeData && population < typeData.minPopulation) return `Need ${typeData.minPopulation} families`;
     if (getRecruitmentCapacity(state, type) < amount) return "At garrison or population limit";
     return null;
   }
 
-  function getDismissDisabledReason(amount) {
+  function getDismissDisabledReason(amount: number) {
     if (count < amount) return "Not enough soldiers";
     return null;
   }
@@ -366,12 +393,18 @@ function SoldierCard({ type, typeData, count, state, onRecruit, onDismiss }) {
 
 // ─── Fortification Track ─────────────────────────────────────────
 
-function FortificationTrack({ trackName, trackData, currentLevel, currentLevels, denarii, onUpgrade }) {
-  const { canUpgrade: canUp, reason, next } = canUpgradeFortification(trackName, currentLevels);
+function FortificationCard({ track, currentLevels, denarii, onUpgrade }: {
+  track: (typeof FORTIFICATION_TRACKS)[number]; currentLevels: FortificationLevels;
+  denarii: number; onUpgrade: MilitaryTabProps['onUpgradeFortification'];
+}) {
+  const { id: trackName, data: trackData, label: trackLabel } = track;
+  const currentLevel = currentLevels[trackName];
+  const eligibility = canUpgradeFortification(trackName, currentLevels);
+  const { canUpgrade: canUp, reason } = eligibility;
+  const next = eligibility.canUpgrade ? eligibility.next : undefined;
   const canAfford = next && denarii >= next.cost;
   const isUpgradeable = canUp && canAfford;
 
-  const trackLabel = trackName === "walls" ? "Walls" : trackName === "gate" ? "Gate" : "Moat";
   const currentLevelData = trackData[currentLevel];
 
   return (
@@ -452,7 +485,7 @@ function FortificationTrack({ trackName, trackData, currentLevel, currentLevels,
 
 // ─── Section Heading ─────────────────────────────────────────────
 
-function SectionHeading({ children }) {
+function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <h3
       className="text-sm font-bold uppercase tracking-wider mb-3"
@@ -472,14 +505,14 @@ const MILITARY_KEYWORDS = [
   "barbican", "morale",
 ];
 
-function isMilitaryEntry(entry) {
+function isMilitaryEntry(entry: { text: string }) {
   const text = (entry.text || "").toLowerCase();
   return MILITARY_KEYWORDS.some(kw => text.includes(kw));
 }
 
 // ─── Main Component ──────────────────────────────────────────────
 
-export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFortification, onOpenWatchtower }) {
+export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFortification, onOpenWatchtower }: MilitaryTabProps) {
   const [defenseExpanded, setDefenseExpanded] = useState(false);
   const [chronicleExpanded, setChronicleExpanded] = useState(false);
 
@@ -490,13 +523,6 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
     gate: 0,
     moat: 0,
     morale: 50,
-    idleSeasons: 0,
-    totalRecruitmentSpending: 0,
-    totalUpkeepSpending: 0,
-    totalFortificationSpending: 0,
-    soldiersLostToRaids: 0,
-    soldiersLostToDesertion: 0,
-    scribesNoteSeen: {},
   };
 
   const watchtowerBonus = state.watchtower?.defenseBonus || 0;
@@ -510,7 +536,7 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
   const currentLevels = { walls: mil.walls, gate: mil.gate, moat: mil.moat };
 
   // Morale bar color
-  function getMoraleBarColor(morale) {
+  function getMoraleBarColor(morale: number) {
     if (morale <= 20) return DANGER_RED;
     if (morale <= 40) return "#d48a2a";
     if (morale <= 60) return "#6a5a42";
@@ -674,7 +700,7 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
               {breakdown.modifierItems.map((item) => (
                 <div key={item.label} className="flex justify-between">
                   <span>{item.label}</span>
-                  <span style={{ color: item.numericMod < 0 ? DANGER_RED : item.numericMod > 0 ? GREEN : LABEL_TAN }}>
+                  <span style={{ color: (item.numericMod ?? 0) < 0 ? DANGER_RED : (item.numericMod ?? 0) > 0 ? GREEN : LABEL_TAN }}>
                     {item.value}
                   </span>
                 </div>
@@ -724,11 +750,10 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
       <div className="mb-4">
         <SectionHeading>{"\u2694"} Garrison</SectionHeading>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {Object.entries(SOLDIER_TYPES).map(([type, typeData]) => (
+          {Object.values(SOLDIER_TYPES).map(({ id: type }) => (
             <SoldierCard
               key={type}
               type={type}
-              typeData={typeData}
               count={mil.garrison[type] || 0}
               state={state}
               onRecruit={onRecruit}
@@ -789,24 +814,12 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
         </Tooltip>
 
         <div className="text-sm space-y-1 mb-2" style={{ color: LABEL_TAN }}>
-          {(mil.garrison.levy || 0) > 0 && (
-            <div className="flex justify-between">
-              <span>Levy ({mil.garrison.levy} x {SOLDIER_TYPES.levy.upkeep}d)</span>
-              <span style={{ color: VALUE_GOLD }}>{mil.garrison.levy * SOLDIER_TYPES.levy.upkeep}d</span>
+          {Object.values(SOLDIER_TYPES).filter(type => (mil.garrison[type.id] || 0) > 0).map(type => (
+            <div key={type.id} className="flex justify-between">
+              <span>{type.id === 'levy' ? 'Levy' : type.name} ({mil.garrison[type.id]} x {type.upkeep}d)</span>
+              <span style={{ color: VALUE_GOLD }}>{mil.garrison[type.id] * type.upkeep}d</span>
             </div>
-          )}
-          {(mil.garrison.menAtArms || 0) > 0 && (
-            <div className="flex justify-between">
-              <span>Men-at-Arms ({mil.garrison.menAtArms} x {SOLDIER_TYPES.menAtArms.upkeep}d)</span>
-              <span style={{ color: VALUE_GOLD }}>{mil.garrison.menAtArms * SOLDIER_TYPES.menAtArms.upkeep}d</span>
-            </div>
-          )}
-          {(mil.garrison.knights || 0) > 0 && (
-            <div className="flex justify-between">
-              <span>Knights ({mil.garrison.knights} x {SOLDIER_TYPES.knights.upkeep}d)</span>
-              <span style={{ color: VALUE_GOLD }}>{mil.garrison.knights * SOLDIER_TYPES.knights.upkeep}d</span>
-            </div>
-          )}
+          ))}
         </div>
 
         <div className="flex justify-between pt-2 text-sm font-bold" style={{ borderTop: "1px solid #3a3228" }}>
@@ -827,30 +840,10 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
       {/* ──── 8. Fortification Upgrade Tracks ──── */}
       <div className="mb-4 space-y-3">
         <SectionHeading>{"\u2616"} Fortifications</SectionHeading>
-        <FortificationTrack
-          trackName="walls"
-          trackData={WALLS_TRACK}
-          currentLevel={mil.walls}
-          currentLevels={currentLevels}
-          denarii={state.denarii}
-          onUpgrade={onUpgradeFortification}
-        />
-        <FortificationTrack
-          trackName="gate"
-          trackData={GATE_TRACK}
-          currentLevel={mil.gate}
-          currentLevels={currentLevels}
-          denarii={state.denarii}
-          onUpgrade={onUpgradeFortification}
-        />
-        <FortificationTrack
-          trackName="moat"
-          trackData={MOAT_TRACK}
-          currentLevel={mil.moat}
-          currentLevels={currentLevels}
-          denarii={state.denarii}
-          onUpgrade={onUpgradeFortification}
-        />
+        {FORTIFICATION_TRACKS.map(track => (
+          <FortificationCard key={track.id} track={track} currentLevels={currentLevels}
+            denarii={state.denarii} onUpgrade={onUpgradeFortification} />
+        ))}
       </div>
 
       {/* ──── 9. Military Chronicle (Collapsible) ──── */}

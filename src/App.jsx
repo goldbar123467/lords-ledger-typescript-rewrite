@@ -11,7 +11,7 @@ import Dashboard from "./components/Dashboard.tsx";
 import TabBar from "./components/TabBar";
 import EstateTab from "./components/EstateTab";
 import MarketSquare from "./components/MarketSquare";
-import MilitaryTab from "./components/MilitaryTab";
+import MilitaryTab from "./components/MilitaryTab.tsx";
 import PeopleTab from "./components/PeopleTab";
 import MapTab from "./components/MapTab";
 import Chronicle from "./components/Chronicle";

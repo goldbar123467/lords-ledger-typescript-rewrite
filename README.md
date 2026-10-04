@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The terminal outcome definitions and screens now use checked TypeScript and shared resource/restart controls. Authored text and 16,000 title/summary cases are preserved; 117 units, five enlarged-phone tests and static/build checks pass. Independent reviewers accepted the Strategy Paths name-layout correction; all 12 focused outcome tests pass. A minor long tier-word wrap remains at doubled phone text. Production remains 1,053 lines above baseline; 32 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
+The terminal outcome definitions and screens now use checked TypeScript and shared resource/restart controls. Authored text and 16,000 title/summary cases are preserved; 117 units, five enlarged-phone tests and static/build checks pass. Independent reviewers accepted the Strategy Paths name-layout correction; all 12 focused outcome tests pass. A minor long tier-word wrap remains at doubled phone text. MilitaryTab now has checked view contracts and shared upkeep/fortification rendering. Four exact saved-action tests and 23 scoped browser cases pass; independent review identified inherited prerequisite-label, keyboard-entry and contrast defects for the next correction. Production remains 1,046 lines above baseline; 31 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate MilitaryTab with checked view contracts and meaningful recruitment/fortification tests.
+1. Correct MilitaryTab prerequisite messages, keyboard Watchtower entry, and essential text contrast.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
