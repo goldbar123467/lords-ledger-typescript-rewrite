@@ -5,9 +5,9 @@
  * Random draws come from the saved game's stream.
  */
 
-import { RAID_TYPES, TRADE_GOODS_FOR_RAIDS } from "../data/raids.js";
+import { RAID_TYPES, TRADE_GOODS_FOR_RAIDS, type RaidType, type RaidTradeGoodId } from "../data/raids.ts";
 
-export type RaidType = keyof typeof RAID_TYPES;
+export type { RaidType } from '../data/raids.ts';
 export type RandomSource = () => number;
 
 export interface RaidResult {
@@ -18,7 +18,7 @@ export interface RaidResult {
   foodDelta: number;
   populationDelta: number;
   garrisonDelta: number;
-  tradeGoodLost: { resource: string; amount: number } | null;
+  tradeGoodLost: { resource: RaidTradeGoodId; amount: number } | null;
   narrativeLine: string;
   raidName: string;
 }

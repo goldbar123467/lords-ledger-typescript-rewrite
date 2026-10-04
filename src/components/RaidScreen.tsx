@@ -1,74 +1,30 @@
 /**
- * RaidScreen.jsx
+ * RaidScreen.tsx
  *
  * Full-screen raid warning, victory, and defeat overlays.
  * Interrupts the season flow when a raid triggers.
  */
 
-import { useState, useEffect } from "react";
-import { RAID_TYPES } from "../data/raids.js";
+import { useState, useEffect, type CSSProperties, type RefObject } from "react";
+import type { ActiveRaid } from "../engine/raidEngine.ts";
+import type { MilitaryDefenseState } from "../data/military.ts";
+import { RAID_TYPES } from "../data/raids.ts";
 import { CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD, calculateDefenseRating } from "../data/military.ts";
 import { Skull, Swords } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// CSS keyframe injection (once)
-// ---------------------------------------------------------------------------
-const RAID_STYLES_ID = "raid-screen-styles";
+type RaidStyle = CSSProperties & { "--raid-glow"?: string; "--px"?: string; "--py"?: string };
+function raidStyle(style: RaidStyle): CSSProperties { return style; }
 
-function ensureStyles() {
-  if (document.getElementById(RAID_STYLES_ID)) return;
-  const style = document.createElement("style");
-  style.id = RAID_STYLES_ID;
-  style.textContent = `
-    @keyframes raid-pulse {
-      0%, 100% { box-shadow: 0 0 15px 2px var(--raid-glow); }
-      50% { box-shadow: 0 0 30px 6px var(--raid-glow); }
-    }
-    @keyframes raid-gold-flash {
-      0% { opacity: 0; }
-      30% { opacity: 0.4; }
-      100% { opacity: 0; }
-    }
-    @keyframes raid-red-vignette {
-      0% { opacity: 0; }
-      30% { opacity: 0.5; }
-      100% { opacity: 0; }
-    }
-    @keyframes raid-shake {
-      0%, 100% { transform: translateX(0); }
-      15% { transform: translateX(-4px); }
-      30% { transform: translateX(4px); }
-      45% { transform: translateX(-3px); }
-      60% { transform: translateX(3px); }
-      75% { transform: translateX(-1px); }
-    }
-    @keyframes raid-drop-in {
-      0% { opacity: 0; transform: translateY(-12px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes raid-fade-in {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-    @keyframes raid-particle {
-      0% { opacity: 1; transform: translate(0, 0) scale(1); }
-      100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0.3); }
-    }
-    .raid-pulse-border {
-      animation: raid-pulse 1.5s ease-in-out infinite;
-    }
-    .raid-shake {
-      animation: raid-shake 0.2s ease-in-out;
-    }
-  `;
-  document.head.appendChild(style);
+interface RaidScreenProps {
+  raidState: ActiveRaid | null;
+  garrison: number;
+  military?: MilitaryDefenseState | null;
+  onDefend: () => void;
+  onContinue: () => void;
+  actionRef?: RefObject<HTMLButtonElement | null>;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function DefenseComparison({ defenseRating, threshold, drillBonus = 0 }) {
+function DefenseComparison({ defenseRating, threshold, drillBonus = 0 }: { defenseRating: number; threshold: number; drillBonus?: number }) {
   const isReady = defenseRating >= threshold;
   return (
     <div
@@ -126,40 +82,26 @@ function GoldParticles() {
         <div
           key={p.key}
           className="absolute w-2 h-2 rounded-sm"
-          style={{
+          style={raidStyle({
             backgroundColor: "#c4a24a",
             "--px": p.px,
             "--py": p.py,
             animation: "raid-particle 0.8s ease-out forwards",
             animationDelay: p.delay,
-          }}
+          })}
         />
       ))}
     </div>
   );
 }
 
-function LossLine({ text, delay }) {
+function OutcomeLine({ text, delay, victory }: { text: string; delay: number; victory: boolean }) {
   return (
     <div
       className="text-base font-semibold py-1"
       style={{
-        color: "#c62828",
-        animation: `raid-drop-in 0.3s ease-out ${delay}ms both`,
-      }}
-    >
-      {text}
-    </div>
-  );
-}
-
-function GainLine({ text, delay }) {
-  return (
-    <div
-      className="text-base font-semibold py-1"
-      style={{
-        color: "#4a8a3a",
-        animation: `raid-fade-in 0.3s ease-out ${delay}ms both`,
+        color: victory ? "#4a8a3a" : "#c62828",
+        animation: `raid-${victory ? "fade-in" : "drop-in"} 0.3s ease-out ${delay}ms both`,
       }}
     >
       {text}
@@ -171,13 +113,14 @@ function GainLine({ text, delay }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue, actionRef }) {
+export default function RaidScreen({ raidState, garrison, military, onDefend, onContinue, actionRef }: RaidScreenProps) {
   const [showShake, setShowShake] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
-  useEffect(() => { ensureStyles(); }, []);
 
-  const { type, phase, result } = raidState || {};
+  const type = raidState?.type;
+  const phase = raidState?.phase;
+  const result = raidState?.result;
   const def = type ? RAID_TYPES[type] : null;
   const isVictory = result?.victory ?? false;
 
@@ -198,13 +141,13 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
     return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
   }, [phase, result, isVictory]);
 
-  // Stable warning text (pick once per raid type, not on every render)
+  // Stable warning text for this mounted raid screen.
   const [warningText] = useState(() => {
     if (!def) return "";
-    return def.warningText[Math.floor(Math.random() * def.warningText.length)];
+    return def.warningText[Math.floor(Math.random() * def.warningText.length)] ?? "";
   });
 
-  if (!def || !phase) return null;
+  if (!raidState || !def) return null;
 
   const isCriminal = type === "criminal";
   const isScottish = type === "scottish";
@@ -218,13 +161,13 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
         <div
           className="w-full max-w-lg rounded-lg raid-pulse-border relative flex flex-col"
-          style={{
+          style={raidStyle({
             backgroundColor: "#1a1610",
             border: `3px solid ${borderColor}`,
             borderLeft: `6px solid ${borderColor}`,
             "--raid-glow": glowColor,
             maxHeight: "calc(100vh - 2rem)",
-          }}
+          })}
         >
           {/* Scrollable content area */}
           <div className="px-6 pt-6 pb-3 overflow-y-auto flex-1 min-h-0">
@@ -250,7 +193,7 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
 
             {/* Defense comparison */}
             {(() => {
-              const mil = military || { garrison: { levy: garrison, menAtArms: 0, knights: 0 }, walls: 1, gate: 0, moat: 0, morale: 50 };
+              const mil: MilitaryDefenseState = military || { garrison: { levy: garrison, menAtArms: 0, knights: 0 }, walls: 1, gate: 0, moat: 0, morale: 50 };
               const dr = raidState.defenseRating ?? calculateDefenseRating(mil, raidState.drillBonus ?? 0);
               const threshold = type === "criminal" ? CRIMINAL_DEFENSE_THRESHOLD : SCOTTISH_DEFENSE_THRESHOLD;
               return <DefenseComparison defenseRating={dr} threshold={threshold} drillBonus={raidState.drillBonus ?? 0} />;
@@ -383,13 +326,9 @@ export default function RaidScreen({ raidState, garrison, military, onDefend, on
               <div className="text-xs uppercase tracking-wider mb-2 font-bold" style={{ color: "#a89070" }}>
                 {isVictory ? "Spoils of Victory" : "Losses Sustained"}
               </div>
-              {lines.map((line, i) =>
-                isVictory ? (
-                  <GainLine key={i} text={line} delay={i * 200} />
-                ) : (
-                  <LossLine key={i} text={line} delay={i * 200} />
-                )
-              )}
+              {lines.map((line, i) => (
+                <OutcomeLine key={line} text={line} delay={i * 200} victory={isVictory} />
+              ))}
             </div>
           </div>
 

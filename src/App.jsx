@@ -24,7 +24,7 @@ import FlipScreen from "./components/FlipScreen";
 import SynergyToast from "./components/SynergyToast";
 import TutorialHint from "./components/TutorialHint";
 import Watchtower from "./components/Watchtower";
-import RaidScreen from "./components/RaidScreen";
+import RaidScreen from "./components/RaidScreen.tsx";
 import ChapelTab from "./components/ChapelTab";
 import TutorialPopup from "./components/TutorialPopup";
 

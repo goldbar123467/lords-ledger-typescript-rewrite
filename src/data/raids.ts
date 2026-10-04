@@ -1,9 +1,58 @@
 /**
- * raids.js
+ * raids.ts
  *
  * Data definitions for the raid system: criminals (outlaws) and Scottish raiders.
  * Pure data — no logic, no side effects.
  */
+
+import type { ResourceId } from './economy.ts';
+
+export type RaidType = 'criminal' | 'scottish';
+type NarrativeLines = readonly [string, ...string[]];
+interface BaseLosses {
+  readonly denariiMin: number;
+  readonly denariiMax: number;
+  readonly foodMin: number;
+  readonly foodMax: number;
+  readonly populationLoss: number;
+}
+interface BaseGains {
+  readonly denarii: number;
+  readonly populationGain: number;
+  readonly garrisonGain: number;
+}
+interface BaseRaidDefinition<Id extends RaidType> {
+  readonly id: Id;
+  readonly garrisonRequired: number;
+  readonly firstPossibleTurn: number;
+  readonly baseChance: number;
+  readonly cooldownTurns: number;
+  readonly triggerInterval: number;
+  readonly names: NarrativeLines;
+  readonly themeColor: string;
+  readonly themeBg: string;
+  readonly warningTitle: string;
+  readonly warningText: NarrativeLines;
+  readonly victoryLines: NarrativeLines;
+  readonly fortificationVictoryLine: string;
+  readonly defeatLines: NarrativeLines;
+  readonly zeroGarrisonLine: string;
+  readonly partialZeroGarrisonLine: string;
+  readonly scribesNote: string;
+}
+export type RaidDefinition<Id extends RaidType> = BaseRaidDefinition<Id> & (Id extends 'criminal' ? {
+  readonly losses: BaseLosses & { readonly garrisonLoss: number; readonly tradeGoodCount: number };
+  readonly gains: BaseGains;
+} : {
+  readonly forceTurn: number;
+  readonly losses: BaseLosses & {
+    readonly garrisonLossMin: number;
+    readonly garrisonLossMax: number;
+    readonly tradeGoodCount: 'all_of_one';
+    readonly noCastleExtraDenarii: number;
+  };
+  readonly gains: BaseGains & { readonly food: number };
+});
 
 export const RAID_TYPES = {
   criminal: {
@@ -114,6 +163,7 @@ export const RAID_TYPES = {
     scribesNote:
       "The Anglo-Scottish border was one of the most violent frontiers in medieval Europe. For centuries, raiding parties (known as 'reivers') crossed in both directions, stealing livestock, burning farms, and kidnapping for ransom. Border families \u2014 English and Scottish alike \u2014 built fortified tower houses called 'peel towers' for protection. The raids were so constant that a unique border culture emerged, with its own laws, its own loyalties, and its own code of honor. The word 'bereaved' comes from the border reiving tradition \u2014 to be 'reived' was to be robbed of everything.",
   },
-};
+} as const satisfies { [Id in RaidType]: RaidDefinition<Id> };
 
-export const TRADE_GOODS_FOR_RAIDS = ["wool", "cloth", "honey", "herbs", "ale"];
+export const TRADE_GOODS_FOR_RAIDS = ["wool", "cloth", "honey", "herbs", "ale"] as const satisfies readonly ResourceId[];
+export type RaidTradeGoodId = typeof TRADE_GOODS_FOR_RAIDS[number];

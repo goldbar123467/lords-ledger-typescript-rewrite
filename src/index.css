@@ -1284,3 +1284,47 @@ input[type="range"].labor-slider::-moz-range-thumb {
     min-height: 44px;
   }
 }
+
+/* Raid presentation animations. */
+
+    @keyframes raid-pulse {
+      0%, 100% { box-shadow: 0 0 15px 2px var(--raid-glow); }
+      50% { box-shadow: 0 0 30px 6px var(--raid-glow); }
+    }
+    @keyframes raid-gold-flash {
+      0% { opacity: 0; }
+      30% { opacity: 0.4; }
+      100% { opacity: 0; }
+    }
+    @keyframes raid-red-vignette {
+      0% { opacity: 0; }
+      30% { opacity: 0.5; }
+      100% { opacity: 0; }
+    }
+    @keyframes raid-shake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translateX(-4px); }
+      30% { transform: translateX(4px); }
+      45% { transform: translateX(-3px); }
+      60% { transform: translateX(3px); }
+      75% { transform: translateX(-1px); }
+    }
+    @keyframes raid-drop-in {
+      0% { opacity: 0; transform: translateY(-12px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes raid-fade-in {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    @keyframes raid-particle {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0.3); }
+    }
+    .raid-pulse-border {
+      animation: raid-pulse 1.5s ease-in-out infinite;
+    }
+    .raid-shake {
+      animation: raid-shake 0.2s ease-in-out;
+    }
+  

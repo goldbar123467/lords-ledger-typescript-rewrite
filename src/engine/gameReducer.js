@@ -50,7 +50,7 @@ import { ALL_FLIPS, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequen
 import { checkSynergies, advanceSynergyCounters, applySynergyMeterEffects } from "./synergyEngine.ts";
 import { SYNERGY_TIER_MAP } from "../data/synergies.ts";
 import { getInitialRaidState, checkForRaid, resolveRaid, buildRaidChronicleText } from "./raidEngine.ts";
-import { RAID_TYPES } from "../data/raids.js";
+import { RAID_TYPES } from "../data/raids.ts";
 import {
   SOLDIER_TYPES, WALLS_TRACK, GATE_TRACK, MOAT_TRACK, MORALE_LEVELS,
   BASE_CASTLE_DEFENSE, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
