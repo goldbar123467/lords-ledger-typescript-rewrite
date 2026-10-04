@@ -29,6 +29,8 @@
   /* Status */
   --color-food-green: #4a8a3a;
   --color-danger-red: #c62828;
+  --color-status-positive: #aed48f;
+  --color-status-negative: #ffb5a7;
   --color-faith-purple: #6a4a8a;
 
   /* Rarity */
@@ -968,6 +970,171 @@ input[type="range"].labor-slider::-moz-range-thumb {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
+  padding: 4px 8px;
+  margin: 0;
+}
+
+.dashboard {
+  container-type: inline-size;
+  background: linear-gradient(180deg, var(--color-bg-dark), var(--color-bg-deepest));
+  border-bottom: 1px solid var(--color-gold-dim);
+}
+
+.resource-stat {
+  min-width: 0;
+  padding: 4px;
+  border-bottom: 3px solid;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.resource-stat-heading {
+  font-family: var(--font-heading);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-tan-light);
+}
+
+.resource-stat dd {
+  margin: 0;
+}
+
+.resource-stat-reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.resource-stat-reading svg {
+  flex-shrink: 0;
+  color: var(--color-tan-light);
+}
+
+.resource-stat-value {
+  min-width: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gold-bright);
+}
+
+.resource-stat-delta, .resource-morale-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.resource-stat-delta[data-direction="gain"] {
+  color: var(--color-status-positive);
+}
+
+.resource-stat-delta[data-direction="loss"] {
+  color: var(--color-status-negative);
+}
+
+.dashboard-warnings {
+  display: grid;
+  gap: 4px;
+  padding: 8px 16px;
+  margin: 0;
+  list-style: none;
+  font-size: 1rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--color-status-negative);
+  background: #2a1713;
+  border-left: 3px solid var(--color-royal-red-bright);
+}
+
+.dashboard-season-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-gold-dim);
+  background: var(--color-bg-dark);
+  color: var(--color-gold);
+  font: 600 0.875rem var(--font-heading);
+  text-align: center;
+}
+
+.turn-progress {
+  position: relative;
+  width: 12rem;
+  max-width: 100%;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--color-bg-deepest);
+}
+
+.turn-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-royal-blue), var(--color-royal-red));
+  transition: width 0.5s ease;
+}
+
+.turn-progress > span {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-gold);
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.flip-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6rem), 1fr));
+  gap: 12px;
+  padding: 8px 12px;
+  max-width: 40rem;
+  margin: auto;
+}
+
+.flip-stat {
+  min-width: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-tan-light);
+  overflow-wrap: anywhere;
+}
+
+.flip-stat-heading {
+  font-family: var(--font-heading);
+  margin-bottom: 4px;
+}
+
+.flip-stat-track {
+  height: 16px;
+  border: 1px solid;
+  border-radius: 16px;
+  background: var(--color-bg-deepest);
+  overflow: hidden;
+}
+
+.flip-stat-track > div {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.5s ease;
+}
+
+/* Rem-based queries also reflow the cells when the player's text size grows. */
+@container (max-width: 40rem) {
+  .resource-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@container (max-width: 22rem) {
+  .resource-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Tall resource/warning stacks must scroll away so game controls remain reachable. */
+@media (max-width: 767px), (max-height: 600px) {
+  .game-header { position: static; z-index: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -979,47 +1146,7 @@ input[type="range"].labor-slider::-moz-range-thumb {
   }
 }
 
-.resource-stat {
-  min-width: 0;
-}
-
 @media (max-width: 480px) {
-
-  .resource-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
-    padding-left: 4px;
-    padding-right: 4px;
-  }
-
-  .resource-stat {
-    padding: 3px 2px !important;
-    gap: 2px !important;
-  }
-
-  .resource-morale-label,
-  .turn-progress {
-    display: none;
-  }
-
-  .resource-stat svg {
-    width: 13px;
-    height: 13px;
-  }
-
-  .resource-stat-heading {
-    font-size: 0.6rem !important;
-    letter-spacing: 0.03em !important;
-  }
-
-  .resource-stat .text-2xl {
-    font-size: 1rem !important;
-  }
-
-  .dashboard-season-row {
-    padding: 4px 8px !important;
-    gap: 0 !important;
-  }
 
   .tab-nav {
     -webkit-overflow-scrolling: touch;

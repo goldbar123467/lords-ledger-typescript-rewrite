@@ -20,14 +20,14 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Migrate remaining registries |
-| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial and navigation views; modal keyboard containment, focus return and resize-aware tab reveal | Migrate app entry points and remaining views; complete interface review |
+| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial, navigation and Dashboard views; modal focus, resize-aware navigation and readable resource headers | Migrate app entry points and remaining views; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The latest 2026-10-02 checkpoint types military definitions and helpers while preserving all 13 data exports and sampled calculations. Typecheck, lint, build, 114 unit tests and 13 companion/raid browser cases pass. Independent reviews confirmed content and gameplay parity, then verified the correction restricting fortification state to its authored level ranges. The preceding 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 1,071 lines above baseline, so the overall reduction requirement is unfinished.
+The latest checkpoint types and consolidates the Dashboard. Resource labels, warnings and perspective meters are clearer at narrow widths and enlarged text sizes. Static checks and 17 focused Dashboard/navigation browser tests pass; both independent reviewers passed 11 Dashboard cases and found only a minor large-number wrapping issue. The preceding military checkpoint passed 114 unit tests. The recorded 100 seeded campaigns completed with 49 victories, 51 losses, and no save failures; these are separate from browser campaign evidence. Historical results and their limits are recorded in [verification notes](docs/v2/verification.md). Current production is 957 lines above baseline, so the overall reduction requirement is unfinished.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate and improve the resource dashboard.
+1. Type raid definitions and presentation, preserving their warning/result/save flow.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

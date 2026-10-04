@@ -7,7 +7,7 @@ import useMusic from "./hooks/useMusic";
 import { LEGACY_SAVE_KEY, SAVE_KEY_V2, readLegacySave, readV2Save, writeV2Save } from "./save/saveGame";
 
 import TitleScreen from "./components/TitleScreen";
-import Dashboard from "./components/Dashboard";
+import Dashboard from "./components/Dashboard.tsx";
 import TabBar from "./components/TabBar";
 import EstateTab from "./components/EstateTab";
 import MarketSquare from "./components/MarketSquare";
@@ -452,7 +452,7 @@ export default function App() {
       )}
 
       {/* Sticky header: Dashboard + TabBar */}
-      <div className="sticky top-0 z-40">
+      <div className="game-header sticky top-0 z-40">
         {/* Save / Load / Music controls */}
         <div className="flex justify-end items-center gap-2 px-3 py-1" style={{ backgroundColor: "#1a1610", borderBottom: "1px solid #4a3a22" }}>
           {saveFlash && (
