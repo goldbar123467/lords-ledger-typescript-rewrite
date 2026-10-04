@@ -55,8 +55,8 @@ const GOLD = "#c4a24a";
 const VALUE_GOLD = "#e8c44a";
 const LABEL_TAN = "#a89070";
 const TEXT_TAN = "#c8b090";
-const DANGER_RED = "#c62828";
-const GREEN = "#4a8a3a";
+const DANGER_RED = "#ffaba3";
+const GREEN = "#a4cd8c";
 
 const headingFont = { fontFamily: "Cinzel, serif" };
 
@@ -313,7 +313,7 @@ function SoldierCard({ type, count, state, onRecruit, onDismiss }: Pick<Military
         <div>
           <h4
             className="text-sm font-bold uppercase tracking-wider"
-            style={{ ...headingFont, color: typeData.borderColor }}
+            style={{ ...headingFont, color: type === 'menAtArms' ? DANGER_RED : type === 'levy' ? TEXT_TAN : VALUE_GOLD }}
           >
             {typeData.name}
           </h4>
@@ -401,7 +401,7 @@ function FortificationCard({ track, currentLevels, denarii, onUpgrade }: {
   const currentLevel = currentLevels[trackName];
   const eligibility = canUpgradeFortification(trackName, currentLevels);
   const { canUpgrade: canUp, reason } = eligibility;
-  const next = eligibility.canUpgrade ? eligibility.next : undefined;
+  const next = trackData[currentLevel + 1];
   const canAfford = next && denarii >= next.cost;
   const isUpgradeable = canUp && canAfford;
 
@@ -537,10 +537,10 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
 
   // Morale bar color
   function getMoraleBarColor(morale: number) {
-    if (morale <= 20) return DANGER_RED;
+    if (morale <= 20) return "#c62828";
     if (morale <= 40) return "#d48a2a";
     if (morale <= 60) return "#6a5a42";
-    if (morale <= 80) return GREEN;
+    if (morale <= 80) return "#4a8a3a";
     return GOLD;
   }
 
@@ -558,33 +558,19 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
     <div className="w-full max-w-2xl mx-auto">
 
       {/* ──── 1. Watchtower Access Card ──── */}
-      <div
+      <button type="button" aria-label="Climb the Watchtower"
         onClick={onOpenWatchtower}
-        className="rounded-lg p-4 mb-4 cursor-pointer transition-all duration-200"
-        style={{
-          backgroundColor: "#1a1e24",
-          border: "1px solid #4a6a8a",
-          position: "relative",
-          overflow: "hidden",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "#6a8aaa";
-          e.currentTarget.style.backgroundColor = "#1e2530";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "#4a6a8a";
-          e.currentTarget.style.backgroundColor = "#1a1e24";
-        }}
+        className="military-watchtower w-full text-left rounded-lg p-4 mb-4 cursor-pointer transition-all duration-200"
       >
-        <h3
-          className="text-sm font-bold uppercase tracking-wider mb-1"
+        <span
+          className="block text-sm font-bold uppercase tracking-wider mb-1"
           style={{ ...headingFont, color: "#8ab4d6" }}
         >
-          {"\u26CA"} Climb the Watchtower
-        </h3>
-        <p className="text-sm" style={{ color: "#8a9aaa" }}>
+          <span aria-hidden="true">{"\u26CA"}</span> Climb the Watchtower
+        </span>
+        <span className="block text-sm" style={{ color: "#8a9aaa" }}>
           Survey the horizon. Hear your captain's report.
-        </p>
+        </span>
         {state.watchtower?.scannedThisSeason && (
           <span
             className="text-xs font-bold uppercase tracking-wider mt-1 inline-block"
@@ -593,7 +579,7 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
             {"\u2713"} Scanned this season
           </span>
         )}
-      </div>
+      </button>
 
       {/* ──── 2. Raid Defense Status ──── */}
       <div
