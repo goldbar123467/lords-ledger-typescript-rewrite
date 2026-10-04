@@ -18,6 +18,16 @@ export type Garrison = Record<SoldierType, number>;
 export type FortificationTrack = 'walls' | 'gate' | 'moat';
 export type FortificationLevels = { walls: 0 | 1 | 2 | 3 | 4; gate: 0 | 1 | 2 | 3 | 4; moat: 0 | 1 | 2 | 3 };
 
+export function isSoldierType(value: unknown): value is SoldierType {
+  return typeof value === 'string' && Object.hasOwn(SOLDIER_TYPES, value);
+}
+
+/** Persisted levels must occur in the authored track, including level zero. */
+export function isFortificationLevel<T extends FortificationTrack>(track: T, value: unknown): value is FortificationLevels[T] {
+  const levels = track === 'walls' ? WALLS_TRACK : track === 'gate' ? GATE_TRACK : MOAT_TRACK;
+  return levels.some(level => level.level === value);
+}
+
 interface SoldierDefinition<Id extends SoldierType> {
   readonly id: Id;
   readonly name: string;

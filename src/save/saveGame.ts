@@ -16,6 +16,7 @@ import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarket
 import { GAMBIT_MAX_ROUNDS } from '../data/tavern.js';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
 import type { SynergyTierId } from '../data/synergies.ts';
+import { isFortificationLevel, type MilitaryDefenseState, type FortificationLevels } from '../data/military.ts';
 import { ALL_RESOURCES, RESOURCE_CONFIG, TAX_RATES, type Inventory, type ResourceId as AuthoredResourceId } from '../data/economy.ts';
 export type { Inventory } from '../data/economy.ts';
 
@@ -61,6 +62,7 @@ export interface GameSnapshot {
   inventory: Inventory;
   buildings: Array<BuildingInstance | BuildingId>;
   garrison: number;
+  castleLevel: FortificationLevels['walls'];
   gameOverReason: GameOverReason | null;
   activeTab: string;
   tavern: {
@@ -82,7 +84,7 @@ export interface GameSnapshot {
     aldricAdviceRemaining?: number[];
     aldricStoriesRemaining?: number[];
   };
-  military: { garrison: { levy: number; menAtArms: number; knights: number }; morale: number };
+  military: MilitaryDefenseState;
   chapel: { faith: number };
   greatHall: { meters: { treasury: number; people: number; church: number; military: number } };
   synergies: {
@@ -357,6 +359,8 @@ function validateSnapshot(value: unknown): string | null {
   for (const key of ['denarii', 'food', 'population', 'garrison', 'inventoryCapacity', 'totalPlots'] as const) {
     if (!isNonnegativeNumber(value[key])) return `Save field ${key} cannot be negative.`;
   }
+  if (!Number.isSafeInteger(value.garrison)) return 'Save garrison must be a whole number.';
+  if (!isFortificationLevel('walls', value.castleLevel)) return 'Save castleLevel is not an authored level.';
 
   const inventory = value.inventory;
   if (!isRecord(inventory)) return 'Save inventory is invalid.';
@@ -392,7 +396,12 @@ function validateSnapshot(value: unknown): string | null {
   const military = value.military;
   if (!isRecord(military) || !isRecord(military.garrison)) return 'Save military roster is invalid.';
   for (const key of ['levy', 'menAtArms', 'knights'] as const) {
-    if (!isNonnegativeNumber(military.garrison[key])) return `Save military.garrison.${key} is invalid.`;
+    if (!isNonnegativeNumber(military.garrison[key]) || !Number.isSafeInteger(military.garrison[key])) {
+      return `Save military.garrison.${key} must be a nonnegative whole number.`;
+    }
+  }
+  for (const track of ['walls', 'gate', 'moat'] as const) {
+    if (!isFortificationLevel(track, military[track])) return `Save military.${track} is not an authored level.`;
   }
   if (!isFiniteNumber(military.morale) || military.morale < 0 || military.morale > 100) return 'Save military morale is invalid.';
   const marketPrices = value.marketPrices;

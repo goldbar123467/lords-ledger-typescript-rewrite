@@ -56,7 +56,7 @@ import {
   BASE_CASTLE_DEFENSE, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
   getMoraleLevel, getTotalGarrison, getMilitaryUpkeep,
   calculateDefenseRating, canUpgradeFortification, removeFromGarrison,
-  getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
+  getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES, isSoldierType,
 } from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
@@ -1036,7 +1036,7 @@ function reduceGame(state, action, random) {
     case "RECRUIT_SOLDIERS": {
       const { count, soldierType = "levy" } = action.payload ?? {};
       if (state.phase !== "management") return state;
-      if (!count || count <= 0) return state;
+      if (!isPositiveQuantity(count) || !isSoldierType(soldierType)) return state;
 
       const typeDef = SOLDIER_TYPES[soldierType];
       if (!typeDef) return state;
@@ -1076,7 +1076,7 @@ function reduceGame(state, action, random) {
     case "DISMISS_SOLDIERS": {
       const { count, soldierType = "levy" } = action.payload ?? {};
       if (state.phase !== "management") return state;
-      if (!count || count <= 0) return state;
+      if (!isPositiveQuantity(count) || !isSoldierType(soldierType)) return state;
 
       const typeDef = SOLDIER_TYPES[soldierType];
       if (!typeDef) return state;
