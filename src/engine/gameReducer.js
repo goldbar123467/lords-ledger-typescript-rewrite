@@ -34,6 +34,7 @@ import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputatio
 
 import { simulateEconomy, canBuildBuilding, getTotalFood, getBuildingType, getRepairCost } from "./economyEngine.ts";
 import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "./buildingActions.ts";
+import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
@@ -52,11 +53,11 @@ import { SYNERGY_TIER_MAP } from "../data/synergies.ts";
 import { getInitialRaidState, checkForRaid, resolveRaid, buildRaidChronicleText } from "./raidEngine.ts";
 import { RAID_TYPES } from "../data/raids.ts";
 import {
-  SOLDIER_TYPES, WALLS_TRACK, GATE_TRACK, MOAT_TRACK, MORALE_LEVELS,
+  WALLS_TRACK, GATE_TRACK, MOAT_TRACK, MORALE_LEVELS,
   BASE_CASTLE_DEFENSE, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
   getMoraleLevel, getTotalGarrison, getMilitaryUpkeep,
-  calculateDefenseRating, canUpgradeFortification, removeFromGarrison,
-  getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES, isSoldierType,
+  calculateDefenseRating, removeFromGarrison,
+  getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
 } from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
@@ -1030,130 +1031,22 @@ function reduceGame(state, action, random) {
       };
     }
 
-    // -----------------------------------------------------------------------
-    // RECRUIT_SOLDIERS (typed: levy, menAtArms, knights)
-    // -----------------------------------------------------------------------
-    case "RECRUIT_SOLDIERS": {
-      const { count, soldierType = "levy" } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (!isPositiveQuantity(count) || !isSoldierType(soldierType)) return state;
-
-      const typeDef = SOLDIER_TYPES[soldierType];
-      if (!typeDef) return state;
-
-      const mil = state.military ?? getInitialMilitaryState(state.garrison);
-      const currentCount = mil.garrison[soldierType] || 0;
-
-      // Cost check
-      const maxCanAfford = Math.floor(state.denarii / typeDef.recruitCost);
-
-      // Knights require minimum population
-      if (soldierType === "knights" && state.population < (typeDef.minPopulation || 0)) return state;
-
-      const actual = Math.min(count, maxCanAfford, getRecruitmentCapacity(state, soldierType));
-      if (actual <= 0) return state;
-
-      const cost = actual * typeDef.recruitCost;
-      const newGarrison = { ...mil.garrison, [soldierType]: currentCount + actual };
-
-      return {
-        ...state,
-        denarii: state.denarii - cost,
-        garrison: getTotalGarrison(newGarrison),
-        military: {
-          ...mil,
-          garrison: newGarrison,
-          morale: soldierType === "knights" ? Math.min(100, (mil.morale || 50) + 5) : mil.morale,
-          totalRecruitmentSpending: (mil.totalRecruitmentSpending || 0) + cost,
-        },
-        chronicle: addChronicle(state.chronicle, `Recruited ${actual} ${typeDef.name.toLowerCase()} for ${cost}d.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // DISMISS_SOLDIERS (typed: levy, menAtArms, knights)
-    // -----------------------------------------------------------------------
-    case "DISMISS_SOLDIERS": {
-      const { count, soldierType = "levy" } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (!isPositiveQuantity(count) || !isSoldierType(soldierType)) return state;
-
-      const typeDef = SOLDIER_TYPES[soldierType];
-      if (!typeDef) return state;
-
-      const mil = state.military ?? getInitialMilitaryState(state.garrison);
-      const currentCount = mil.garrison[soldierType] || 0;
-      const actual = Math.min(count, currentCount);
-      if (actual <= 0) return state;
-
-      const newGarrison = { ...mil.garrison, [soldierType]: currentCount - actual };
-      const newMorale = Math.max(0, (mil.morale || 50) - 5); // Dismissal hurts morale
-
-      return {
-        ...state,
-        garrison: getTotalGarrison(newGarrison),
-        military: { ...mil, garrison: newGarrison, morale: newMorale },
-        chronicle: addChronicle(state.chronicle, `Dismissed ${actual} ${typeDef.name.toLowerCase()}.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // UPGRADE_CASTLE (legacy — kept for backward compat, no-op if military exists)
-    // -----------------------------------------------------------------------
-    case "UPGRADE_CASTLE": {
-      // Legacy action — use UPGRADE_FORTIFICATION instead
-      return state;
-    }
-
-    // -----------------------------------------------------------------------
-    // INSTALL_DEFENSE (legacy — replaced by fortification tracks)
-    // -----------------------------------------------------------------------
-    case "INSTALL_DEFENSE": {
-      // Legacy action — use UPGRADE_FORTIFICATION instead
-      return state;
-    }
-
-    // -----------------------------------------------------------------------
-    // UPGRADE_FORTIFICATION (walls, gate, or moat)
-    // -----------------------------------------------------------------------
+    // Military commands share an atomic, checked domain planner.
+    case "RECRUIT_SOLDIERS":
+    case "DISMISS_SOLDIERS":
     case "UPGRADE_FORTIFICATION": {
-      const { track } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (!["walls", "gate", "moat"].includes(track)) return state;
-
-      const mil = state.military ?? getInitialMilitaryState(state.garrison);
-      const currentLevels = { walls: mil.walls, gate: mil.gate, moat: mil.moat };
-      const { canUpgrade, next } = canUpgradeFortification(track, currentLevels);
-      if (!canUpgrade || !next) return state;
-
-      if (state.denarii < next.cost) return state;
-
-      const newMil = {
-        ...mil,
-        [track]: next.level,
-        morale: Math.min(100, (mil.morale || 50) + 10), // Castle upgrade boosts morale
-        totalFortificationSpending: (mil.totalFortificationSpending || 0) + next.cost,
-      };
-
-      // Keep castleLevel synced with walls level (for passive income)
-      const newCastleLevel = track === "walls" ? next.level : state.castleLevel;
-
-      // Determine scribe's note
-      let scribesNote = null;
-      if (track === "walls" && next.level === 2 && !mil.scribesNoteSeen?.castleEvolution) {
-        scribesNote = MILITARY_SCRIBES_NOTES.castleEvolution;
-        newMil.scribesNoteSeen = { ...mil.scribesNoteSeen, castleEvolution: true };
-      }
-
+      const change = planMilitaryAction(state, action.type, action.payload);
+      if (!change) return state;
       return {
         ...state,
-        denarii: state.denarii - next.cost,
-        castleLevel: newCastleLevel,
-        military: newMil,
-        scribesNote: scribesNote || state.scribesNote,
-        chronicle: addChronicle(state.chronicle, `Upgraded ${track} to ${next.name} for ${next.cost}d.`, state.season, state.year, state.turn, "action"),
+        ...change.patch,
+        chronicle: addChronicle(state.chronicle, change.chronicleText, state.season, state.year, state.turn, "action"),
       };
     }
+    // Retained legacy commands remain no-ops.
+    case "UPGRADE_CASTLE":
+    case "INSTALL_DEFENSE":
+      return state;
 
     // -----------------------------------------------------------------------
     // DONATE_TO_CHURCH
