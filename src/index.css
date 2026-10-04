@@ -1374,3 +1374,9 @@ input[type="range"].labor-slider::-moz-range-thumb {
   .terminal-strategy-row { grid-template-columns: auto minmax(0, 1fr); }
   .terminal-strategy-tier { grid-column: 2; }
 }
+
+.watchtower-readiness { container-type: inline-size; container-name: watchtower-readiness; }
+.watchtower-readiness-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+@container watchtower-readiness (min-width: 30rem) {
+  .watchtower-readiness-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

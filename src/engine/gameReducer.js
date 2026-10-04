@@ -28,12 +28,13 @@ import { planRatRun, scoreRatRun } from "./ratsInCellar.ts";
 import { rollStrangerEncounter, strangerTradeTerms } from "./tavernEncounter.ts";
 import { isBardContent, isBardSolvedIds, nextBardContent } from "./tavernBard.ts";
 import { isCompanionContent, nextCompanionContent } from "./tavernCompanion.ts";
-import { getAldricDrillBonus, getRecruitmentCapacity } from "../data/militaryRules.ts";
+import { getRecruitmentCapacity } from "../data/militaryRules.ts";
 import { resolveFeast } from "./feast.ts";
 import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputation, marketQuickSalePrice, marketTradePrice, openingHaggleOffer } from "./marketHaggle.ts";
 
 import { simulateEconomy, canBuildBuilding, getTotalFood, getBuildingType, getRepairCost } from "./economyEngine.ts";
 import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "./buildingActions.ts";
+import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import BUILDINGS from "../data/buildings.ts";
@@ -56,7 +57,7 @@ import {
   WALLS_TRACK, GATE_TRACK, MOAT_TRACK, MORALE_LEVELS,
   BASE_CASTLE_DEFENSE, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
   getMoraleLevel, getTotalGarrison, getMilitaryUpkeep,
-  calculateDefenseRating, removeFromGarrison,
+  removeFromGarrison,
   getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
 } from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
@@ -72,7 +73,7 @@ import {
   checkFamilyDepartures, checkFamilyReturns, pickFeedEvents, computeMorale,
 } from "../data/people.js";
 import {
-  generateForgeMarketPrices, rollForgeSupplyEvent, calculateForgeReadiness, RESOURCE_MARKET,
+  generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
 } from "../data/blacksmith.js";
 
 // ---------------------------------------------------------------------------
@@ -1433,11 +1434,10 @@ function reduceGame(state, action, random) {
       if (raidTrigger) {
         // Capture readiness before the seasonal drill counter expires. A raid in
         // the third covered season still benefits even though the next turn does not.
-        const drillBonus = getAldricDrillBonus(updatedMilitary, state.tavern?.aldricDrillActive);
-        const forgeBonus = calculateForgeReadiness(
-          forgeSeasonReset.equipped || [], econResult.garrison
-        ).defenseBonus;
-        const defenseRating = calculateDefenseRating(updatedMilitary, drillBonus + forgeBonus);
+        const { drillBonus, baseDefense: defenseRating } = getMilitaryReadiness({
+          ...state, military: updatedMilitary, garrison: econResult.garrison,
+          blacksmith: forgeSeasonReset,
+        });
         // Raid triggered — pause season at raid_warning phase
         return {
           ...state,
@@ -1522,19 +1522,10 @@ function reduceGame(state, action, random) {
       const raidType = activeRaid.type;
       const mil = state.military ?? getInitialMilitaryState(state.garrison);
 
-      // Calculate watchtower bonus
-      const wtWarnings = state.watchtower?.warnings ?? {};
-      let watchtowerBonus = 0;
-      if (raidType === "criminal") watchtowerBonus += (wtWarnings.criminalRaidBonus || 0);
-      if (raidType === "scottish") watchtowerBonus += (wtWarnings.scottishRaidBonus || 0);
-      watchtowerBonus += (wtWarnings.raidRequirementReduction || 0);
-
-      // Calculate defense rating (including forge equipment bonus)
-      const forgeEquipBonus = calculateForgeReadiness(
-        (state.blacksmith ?? {}).equipped || [], state.garrison
-      ).defenseBonus;
-      const drillBonus = activeRaid.drillBonus ?? getAldricDrillBonus(mil, state.tavern?.aldricDrillActive);
-      const defenseRating = calculateDefenseRating(mil, watchtowerBonus + forgeEquipBonus + drillBonus);
+      const readiness = getMilitaryReadiness({ ...state, military: mil }, activeRaid.drillBonus);
+      const { drillBonus } = readiness;
+      const watchtowerBonus = raidType === "criminal" ? readiness.criminalScoutBonus : readiness.scottishScoutBonus;
+      const defenseRating = raidType === "criminal" ? readiness.criminalDefense : readiness.scottishDefense;
       const defenseThreshold = raidType === "criminal" ? CRIMINAL_DEFENSE_THRESHOLD : SCOTTISH_DEFENSE_THRESHOLD;
 
       const result = resolveRaid(raidType, defenseRating, defenseThreshold, state.garrison, state.castleLevel, state.inventory, state.difficulty, random);

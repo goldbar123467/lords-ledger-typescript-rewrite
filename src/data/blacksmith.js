@@ -1017,38 +1017,4 @@ export function rollForgeSupplyEvent(turn, usedEventIds, random) {
  * Calculate equipment readiness of the garrison based on forged items.
  * Returns { readiness (0-100), armed, armored, quality, defenseBonus }.
  */
-export function calculateForgeReadiness(equipped, garrison) {
-  if (garrison <= 0) return { readiness: 0, armed: 0, armored: 0, quality: 0, defenseBonus: 0 };
-
-  const weapons = equipped.filter(i => i.category === "weapon");
-  const armor = equipped.filter(i => i.category === "armor");
-
-  const armed = Math.min(weapons.length, garrison);
-  const armored = Math.min(armor.length, garrison);
-
-  const armedRatio = armed / garrison;
-  const armoredRatio = armored / garrison;
-
-  // Average quality of all military items
-  const allMil = equipped.filter(i => i.militaryBonus > 0);
-  const avgQuality = allMil.length > 0
-    ? allMil.reduce((s, i) => s + (i.qualityScore || 50), 0) / allMil.length
-    : 0;
-  const qualityFactor = avgQuality / 100;
-
-  // Weighted: arms (0.4) + armor (0.3) + quality (0.3)
-  const readiness = Math.round(
-    (armedRatio * 0.4 + armoredRatio * 0.3 + qualityFactor * 0.3) * 100
-  );
-
-  // Defense bonus: sum of all military bonuses, halved (it supplements, not replaces, garrison)
-  const totalMilBonus = equipped.reduce((s, i) => s + (i.militaryBonus || 0), 0);
-
-  return {
-    readiness: Math.min(readiness, 100),
-    armed,
-    armored,
-    quality: Math.round(avgQuality),
-    defenseBonus: Math.round(totalMilBonus * 0.5),
-  };
-}
+export { calculateForgeReadiness } from '../engine/forgeReadiness.ts';

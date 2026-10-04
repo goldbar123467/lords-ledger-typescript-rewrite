@@ -9,6 +9,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import WatchtowerDefenseStatus from './WatchtowerDefenseStatus.tsx';
 import { createRandomCursor } from "../engine/random.ts";
 import { createScanPlan, summarizeScan } from "../engine/watchtowerScan.ts";
 import {
@@ -947,143 +948,6 @@ function CaptainBriefing({ state, dispatch, onBack }) {
 // Defense Status Panel
 // ---------------------------------------------------------------------------
 
-function DefenseStatus({ state }) {
-  const { garrison, castleLevel, defenseUpgrades = [] } = state;
-  const raids = state.raids ?? {};
-  const wt = state.watchtower ?? {};
-  const warnings = wt.warnings ?? {};
-
-  const criminalDefended = garrison >= 5;
-  const scottishDefended = garrison >= 10;
-
-  // Castle name
-  const castleNames = ["", "Motte-and-Bailey", "Palisade Fort", "Stone Keep", "Curtain Wall Castle"];
-  const castleName = castleNames[castleLevel] || "Unknown";
-
-  // Morale approximation
-  const morale = garrison === 0 ? "None" :
-    garrison < 5 ? "Nervous" :
-    garrison < 10 ? "Steady" :
-    "Strong";
-
-  // Active warnings
-  const activeWarnings = [];
-  if (warnings.criminalRaidBonus > 0) activeWarnings.push({ icon: "\u2694", text: "Campfire smoke spotted \u2014 bandit threat" });
-  if (warnings.scottishRaidBonus > 0) activeWarnings.push({ icon: "\u2694", text: "Dust cloud spotted \u2014 riders approaching" });
-  if (warnings.raidRequirementReduction > 0) activeWarnings.push({ icon: "\u26A0", text: "Signal fire \u2014 allied warning active" });
-  if (warnings.merchantPreview) activeWarnings.push({ icon: "\u2696", text: `Merchant caravan approaching: ${warnings.merchantPreview.name}` });
-
-  return (
-    <div
-      className="rounded-lg border p-4"
-      style={{ backgroundColor: "var(--bg-card, #231e16)", borderColor: "#3a4050" }}
-    >
-      <h3
-        className="text-sm font-bold uppercase tracking-wider mb-3 text-center"
-        style={{ fontFamily: "Cinzel, serif", color: "var(--gold-dim, #8a7a3a)" }}
-      >
-        Defense Status
-      </h3>
-
-      <div className="grid grid-cols-3 gap-3 text-center text-sm mb-3">
-        {/* Garrison */}
-        <div
-          className="rounded-lg p-2"
-          style={{ backgroundColor: "#1a0e0e", border: "1px solid var(--royal-red, #8b1a1a)" }}
-        >
-          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: "#c44a4a", fontFamily: "Cinzel, serif" }}>
-            Garrison
-          </div>
-          <div className="text-xl font-bold" style={{ color: "var(--gold-bright, #e8c44a)", fontFamily: "Cinzel, serif" }}>
-            {"\u2694"} {garrison}
-          </div>
-          <div className="text-xs" style={{ color: "#8a6a5a" }}>Morale: {morale}</div>
-        </div>
-
-        {/* Raid Defense */}
-        <div
-          className="rounded-lg p-2"
-          style={{ backgroundColor: "#0e0e14", border: "1px solid #3a4050" }}
-        >
-          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: "#8090a0", fontFamily: "Cinzel, serif" }}>
-            Raid Defense
-          </div>
-          <div className="space-y-1 mt-1">
-            <div className="text-xs">
-              <span style={{ color: "#c8b090" }}>Outlaws: </span>
-              <span
-                className="font-bold"
-                style={{ color: criminalDefended ? "var(--food-green, #4a8a3a)" : "var(--danger-red, #c62828)" }}
-              >
-                {criminalDefended ? "\u2713" : "\u2717"}
-              </span>
-            </div>
-            <div className="text-xs">
-              <span style={{ color: "#c8b090" }}>Scots: </span>
-              <span
-                className="font-bold"
-                style={{
-                  color: scottishDefended ? "var(--food-green, #4a8a3a)" : "var(--danger-red, #c62828)",
-                  animation: scottishDefended ? "none" : "critical-pulse 3s ease-in-out infinite",
-                }}
-              >
-                {scottishDefended ? "\u2713" : "\u2717"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Fortifications */}
-        <div
-          className="rounded-lg p-2"
-          style={{ backgroundColor: "#0e0e0a", border: "1px solid #4a4a3a" }}
-        >
-          <div className="text-xs uppercase tracking-wide mb-1" style={{ color: "var(--tan, #a89070)", fontFamily: "Cinzel, serif" }}>
-            Fortifications
-          </div>
-          <div className="text-xs space-y-1" style={{ color: "#c8b090" }}>
-            <div>Castle: Lvl {castleLevel}</div>
-            <div style={{ fontSize: "10px", color: "#8a7a5a" }}>{castleName}</div>
-            <div style={{ fontSize: "10px", color: "#8a7a5a" }}>
-              {defenseUpgrades.length} upgrade{defenseUpgrades.length !== 1 ? "s" : ""}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Active Warnings */}
-      {activeWarnings.length > 0 && (
-        <div
-          className="rounded-lg p-3 mb-3"
-          style={{ backgroundColor: "#1a1a10", borderLeft: "3px solid var(--gold, #c4a24a)" }}
-        >
-          <div className="text-xs uppercase tracking-wide mb-1 font-bold" style={{ color: "var(--gold, #c4a24a)", fontFamily: "Cinzel, serif" }}>
-            Active Warnings
-          </div>
-          {activeWarnings.map((w, i) => (
-            <div key={i} className="text-xs" style={{ color: "#c8b090" }}>
-              {w.icon} {w.text}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Raid History */}
-      <div className="text-xs" style={{ color: "var(--tan-dark, #6a5a42)" }}>
-        <span className="font-bold">Raid History:</span>{" "}
-        Criminal: {raids.totalCriminalRaids ?? 0} (Won: {raids.criminalVictories ?? 0}, Lost: {raids.criminalDefeats ?? 0})
-        {" \u00B7 "}
-        Scottish: {raids.totalScottishRaids ?? 0} (Won: {raids.scottishVictories ?? 0}, Lost: {raids.scottishDefeats ?? 0})
-        {((raids.totalDenariiLost ?? 0) > 0 || (raids.totalFoodLost ?? 0) > 0) && (
-          <span>
-            {" \u00B7 "}Total losses: {raids.totalDenariiLost ?? 0}d, {raids.totalFoodLost ?? 0} food
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Signal Fire Log
 // ---------------------------------------------------------------------------
@@ -1320,7 +1184,7 @@ export default function Watchtower({ state, dispatch, onClose }) {
 
         {/* Defense Status */}
         <div className="mb-4">
-          <DefenseStatus state={state} />
+          <WatchtowerDefenseStatus state={state} />
         </div>
 
         {/* Signal Fire Log */}

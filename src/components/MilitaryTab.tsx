@@ -12,21 +12,22 @@ import {
   SOLDIER_TYPES, WALLS_TRACK, GATE_TRACK, MOAT_TRACK,
   CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
   getMoraleLevel, getMilitaryUpkeep,
-  calculateDefenseRating, getDefenseBreakdown, canUpgradeFortification,
+  getDefenseBreakdown, canUpgradeFortification,
   MILITARY_TOOLTIPS,
 } from "../data/military.ts";
-import { getAldricDrillBonus, getRecruitmentCapacity } from "../data/militaryRules.ts";
+import { getRecruitmentCapacity } from "../data/militaryRules.ts";
+import { getMilitaryReadiness, type MilitaryReadinessState } from '../engine/militaryReadiness.ts';
 
 import type { MilitaryDefenseState, FortificationLevels, SoldierType, FortificationTrack as FortificationId } from "../data/military.ts";
 import type { EconomySeason } from "../engine/foodRequirement.ts";
 
-interface MilitaryViewState {
+interface MilitaryViewState extends MilitaryReadinessState {
   denarii: number;
   population: number;
   garrison: number;
   castleLevel: FortificationLevels['walls'];
   military?: MilitaryDefenseState | null;
-  watchtower?: { defenseBonus?: number; scannedThisSeason?: boolean } | null;
+  watchtower?: (NonNullable<MilitaryReadinessState['watchtower']> & { scannedThisSeason?: boolean }) | null;
   tavern?: { aldricDrillActive?: number } | null;
   chronicle?: readonly { text: string; season: EconomySeason; year: number }[];
 }
@@ -516,19 +517,9 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
   const [defenseExpanded, setDefenseExpanded] = useState(false);
   const [chronicleExpanded, setChronicleExpanded] = useState(false);
 
-  // Fallback for old saves without state.military
-  const mil = state.military ?? {
-    garrison: { levy: state.garrison || 0, menAtArms: 0, knights: 0 },
-    walls: state.castleLevel || 1,
-    gate: 0,
-    moat: 0,
-    morale: 50,
-  };
-
-  const watchtowerBonus = state.watchtower?.defenseBonus || 0;
-  const drillBonus = getAldricDrillBonus(mil, state.tavern?.aldricDrillActive);
-  const defenseRating = calculateDefenseRating(mil, watchtowerBonus + drillBonus);
-  const breakdown = getDefenseBreakdown(mil, watchtowerBonus, drillBonus);
+  const readiness = getMilitaryReadiness(state);
+  const { military: mil, baseDefense: defenseRating, forgeBonus, drillBonus } = readiness;
+  const breakdown = getDefenseBreakdown(mil, 0, drillBonus, forgeBonus);
   const moraleLevel = getMoraleLevel(mil.morale);
   const totalUpkeep = getMilitaryUpkeep(mil.garrison);
   const estimatedIncome = (state.castleLevel || 1) * 5;
@@ -591,25 +582,25 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
           <div className="flex items-center justify-between">
             <span>
               <span className="font-semibold" style={{ color: TEXT_TAN }}>Outlaws:</span>{" "}
-              {CRIMINAL_DEFENSE_THRESHOLD} defense
+              {readiness.criminalDefense}/{CRIMINAL_DEFENSE_THRESHOLD} defense
             </span>
             <span
               className="font-bold text-sm uppercase tracking-wider"
-              style={{ color: defenseRating >= CRIMINAL_DEFENSE_THRESHOLD ? GREEN : DANGER_RED }}
+              style={{ color: readiness.criminalDefended ? GREEN : DANGER_RED }}
             >
-              {defenseRating >= CRIMINAL_DEFENSE_THRESHOLD ? "\u2713 DEFENDED" : "\u2717 VULNERABLE"}
+              {readiness.criminalDefended ? "\u2713 DEFENDED" : "\u2717 VULNERABLE"}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span>
               <span className="font-semibold" style={{ color: TEXT_TAN }}>Scots:</span>{" "}
-              {SCOTTISH_DEFENSE_THRESHOLD} defense
+              {readiness.scottishDefense}/{SCOTTISH_DEFENSE_THRESHOLD} defense
             </span>
             <span
               className="font-bold text-sm uppercase tracking-wider"
-              style={{ color: defenseRating >= SCOTTISH_DEFENSE_THRESHOLD ? GREEN : DANGER_RED }}
+              style={{ color: readiness.scottishDefended ? GREEN : DANGER_RED }}
             >
-              {defenseRating >= SCOTTISH_DEFENSE_THRESHOLD ? "\u2713 DEFENDED" : "\u2717 VULNERABLE"}
+              {readiness.scottishDefended ? "\u2713 DEFENDED" : "\u2717 VULNERABLE"}
             </span>
           </div>
         </div>
@@ -703,14 +694,14 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
             <div className="mt-3 pt-2 text-xs" style={{ borderTop: "1px solid #3a3228" }}>
               <div className="flex justify-between">
                 <span>Outlaw threshold ({CRIMINAL_DEFENSE_THRESHOLD})</span>
-                <span style={{ color: breakdown.total >= CRIMINAL_DEFENSE_THRESHOLD ? GREEN : DANGER_RED }}>
-                  {breakdown.total >= CRIMINAL_DEFENSE_THRESHOLD ? "\u2713" : "\u2717"}
+                <span style={{ color: readiness.criminalDefended ? GREEN : DANGER_RED }}>
+                  {readiness.criminalDefense}/{CRIMINAL_DEFENSE_THRESHOLD} {readiness.criminalDefended ? "\u2713" : "\u2717"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Scottish threshold ({SCOTTISH_DEFENSE_THRESHOLD})</span>
-                <span style={{ color: breakdown.total >= SCOTTISH_DEFENSE_THRESHOLD ? GREEN : DANGER_RED }}>
-                  {breakdown.total >= SCOTTISH_DEFENSE_THRESHOLD ? "\u2713" : "\u2717"}
+                <span style={{ color: readiness.scottishDefended ? GREEN : DANGER_RED }}>
+                  {readiness.scottishDefense}/{SCOTTISH_DEFENSE_THRESHOLD} {readiness.scottishDefended ? "\u2713" : "\u2717"}
                 </span>
               </div>
             </div>

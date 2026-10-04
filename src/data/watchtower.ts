@@ -1,4 +1,5 @@
-import type { FortificationLevels, Garrison } from './military.ts';
+import { WALLS_TRACK, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD } from './military.ts';
+import { getMilitaryReadiness, type MilitaryReadinessState } from '../engine/militaryReadiness.ts';
 import type { RaidType } from './raids.ts';
 
 export type AnomalyId = 'campfire' | 'dust' | 'signal' | 'wagon' | 'birds';
@@ -16,13 +17,10 @@ export interface MerchantPreview { name: string; specialty: string }
 export interface ScanRating { min: number; max: number; label: string; denariiBonus: number; captainLine: string }
 
 /** Dialogue consumes a small view of state; this is not a persisted-state validator. */
-export interface RodericState {
+export interface RodericState extends MilitaryReadinessState {
   turn: number;
-  garrison?: number;
-  castleLevel?: FortificationLevels['walls'];
   food?: number;
   denarii?: number;
-  military?: Partial<FortificationLevels> & { garrison?: Partial<Garrison>; morale?: number };
   raids?: {
     lastRaidType?: RaidType | null;
     lastRaidTurn?: number;
@@ -69,18 +67,19 @@ export const WATCHTOWER_SUBTITLES = [
 
 export const RODERIC_DEFENSE_ASSESSMENTS: readonly RodericResponse[] = [
   (state) => {
-    const g = state.garrison ?? 0;
-    if (g === 0) return "We have no garrison, my lord. None. If anyone attacks \u2014 bandits, raiders, a stiff wind \u2014 we fall. This must be your first priority.";
-    if (g < 5) return `We have ${g} soldiers. Enough to deter petty thieves, perhaps. But organized attackers? We\u2019d be overrun. I need at least 5 men to hold the walls against outlaws.`;
-    if (g < 10) return `Garrison strength: ${g}. We can repel bandits. But the Scots raid in force \u2014 ten men minimum to hold against border reivers. We\u2019re not there yet.`;
-    if (g < 15) return `Garrison: ${g}. Solid. We can handle outlaws and turn back a Scottish raiding party. But don\u2019t get comfortable \u2014 strength invites complacency.`;
-    return `${g} soldiers under arms. This is a proper garrison, my lord. We can defend against any raiding force in this region. I\u2019d recommend maintaining this strength, not overextending.`;
+    const readiness = getMilitaryReadiness(state);
+    const g = readiness.garrison;
+    const defenses = `Outlaw defense: ${readiness.criminalDefense}/${CRIMINAL_DEFENSE_THRESHOLD} (${readiness.criminalDefended ? 'defended' : 'vulnerable'}). Scottish defense: ${readiness.scottishDefense}/${SCOTTISH_DEFENSE_THRESHOLD} (${readiness.scottishDefended ? 'defended' : 'vulnerable'}).`;
+    if (g === 0) return `We have no garrison, my lord. None. Our fortifications provide ${readiness.baseDefense} defense. ${defenses} Soldiers and strong walls work together; maintain both when you can.`;
+    if (g < 5) return `We have ${g} soldiers. Enough to deter petty thieves, perhaps. But organized attackers? Our walls and morale matter as much as numbers. ${defenses}`;
+    if (g < 10) return `Garrison strength: ${g}. ${defenses} The Scots raid in force; recruit or fortify if our rating falls short.`;
+    if (g < 15) return `Garrison: ${g}. Solid. ${defenses} But don't get comfortable — strength invites complacency.`;
+    return `${g} soldiers under arms. This is a proper garrison, my lord. ${defenses} I'd recommend maintaining this strength, not overextending.`;
   },
   (state) => {
-    const cl = state.castleLevel ?? 1;
-    if (cl <= 1) return "Our defenses are... basic. A wooden palisade and a prayer. Stone walls would double our defensive capability.";
-    if (cl === 2) return "The palisade holds. But wood burns, my lord. A stone curtain wall is the next step.";
-    return "Stone walls. Good. Every upgrade makes the garrison more effective. Walls are a force multiplier \u2014 five men behind stone fight like fifteen in the open.";
+    const walls = state.military?.walls ?? state.castleLevel ?? 1;
+    const current = WALLS_TRACK[walls];
+    return `${current.name}. ${current.description} Walls are a force multiplier; gate and moat defenses also count.`;
   },
   (state) => {
     const raids = state.raids ?? {};
@@ -137,30 +136,16 @@ export const RODERIC_HISTORICAL_LESSONS = [
 
 export const RODERIC_STRATEGIC_TIPS: readonly RodericResponse[] = [
   (state) => {
-    const mil = state.military ?? {};
-    const g = mil.garrison ?? {};
-    const walls = mil.walls ?? 0;
-    const gate = mil.gate ?? 0;
-    const moat = mil.moat ?? 0;
-    const garrisonDef = (g.levy || 0) * 1 + (g.menAtArms || 0) * 3 + (g.knights || 0) * 8;
-    const fortDef = ([0,5,15,25,40] as const)[walls] + ([0,3,7,12,18] as const)[gate] + ([0,4,10,15] as const)[moat];
-    const rating = Math.round((garrisonDef + fortDef) * (1 + (mil.morale ?? 50 > 60 ? 0.1 : 0)));
-    if (rating < 25 && state.turn >= 4) {
-      return `My recommendation: strengthen our defenses immediately. Our defense rating is ${rating} \u2014 we need 25 to repel outlaws. Recruit soldiers or upgrade fortifications.`;
+    const readiness = getMilitaryReadiness(state);
+    if (!readiness.criminalDefended && state.turn >= 4) {
+      return `My recommendation: strengthen our defenses immediately. Our defense rating is ${readiness.criminalDefense} — we need ${CRIMINAL_DEFENSE_THRESHOLD} to repel outlaws. Recruit soldiers or upgrade fortifications.`;
     }
     return null;
   },
   (state) => {
-    const mil = state.military ?? {};
-    const g = mil.garrison ?? {};
-    const walls = mil.walls ?? 0;
-    const gate = mil.gate ?? 0;
-    const moat = mil.moat ?? 0;
-    const garrisonDef = (g.levy || 0) * 1 + (g.menAtArms || 0) * 3 + (g.knights || 0) * 8;
-    const fortDef = ([0,5,15,25,40] as const)[walls] + ([0,3,7,12,18] as const)[gate] + ([0,4,10,15] as const)[moat];
-    const rating = Math.round((garrisonDef + fortDef) * (1 + (mil.morale ?? 50 > 60 ? 0.1 : 0)));
-    if (rating >= 25 && rating < 50 && state.turn >= 8) {
-      return `We can handle bandits. But the Scots are a different beast. Our defense rating is ${rating} \u2014 we need 50 to hold against a border raid. Upgrade walls or recruit men-at-arms.`;
+    const readiness = getMilitaryReadiness(state);
+    if (readiness.criminalDefended && !readiness.scottishDefended && state.turn >= 8) {
+      return `We can handle bandits. But the Scots are a different beast. Our defense rating is ${readiness.scottishDefense} — we need ${SCOTTISH_DEFENSE_THRESHOLD} to hold against a border raid. Upgrade walls or recruit men-at-arms.`;
     }
     return null;
   },
