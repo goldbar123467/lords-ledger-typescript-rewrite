@@ -95,7 +95,7 @@ export default function WatchtowerDefenseStatus({ state }: { state: ReadinessVie
           style={{ backgroundColor: "#0e0e0a", border: "1px solid #4a4a3a" }}
         >
           <div className="text-sm uppercase tracking-wide mb-1" style={{ color: "var(--tan, #a89070)", fontFamily: "Cinzel, serif" }}>
-            Fortifications
+            Fortifi<wbr />cations
           </div>
           <div className="text-sm space-y-1" style={{ color: "#c8b090" }}>
             <div>Walls: Lvl {castleLevel}</div>

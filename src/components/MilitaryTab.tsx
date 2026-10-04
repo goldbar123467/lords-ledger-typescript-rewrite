@@ -579,7 +579,7 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
       >
         <SectionHeading>{"\u2694"} Raid Defense Status</SectionHeading>
         <div className="grid grid-cols-1 gap-2 text-base" style={{ color: LABEL_TAN }}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span>
               <span className="font-semibold" style={{ color: TEXT_TAN }}>Outlaws:</span>{" "}
               {readiness.criminalDefense}/{CRIMINAL_DEFENSE_THRESHOLD} defense
@@ -591,7 +591,7 @@ export default function MilitaryTab({ state, onRecruit, onDismiss, onUpgradeFort
               {readiness.criminalDefended ? "\u2713 DEFENDED" : "\u2717 VULNERABLE"}
             </span>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span>
               <span className="font-semibold" style={{ color: TEXT_TAN }}>Scots:</span>{" "}
               {readiness.scottishDefense}/{SCOTTISH_DEFENSE_THRESHOLD} defense
