@@ -30,6 +30,8 @@ export interface PeopleState {
   villageFeed: VillageFeedEvent[];
   taxHistory: { season: Season; year: number; revenue: number }[];
 }
+/** Earlier saves can omit or null known fields; runtime validation is separate. */
+export type CompatiblePeopleState = { [K in keyof PeopleState]?: PeopleState[K] | null };
 export interface MoraleInput {
   taxRate?: TaxRate;
   resourceDeltas?: { food?: number | null } | null;

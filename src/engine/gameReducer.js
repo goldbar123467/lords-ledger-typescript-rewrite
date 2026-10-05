@@ -38,6 +38,7 @@ import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import { planChapelAction } from "./chapelActions.ts";
+import { planPeopleAction } from "./peopleActions.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -1003,29 +1004,10 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
     // SET_TAX_RATE
     // -----------------------------------------------------------------------
-    case "SET_TAX_RATE": {
-      const { rate } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (!["low", "medium", "high", "crushing"].includes(rate)) return state;
-      return { ...state, taxRate: rate };
-    }
-
-    // -----------------------------------------------------------------------
-    // PEOPLE_SET_LABOR — labor allocation from People tab
-    // -----------------------------------------------------------------------
+    case "SET_TAX_RATE":
     case "PEOPLE_SET_LABOR": {
-      if (state.phase !== "management") return state;
-      const { laborFarming, laborGarrison, laborChurch } = action.payload ?? {};
-      const prevPeople = state.people ?? getInitialPeopleState(state.population);
-      return {
-        ...state,
-        people: {
-          ...prevPeople,
-          laborFarming: laborFarming ?? prevPeople.laborFarming,
-          laborGarrison: laborGarrison ?? prevPeople.laborGarrison,
-          laborChurch: laborChurch ?? prevPeople.laborChurch,
-        },
-      };
+      const patch = planPeopleAction(state, action.type, action.payload);
+      return patch ? { ...state, ...patch } : state;
     }
 
     // Military commands share an atomic, checked domain planner.

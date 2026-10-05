@@ -24,8 +24,9 @@ import {
   TAX_CONSEQUENCES,
   LABOR_DEFAULTS,
   getInitialTiers,
-  type PeopleState, type NotableFamily, type VillageFeedEvent, type TaxRate, type MoraleInput,
+  type CompatiblePeopleState, type NotableFamily, type VillageFeedEvent, type TaxRate, type MoraleInput,
 } from "../data/people.ts";
+import type { PeopleAction } from "../engine/peopleActions.ts";
 
 interface PeopleViewState {
   population: number;
@@ -35,11 +36,8 @@ interface PeopleViewState {
   season: keyof typeof SEASON_INFO;
   year: number;
   resourceDeltas?: MoraleInput['resourceDeltas'];
-  people?: { [K in keyof PeopleState]?: PeopleState[K] | null } | null;
+  people?: CompatiblePeopleState | null;
 }
-type PeopleViewCommand =
-  | { type: 'SET_TAX_RATE'; payload: { rate: TaxRate } }
-  | { type: 'PEOPLE_SET_LABOR'; payload: Pick<PeopleState, 'laborFarming' | 'laborGarrison' | 'laborChurch'> };
 interface LaborSliderProps {
   label: string;
   icon: LucideIcon;
@@ -376,7 +374,7 @@ function FeedEntry({ event, season, year }: { event: VillageFeedEvent; season?: 
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function PeopleTab({ state, dispatch }: { state: PeopleViewState; dispatch: (command: PeopleViewCommand) => void }) {
+export default function PeopleTab({ state, dispatch }: { state: PeopleViewState; dispatch: (command: PeopleAction) => void }) {
   const {
     population,
     inventory,
