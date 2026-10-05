@@ -3,7 +3,7 @@ import test from 'node:test';
 import { getTrustTier, exportPitchData } from '../../src/data/greatHall.ts';
 import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-import disputes from '../../src/data/disputes.js';
+import disputes from '../../src/data/disputes.ts';
 import { COUNCIL_TOPICS } from '../../src/data/decrees.ts';
 
 test('fractional trust retains the last reached integer tier threshold', () => {

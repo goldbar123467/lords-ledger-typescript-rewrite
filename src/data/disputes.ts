@@ -14,6 +14,42 @@
  * Difficulties: easy, medium, hard
  */
 
+import type { HallMeterEffects } from './decrees.ts';
+
+export interface DisputePetitioner {
+  readonly name: string;
+  readonly portrait: 'peasant' | 'merchant' | 'military' | 'clergy';
+  readonly mood: 'angry' | 'defensive' | 'nervous' | 'hopeful' | 'sad' | 'neutral';
+  readonly speech: string;
+  readonly evidence: string;
+}
+export interface DisputeRuling {
+  readonly id: 'a' | 'b' | 'c' | 'd';
+  readonly label: string;
+  readonly decree: string;
+  readonly consequences: Readonly<HallMeterEffects>;
+  readonly aftermath: string;
+  readonly reputation_shift: 'protector' | 'pragmatist' | 'wise' | 'just' | 'lenient'
+    | 'traditional' | 'merciful' | 'pious' | 'harsh' | 'tyrant' | 'indifferent' | 'brave'
+    | 'dismissive' | 'generous' | 'legalist' | 'cunning' | 'beloved';
+}
+interface DisputeContent {
+  readonly id: string;
+  readonly title: string;
+  readonly season: 'any' | 'spring' | 'summer' | 'autumn' | 'winter';
+  readonly category: 'property' | 'family' | 'trade' | 'crime' | 'absurd' | 'military' | 'church';
+  readonly tone: 'serious' | 'tense' | 'comedic' | 'tragic';
+  readonly difficulty: 'easy' | 'medium' | 'hard';
+  readonly herald: string;
+  readonly stewardAdvice: string;
+  readonly rulings: readonly [DisputeRuling, ...DisputeRuling[]];
+  readonly historicalNote: string;
+}
+export type Dispute = DisputeContent & (
+  | { readonly petitionerA: DisputePetitioner; readonly petitionerB: DisputePetitioner; readonly description?: never }
+  | { readonly petitionerA: null; readonly petitionerB: null; readonly description: string }
+);
+
 const DISPUTES = [
 
   // ---------------------------------------------------------------
@@ -1903,5 +1939,7 @@ const DISPUTES = [
   },
 
 ];
+
+export type DisputeId = typeof DISPUTES[number]['id'];
 
 export default DISPUTES;
