@@ -34,35 +34,35 @@ const HALL = {
   inkBrown:   "#3d2b1a",
   bloodRed:   "#8b2020",
   forestGreen:"#2d5a2d",
-  dimText:    "#6a5a42",
+  dimText:    "#c1b49b",
   bodyText:   "#c8b090",
-  mutedText:  "#a89070",
+  mutedText:  "#b8a78a",
 };
 
 // ─── Type badge color map ────────────────────────────────────────
 
 const TYPE_COLORS: Record<AudiencePetitionerType | 'clergy' | 'military', string> = {
-  beggar:        "#8b6b4a",
-  merchant:      "#2d5a2d",
-  priest:        "#6a4a8a",
-  clergy:        "#6a4a8a",
-  monk:          "#6a4a8a",
-  soldier:       "#8b2020",
-  military:      "#8b2020",
-  gossip:        "#a89070",
+  beggar:        "#c5a47f",
+  merchant:      "#8fbc84",
+  priest:        "#b69bd5",
+  clergy:        "#b69bd5",
+  monk:          "#b69bd5",
+  soldier:       "#e8a29a",
+  military:      "#e8a29a",
+  gossip:        "#c8b090",
   inventor:      "#c4a24a",
-  child:         "#4a8a6a",
-  healer:        "#4a7a4a",
-  criminal:      "#c44444",
-  entertainer:   "#c4813a",
-  petitioner:    "#6a5a42",
+  child:         "#8fbc84",
+  healer:        "#8fbc84",
+  criminal:      "#efa39b",
+  entertainer:   "#ddb075",
+  petitioner:    "#c1b49b",
   advisor:       "#d4a44c",
-  mystery:       "#3a3a5a",
-  tradition:     "#6a5a42",
-  staff:         "#a89070",
-  collective:    "#5a4a3a",
-  specialist:    "#8b7a4a",
-  dispute_light: "#ca8844",
+  mystery:       "#a9a7ce",
+  tradition:     "#c1b49b",
+  staff:         "#c8b090",
+  collective:    "#c5b399",
+  specialist:    "#d3bb83",
+  dispute_light: "#ddb075",
 };
 
 // ─── Portrait background map ────────────────────────────────────
@@ -100,7 +100,7 @@ const MOOD_BORDER: Partial<Record<PortraitTone, string>> = {
 
 // ─── Typewriter Text ─────────────────────────────────────────────
 
-function TypewriterText({ text, speed = 25, onComplete }: { text: string; speed?: number; onComplete?: () => void }) {
+function TypewriterText({ text, speed = 25, onComplete }: { text: string; speed?: number; onComplete?: (focusResponse: boolean) => void }) {
   const [len, setLen] = useState(0);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -122,7 +122,7 @@ function TypewriterText({ text, speed = 25, onComplete }: { text: string; speed?
         clearInterval(timer);
         if (!completedRef.current) {
           completedRef.current = true;
-          onCompleteRef.current?.();
+          onCompleteRef.current?.(false);
         }
       } else {
         setLen(i);
@@ -132,24 +132,36 @@ function TypewriterText({ text, speed = 25, onComplete }: { text: string; speed?
     return () => clearInterval(timer);
   }, [text, speed]);
 
-  const skip = () => {
+  const skip = (focusResponse = false) => {
     setLen(text.length);
     if (!completedRef.current) {
       completedRef.current = true;
-      onCompleteRef.current?.();
+      onCompleteRef.current?.(focusResponse);
     }
   };
 
   const isDone = len >= text.length;
 
   return (
-    <span
-      onClick={!isDone ? skip : undefined}
-      style={{ cursor: isDone ? "default" : "pointer" }}
-    >
-      {text.slice(0, len)}
-      {!isDone && <span className="dispute-cursor">|</span>}
-    </span>
+    <>
+      <p style={{
+        fontFamily: "Crimson Text, serif", fontStyle: "italic", fontSize: "1rem",
+        color: HALL.bodyText, lineHeight: 1.6, margin: 0,
+      }}>
+        &ldquo;<span
+          onClick={!isDone ? () => skip() : undefined}
+          style={{ cursor: isDone ? "default" : "pointer" }}
+        >
+          {text.slice(0, len)}
+          {!isDone && <span className="dispute-cursor">|</span>}
+        </span>&rdquo;
+      </p>
+      {!isDone && (
+        <button className="audience-skip" onClick={e => skip(e.currentTarget.matches(':focus-visible'))}>
+          Reveal full petition
+        </button>
+      )}
+    </>
   );
 }
 
@@ -189,7 +201,7 @@ function TypeBadge({ type }: { type: AudiencePetitionerType }) {
     <span
       style={{
         fontFamily: "Cinzel, serif",
-        fontSize: "0.55rem",
+        fontSize: "0.875rem",
         color,
         letterSpacing: "2px",
         textTransform: "uppercase",
@@ -231,9 +243,9 @@ function ConsequencePreview({ consequences }: { consequences: Readonly<HallMeter
           <span
             key={key}
             style={{
-              fontSize: "0.65rem",
+              fontSize: "0.875rem",
               fontFamily: "Cinzel, serif",
-              color: isPositive ? "#4a8a3a" : "#c44444",
+              color: isPositive ? "var(--audience-positive)" : "var(--audience-negative)",
               letterSpacing: "1px",
             }}
           >
@@ -268,8 +280,8 @@ function ConsequenceResult({ consequences }: { consequences: Readonly<HallMeterE
             key={key}
             style={{
               fontFamily: "Cinzel, serif",
-              fontSize: "0.7rem",
-              color: isPos ? "#4a8a3a" : "#c44444",
+              fontSize: "0.875rem",
+              color: isPos ? "var(--audience-positive)" : "var(--audience-negative)",
               padding: "2px 8px",
               borderRadius: 3,
               border: `1px solid ${colors[key] || HALL.stoneLight}`,
@@ -296,7 +308,7 @@ function HallButton({ children, onClick, variant = "primary", style: extraStyle 
       onClick={onClick}
       style={{
         fontFamily: "Cinzel, serif",
-        fontSize: "0.8rem",
+        fontSize: "0.875rem",
         color: baseColor,
         background: "none",
         border: `1px solid ${baseColor}`,
@@ -364,7 +376,7 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pic
           style={{
             fontFamily: "Crimson Text, serif",
             fontStyle: "italic",
-            fontSize: "0.8rem",
+            fontSize: "0.875rem",
             color: HALL.mutedText,
             margin: 0,
           }}
@@ -401,7 +413,7 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pic
                 borderRight: "none",
                 borderBottom: "none",
                 cursor: isResolved ? "default" : "pointer",
-                opacity: isResolved ? 0.4 : 1,
+                opacity: 1,
                 transition: "all 200ms ease",
               }}
               onMouseEnter={(e) => {
@@ -423,11 +435,11 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pic
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2" style={{ marginBottom: 3 }}>
+                <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: 3 }}>
                   <span
                     style={{
                       fontFamily: "Cinzel, serif",
-                      fontSize: "0.8rem",
+                      fontSize: "0.875rem",
                       color: isResolved ? HALL.dimText : HALL.torchGold,
                       textDecoration: isResolved ? "line-through" : "none",
                     }}
@@ -439,7 +451,7 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pic
                 <p
                   style={{
                     fontFamily: "Crimson Text, serif",
-                    fontSize: "0.8rem",
+                    fontSize: "0.875rem",
                     color: isResolved ? HALL.dimText : HALL.mutedText,
                     fontStyle: "italic",
                     lineHeight: 1.4,
@@ -461,7 +473,7 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pic
                 <span
                   style={{
                     fontFamily: "Cinzel, serif",
-                    fontSize: "0.5rem",
+                    fontSize: "0.875rem",
                     color: HALL.dimText,
                     letterSpacing: "1px",
                     textTransform: "uppercase",
@@ -494,9 +506,18 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
   const [speechDone, setSpeechDone] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const handleSpeechComplete = useCallback(() => {
+  const firstResponse = useRef<HTMLButtonElement>(null);
+  const focusResponse = useRef(false);
+  const handleSpeechComplete = useCallback((keyboard: boolean) => {
+    focusResponse.current = keyboard;
     setSpeechDone(true);
   }, []);
+  useEffect(() => {
+    if (speechDone && focusResponse.current) {
+      focusResponse.current = false;
+      firstResponse.current?.focus();
+    }
+  }, [speechDone]);
 
   return (
     <div>
@@ -506,7 +527,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
         <span
           style={{
             fontFamily: "Cinzel, serif",
-            fontSize: "0.7rem",
+            fontSize: "0.875rem",
             color: HALL.torchGold,
             letterSpacing: "2px",
             textTransform: "uppercase",
@@ -539,7 +560,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
             <h4
               style={{
                 fontFamily: "Cinzel, serif",
-                fontSize: "0.85rem",
+                fontSize: "0.875rem",
                 color: HALL.torchGold,
                 margin: "0 0 3px",
               }}
@@ -551,24 +572,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
         </div>
 
         {/* Speech — typewriter reveal */}
-        <p
-          style={{
-            fontFamily: "Crimson Text, serif",
-            fontStyle: "italic",
-            fontSize: "0.9rem",
-            color: HALL.bodyText,
-            lineHeight: 1.6,
-            margin: 0,
-          }}
-        >
-          &ldquo;
-          <TypewriterText
-            text={encounter.speech}
-            speed={25}
-            onComplete={handleSpeechComplete}
-          />
-          &rdquo;
-        </p>
+        <TypewriterText text={encounter.speech} speed={25} onComplete={handleSpeechComplete} />
       </div>
 
       {/* Responses — appear after speech completes */}
@@ -577,7 +581,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
           <h4
             style={{
               fontFamily: "Cinzel Decorative, Cinzel, serif",
-              fontSize: "0.8rem",
+              fontSize: "0.875rem",
               color: HALL.torchGold,
               letterSpacing: "2px",
               textTransform: "uppercase",
@@ -593,9 +597,12 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
               <button
                 key={idx}
                 className="ruling-card"
+                ref={idx === 0 ? firstResponse : null}
+                onFocus={() => setHoveredIdx(idx)}
+                onBlur={() => setHoveredIdx(null)}
                 onClick={() => onSelectResponse(idx)}
                 onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
+                onMouseLeave={e => { if (e.currentTarget !== document.activeElement) setHoveredIdx(null); }}
                 style={{
                   textAlign: "left",
                   padding: 12,
@@ -612,7 +619,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
                 <h5
                   style={{
                     fontFamily: "Cinzel, serif",
-                    fontSize: "0.8rem",
+                    fontSize: "0.875rem",
                     color: HALL.torchGold,
                     margin: "0 0 4px",
                   }}
@@ -622,7 +629,7 @@ function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceE
                 <p
                   style={{
                     fontFamily: "Crimson Text, serif",
-                    fontSize: "0.8rem",
+                    fontSize: "0.875rem",
                     color: HALL.mutedText,
                     lineHeight: 1.3,
                     margin: 0,
@@ -663,7 +670,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
         <span
           style={{
             fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
+            fontSize: "0.875rem",
             color: HALL.dimText,
             textTransform: "uppercase",
             letterSpacing: "1px",
@@ -674,7 +681,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
         <p
           style={{
             fontFamily: "Crimson Text, serif",
-            fontSize: "0.9rem",
+            fontSize: "1rem",
             color: HALL.parchment,
             lineHeight: 1.5,
             margin: "6px 0 0",
@@ -697,7 +704,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
         <span
           style={{
             fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
+            fontSize: "0.875rem",
             color: HALL.dimText,
             textTransform: "uppercase",
             letterSpacing: "1px",
@@ -708,7 +715,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
         <p
           style={{
             fontFamily: "Crimson Text, serif",
-            fontSize: "0.9rem",
+            fontSize: "1rem",
             color: HALL.bodyText,
             lineHeight: 1.5,
             margin: "6px 0 0",
@@ -731,7 +738,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
         <span
           style={{
             fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
+            fontSize: "0.875rem",
             color: HALL.dimText,
             textTransform: "uppercase",
             letterSpacing: "1px",
@@ -751,7 +758,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
             style={{
               margin: "0 auto",
               fontFamily: "Cinzel, serif",
-              fontSize: "0.7rem",
+              fontSize: "0.875rem",
               color: HALL.dimText,
               background: "none",
               border: `1px solid ${HALL.stoneLight}`,
@@ -786,7 +793,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
               <p
                 style={{
                   fontFamily: "Crimson Text, serif",
-                  fontSize: "0.85rem",
+                  fontSize: "0.875rem",
                   color: HALL.bodyText,
                   lineHeight: 1.5,
                   margin: 0,
@@ -800,7 +807,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex flex-wrap items-center justify-center gap-3">
         {hasMore && (
           <HallButton onClick={onNext}>
             Next Visitor
@@ -830,7 +837,11 @@ export default function AudienceChamber({ encounters, resolvedIds, onRespond, on
   };
 
   return (
-    <div>
+    <div className="audience-view" onFocusCapture={event => {
+      if (event.target instanceof HTMLElement && event.target.matches(':focus-visible')) {
+        event.target.scrollIntoView({ block: 'center' });
+      }
+    }}>
       {view.kind === 'queue' && (
         <QueueView encounters={sessionEncounters} resolvedIds={resolvedIds}
           onSelectEncounter={encounter => setView({ kind: 'active', encounter })} onReturn={onReturn} />

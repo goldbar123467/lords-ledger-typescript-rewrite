@@ -1445,3 +1445,30 @@ input[type="range"].labor-slider::-moz-range-thumb {
 @container chapel (min-width: 30rem) {
   .chapel-result-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Audience text and keyboard controls retain the Hall's stone-and-parchment theme. */
+.audience-view {
+  --audience-positive: #99cc86;
+  --audience-negative: #efa39b;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.audience-view button { min-height: 44px; }
+.audience-skip {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #d4a44c;
+  border-radius: 4px;
+  color: #d4a44c;
+  background: #2a2520;
+  font: 0.875rem 'Cinzel', serif;
+  cursor: pointer;
+}
+.audience-view .evidence-reveal {
+  animation: audience-reveal 400ms ease both;
+  overflow: visible;
+}
+@keyframes audience-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
