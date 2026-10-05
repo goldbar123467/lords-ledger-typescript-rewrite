@@ -1,15 +1,31 @@
 /**
- * chapel.js
+ * chapel.ts
  *
  * Data definitions for the Chapel of St. Dunstan.
  * Dialogue pools, shop inventory, moral dilemmas, manuscript facts.
  */
 
+export type TitheCategory = 'generous' | 'stingy' | 'none';
+export type ChapelItemId = 'monastery_herbs' | 'illuminated_letter' | 'beeswax_candles' | 'relic_tooth' | 'quill_ink' | 'monastery_cheese';
+export type ChapelDilemmaId = 'starving_widow' | 'questionable_relic' | 'herbalist_trial' | 'bishops_demand' | 'caedmons_proposal';
+export type ChapelIconName = 'Heart' | 'Scale' | 'Coins' | 'Star' | 'Eye' | 'BookOpen' | 'Shield' | 'Cross' | 'Church' | 'MessageSquare' | 'AlertTriangle' | 'Scroll' | 'X';
+/** Chapel meters are local to the subsystem; these are authored effects, not a saved-state validator. */
+export type ChapelEffects = Partial<Record<'denarii' | 'food' | 'faith' | 'piety' | 'happiness', number>>;
+export interface ChapelItem {
+  id: ChapelItemId; name: string; icon: string; cost: number;
+  description: string; effectText: string; effects: ChapelEffects;
+}
+export interface ChapelChoice { label: string; iconName: ChapelIconName; result: string; effects: ChapelEffects }
+export interface ChapelDilemma {
+  id: ChapelDilemmaId; title: string; narrative: string;
+  choices: readonly [ChapelChoice, ...ChapelChoice[]];
+}
+export interface PietyFlavor { max: number; text: string }
 // ---------------------------------------------------------------------------
 // Father Anselm — Parish Priest
 // ---------------------------------------------------------------------------
 
-export const ANSELM_GREETINGS = [
+export const ANSELM_GREETINGS: readonly string[] = [
   "Ah, my lord graces us with a visit. The Almighty is watching. He's always watching. That's sort of His thing.",
   "Welcome to God's house, my lord. Please note the new crack in the ceiling. That's not a metaphor. It's an actual crack.",
   "My lord! I was just praying for guidance on how to tell you the chapel needs repairs. And here you are! Coincidence? Or divine intervention? Either way \u2014 the roof leaks.",
@@ -17,7 +33,7 @@ export const ANSELM_GREETINGS = [
   "Ah, you've come to the chapel. Your soul must be heavy. Don't worry \u2014 I charge by the sin, and I offer bulk discounts.",
 ];
 
-export const TITHE_RESPONSES = {
+export const TITHE_RESPONSES: Readonly<Record<TitheCategory, readonly string[]>> = {
   generous: [
     "A generous tithe, my lord. God smiles upon those who give freely. I also smile. See? This is my smiling face.",
     "Splendid! This will repair the chapel roof. It leaks directly onto the altar. God sends rain, but I don't think He means it to land THERE.",
@@ -35,7 +51,7 @@ export const TITHE_RESPONSES = {
   ],
 };
 
-export const TITHE_EFFECTS = {
+export const TITHE_EFFECTS: Readonly<Record<TitheCategory, { faith: number; piety: number }>> = {
   generous: { faith: 12, piety: 8 },
   stingy: { faith: 4, piety: 2 },
   none: { faith: 0, piety: -2 },
@@ -45,14 +61,14 @@ export const TITHE_EFFECTS = {
 // Brother Caedmon — Traveling Monk Shop
 // ---------------------------------------------------------------------------
 
-export const CAEDMON_GREETINGS = [
+export const CAEDMON_GREETINGS: readonly string[] = [
   "Peace be with you, my lord! I've traveled from the monastery with goods and gossip. The goods cost money. The gossip is free.",
   "Greetings! I've just arrived from the scriptorium. My fingers are stained with ink, my back aches from copying, and I have WONDERFUL things to sell you.",
   "My lord! Brother Caedmon, at your service. I carry herbs from the monastery garden, relics of questionable origin, and one genuinely excellent piece of cheese.",
   "I've walked forty miles to reach your village. My feet are blistered, my robes are muddy, and I am absolutely ready to do business.",
 ];
 
-export const SHOP_ITEMS = [
+export const SHOP_ITEMS: readonly ChapelItem[] = [
   {
     id: "monastery_herbs",
     name: "Monastery Herbs",
@@ -113,7 +129,7 @@ export const SHOP_ITEMS = [
 // Moral Dilemmas
 // ---------------------------------------------------------------------------
 
-export const MORAL_DILEMMAS = [
+export const MORAL_DILEMMAS: readonly ChapelDilemma[] = [
   {
     id: "starving_widow",
     title: "The Starving Widow",
@@ -245,7 +261,7 @@ export const MORAL_DILEMMAS = [
 // Manuscript Mini-Game
 // ---------------------------------------------------------------------------
 
-export const MANUSCRIPT_SYMBOLS = [
+export const MANUSCRIPT_SYMBOLS: readonly string[] = [
   "\u2629", // ☩
   "\u2726", // ✦
   "\u2618", // ☘
@@ -256,7 +272,7 @@ export const MANUSCRIPT_SYMBOLS = [
   "\u26EA", // ⛪
 ];
 
-export const MANUSCRIPT_FACTS = [
+export const MANUSCRIPT_FACTS: readonly string[] = [
   "Monks spent up to 3 YEARS copying a single book by hand. One mistake and they'd have to scrape the ink off with a knife and start the page over.",
   "Parchment was made from animal skin \u2014 usually sheep or goat. A single Bible required the hides of about 250 sheep. That's an entire flock for one book.",
   "Scribes often left complaints in the margins: 'My hand is so cold,' 'This ink is terrible,' and the classic: 'Now I've written the whole thing \u2014 for God's sake, give me a drink.'",
@@ -269,7 +285,7 @@ export const MANUSCRIPT_FACTS = [
 // Piety flavor text
 // ---------------------------------------------------------------------------
 
-export const PIETY_FLAVOR = [
+export const PIETY_FLAVOR: readonly PietyFlavor[] = [
   { max: 20, text: "Father Anselm prays for you nightly. Not the good kind of praying." },
   { max: 50, text: "The Church considers you... adequate. Not a compliment." },
   { max: 80, text: "You are in good standing. The bishop knows your name. In a positive way." },

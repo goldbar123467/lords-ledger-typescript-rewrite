@@ -66,7 +66,7 @@ import {
   ANSELM_GREETINGS, TITHE_RESPONSES, TITHE_EFFECTS,
   CAEDMON_GREETINGS, SHOP_ITEMS,
   MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS, MANUSCRIPT_FACTS,
-} from "../data/chapel.js";
+} from "../data/chapel.ts";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.js";
 import {
   getInitialPeopleState, reconcileTiers, updateFamilyLoyalty,

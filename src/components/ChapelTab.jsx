@@ -17,7 +17,7 @@ import {
   CAEDMON_GREETINGS, SHOP_ITEMS,
   MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS, MANUSCRIPT_FACTS,
   PIETY_FLAVOR,
-} from "../data/chapel.js";
+} from "../data/chapel.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
