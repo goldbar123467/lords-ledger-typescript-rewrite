@@ -807,7 +807,7 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { enc
       )}
 
       {/* Navigation */}
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="audience-actions">
         {hasMore && (
           <HallButton onClick={onNext}>
             Next Visitor

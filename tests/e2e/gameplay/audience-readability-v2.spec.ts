@@ -63,6 +63,18 @@ for(const width of [390,1366]) for(const size of [16,24]) {
     await page.screenshot({path:info.outputPath('response-focus.png'),animations:'disabled'}); await page.keyboard.press('Enter');
     const history=page.getByRole('button',{name:'Show Historical Context',exact:true}); await tabTo(page,history); await page.keyboard.press('Enter');
     const next=page.getByRole('button',{name:'Next Visitor',exact:true}); await tabTo(page,next);
+    // A button can pass bounds/hit tests while its label splits within a word.
+    await expect.poll(() => next.evaluate(e => {
+      const walker = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const start = node.textContent?.indexOf('Visitor') ?? -1;
+        if (start < 0) continue;
+        const range = document.createRange();
+        range.setStart(node, start); range.setEnd(node, start + 'Visitor'.length);
+        return range.getClientRects().length === 1;
+      }
+      return false;
+    })).toBe(true);
     await page.screenshot({path:info.outputPath('history-focus.png'),animations:'disabled'});
   });
 }
