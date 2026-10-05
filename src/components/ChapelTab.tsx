@@ -794,7 +794,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
             </div>
           )}
 
-          <div className="flex justify-center gap-3 mt-4 flex-wrap">
+          <div className="chapel-result-actions mt-4">
             <button
               onClick={() => dispatch({ type: "CHAPEL_MS_START" })}
               className="px-4 py-2 text-xs uppercase tracking-wider"

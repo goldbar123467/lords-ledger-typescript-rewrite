@@ -70,7 +70,7 @@ for (const width of [390, 1366]) {
         expect(faded).toBe(false);
         await expect(page.getByRole('button', { name: 'Buy', exact: true })).toBeDisabled();
         await expect(page.getByText('Requires 8d · Treasury: 0d', { exact: true })).toBeVisible();
-        await page.getByText('Monks and Commerce', { exact: true }).scrollIntoViewIfNeeded();
+        await page.getByText('✦ Monks and Commerce', { exact: true }).scrollIntoViewIfNeeded();
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
         expect(overflow).toBe(false);
       } else {
@@ -80,6 +80,22 @@ for (const width of [390, 1366]) {
         expect(await unobscured(page)).toBe(true);
         await expect(result).toContainText(fact);
         await page.keyboard.press('PageDown');
+        await expect.poll(() => result.evaluate(node => node.scrollTop)).toBeGreaterThan(0);
+        for (const name of ['Try Again', 'Return to Chapel']) {
+          const action = page.getByRole('button', { name, exact: true });
+          const readable = await action.evaluate(button => {
+            const style = getComputedStyle(button);
+            const context = document.createElement('canvas').getContext('2d');
+            if (!context) throw new Error('Missing text measurement context');
+            context.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
+            const text = button.textContent?.trim().toUpperCase() ?? '';
+            const needed = Math.max(...text.split(/\s+/).map(word => context.measureText(word).width +
+              Math.max(0, word.length - 1) * (parseFloat(style.letterSpacing) || 0)));
+            const available = button.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            return available >= needed;
+          });
+          expect(readable, name + ' must fit whole words').toBe(true);
+        }
         await tabTo(page, 'Return to Chapel');
         expect(await unobscured(page)).toBe(true);
         await page.keyboard.press('Enter');
