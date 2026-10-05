@@ -7,6 +7,7 @@ import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
 import { validateChapelState, restartSavedManuscript, type ChapelSaveState } from '../engine/chapelState.ts';
 import { validatePeopleState } from '../engine/peopleState.ts';
+import { validateHallAudienceState, type HallAudienceSaveState } from '../engine/hallAudienceState.ts';
 import type { CompatiblePeopleState } from '../data/people.ts';
 import type { GameOverReason } from '../engine/meterUtils.ts';
 import { isGambitWeapon } from '../engine/tavernGambit.ts';
@@ -90,7 +91,7 @@ export interface GameSnapshot {
   military: MilitaryDefenseState;
   chapel: ChapelSaveState;
   people: CompatiblePeopleState;
-  greatHall: { meters: { treasury: number; people: number; church: number; military: number } };
+  greatHall: HallAudienceSaveState;
   synergies: {
     activated: SynergyTierId[];
     tradeTypes: string[];
@@ -324,12 +325,8 @@ function validateSnapshot(value: unknown): string | null {
   if (chapelIssue) return chapelIssue;
   const peopleIssue = validatePeopleState(value.people);
   if (peopleIssue) return peopleIssue;
-  const hallMeters = isRecord(value.greatHall) ? value.greatHall.meters : null;
-  if (!isRecord(hallMeters) ||
-      (['treasury', 'people', 'church', 'military'] as const).some(key =>
-        !isFiniteNumber(hallMeters[key]) || (hallMeters[key] as number) < 0 || (hallMeters[key] as number) > 100)) {
-    return 'Save Great Hall approval is invalid.';
-  }
+  const hallIssue = validateHallAudienceState(value.greatHall);
+  if (hallIssue) return hallIssue;
 
   const hall = value.greatHall;
   if (!isRecord(hall)) return 'Save Great Hall state is invalid.';
