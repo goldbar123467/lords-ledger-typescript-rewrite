@@ -82,7 +82,7 @@ export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, sa
                 color: "#e8c44a",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "linear-gradient(135deg, #a02020, #e03030)";
+                e.currentTarget.style.background = "linear-gradient(135deg, #a02020, #bd2525)";
                 e.currentTarget.style.textShadow = "0 0 10px rgba(232, 196, 74, 0.5)";
               }}
               onMouseLeave={(e) => {
@@ -94,7 +94,7 @@ export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, sa
               <span className="block">{d.label}</span>
               <span
                 className="block text-xs font-normal normal-case tracking-normal mt-0.5"
-                style={{ color: "#a89070" }}
+                style={{ color: "#fff4dc" }}
               >
                 {d.desc}
               </span>
