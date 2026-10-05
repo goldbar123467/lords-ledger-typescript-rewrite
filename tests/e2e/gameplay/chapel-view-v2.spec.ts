@@ -45,7 +45,7 @@ for (const width of [390, 1366]) {
     await page.reload();
     await page.getByRole('button', { name: 'Load saved game' }).click();
     expect((await save()).raw).toBe(purchased.raw);
-    await expect(page.getByText('Owned', { exact: true })).toHaveCount(6);
+    await expect(page.getByText('✓ Owned', { exact: true })).toHaveCount(6);
     await page.getByRole('button', { name: /Scriptorium/ }).click();
     await expect(page.getByText('Watch the pattern carefully...', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: /Nave/ }).click();

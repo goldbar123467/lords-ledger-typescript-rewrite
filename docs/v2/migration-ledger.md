@@ -276,3 +276,12 @@ Sol 6.1 medium tester independently original isolated run five passes/two select
 Primary opened phone-owned/laptop-Anselm/laptop-success images; dark owned cards, narrow subtitle clipping and lower results behind seasonal footer remain unaccepted UI work. Render-time fallback greeting randomness remains inherited presentation behavior, without gameplay RNG consumption. Typed view fields do not validate unchecked App or persisted callers. Complete nested Chapel saves/recovery remains next after test correction.
 
 Production 46,606 (+24 section; +1,259 original baseline), implementation30,809/data14,404/styles1,393. Before this record: tests9,929/docs3,585/tooling1,893/other text9,455/inclusive71,468. Source JS/JSX count falls28→27. Required overall reduction and full rewrite gates remain unmet. README Run locally stays removed; original checkout protected.
+
+
+## Chapel view test-selector correction (2026-10-04)
+
+VERIFIED within scope. Baseline b7adfe1; reviewed fingerprint 07B1E8FB162A46622CBC6E987AEB952D191305A7BC71411C450ABF66F3F92622. Only shared test line48 changes exact Owned to exact authored ✓ Owned, retaining toHaveCount(6). No production source/build changes or skipped/weakened assertions. Primary strict typecheck and both corrected shared 390/1366px cases pass in15.2s. They now reach real showing-to-Nave departure, wait3100ms and exact save-byte equality. Combined with18 existing cases in the source migration checkpoint, all20 focused Chapel cases have passed across the recorded runs; the earlier failed run remains preserved.
+
+Sol 6.1 medium tester independently reruns both actual shared cases with saves/timer departure and no page errors; verifies responding unchanged index-DOuuIem6.js/game-data-BPDeyPN6.js and before/after fingerprint. Grader inspects the one-line diff, unchanged assertion strength, passing primary logs and unconditional downstream assertions, closing the specific harness finding without claiming an additional browser run. Reports artifacts/v2/tester-chapel-view-selector/report.md and artifacts/v2/grader-chapel-view-selector/review.md.
+
+Production remains46,606 (+1,259 baseline),27 sourceJS/JSX. Whole Chapel UI, nested save validation/recovery and full rewrite gates remain unfinished. Next complete the Chapel saved-state boundary, preserving legal earlier snapshots and handling corrupted manuscript prefixes without overwriting original stored bytes. README Run locally remains removed.
