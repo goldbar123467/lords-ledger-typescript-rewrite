@@ -32,7 +32,7 @@ for (const width of [390, 1366]) for (const walls of [1, 3]) {
     await slider.focus();
     await page.keyboard.press('ArrowRight');
     await expect(slider).toHaveValue('5');
-    await expect(page.getByText('1 families on guard duty', { exact: false })).toBeVisible();
+    await expect(page.getByText('1 family on guard duty', { exact: false })).toBeVisible();
     await page.getByRole('button', { name: 'Save game', exact: true }).click();
     const saved = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
     if (!saved) throw new Error('No saved labor change');

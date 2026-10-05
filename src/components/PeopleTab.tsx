@@ -1,5 +1,5 @@
 /**
- * PeopleTab.jsx
+ * PeopleTab.tsx
  *
  * Population management — the emotional and economic heart of the estate.
  * Social tiers, labor allocation, morale gauge, notable families,
@@ -8,13 +8,14 @@
  * Receives state + dispatch directly (complex tab pattern).
  */
 
-import { useState } from "react";
+import type { CSSProperties } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Wheat, ShoppingBag, Hammer, Swords, Church, Users,
-  TrendingUp, TrendingDown, AlertTriangle, Crown, Scissors,
+  AlertTriangle, Crown, Scissors,
   ArrowUpRight, ArrowRight, ArrowDownRight,
 } from "lucide-react";
-import { TAX_RATES, FOOD_PER_FAMILY } from "../data/economy.ts";
+import { TAX_RATES, FOOD_PER_FAMILY, type Inventory, type SEASON_INFO } from "../data/economy.ts";
 import { getTotalFood } from "../engine/economyEngine.ts";
 import {
   TIER_CONFIG,
@@ -22,7 +23,37 @@ import {
   getContextualTip,
   TAX_CONSEQUENCES,
   LABOR_DEFAULTS,
+  getInitialTiers,
+  type PeopleState, type NotableFamily, type VillageFeedEvent, type TaxRate, type MoraleInput,
 } from "../data/people.ts";
+
+interface PeopleViewState {
+  population: number;
+  inventory: Inventory;
+  taxRate: TaxRate;
+  garrison?: number;
+  season: keyof typeof SEASON_INFO;
+  year: number;
+  resourceDeltas?: MoraleInput['resourceDeltas'];
+  people?: { [K in keyof PeopleState]?: PeopleState[K] | null } | null;
+}
+type PeopleViewCommand =
+  | { type: 'SET_TAX_RATE'; payload: { rate: TaxRate } }
+  | { type: 'PEOPLE_SET_LABOR'; payload: Pick<PeopleState, 'laborFarming' | 'laborGarrison' | 'laborChurch'> };
+interface LaborSliderProps {
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  value: number;
+  max: number;
+  onChange: (value: number) => void;
+  leftLabel?: string;
+  rightLabel?: string;
+  detail?: string;
+}
+function isTaxRate(key: string): key is TaxRate {
+  return Object.hasOwn(TAX_RATES, key);
+}
 
 // ---------------------------------------------------------------------------
 // Color palette (matches Lord's Ledger global)
@@ -49,7 +80,7 @@ const C = {
 };
 
 // Icon map for notable families
-const ROLE_ICONS = {
+const ROLE_ICONS: Readonly<Record<string, LucideIcon>> = {
   Wheat,
   ShoppingBag,
   Hammer,
@@ -64,7 +95,7 @@ const ROLE_ICONS = {
 // Shared card style
 // ---------------------------------------------------------------------------
 
-const cardStyle = {
+const cardStyle: CSSProperties = {
   background: C.bgCard,
   border: `1px solid ${C.border}`,
   borderRadius: "4px",
@@ -75,7 +106,7 @@ const cardStyle = {
 // ---------------------------------------------------------------------------
 
 /** Contextual tip bar */
-function TipBar({ text }) {
+function TipBar({ text }: { text: string }) {
   return (
     <div
       className="flex items-start gap-2 px-4 py-2.5 mb-4"
@@ -97,7 +128,7 @@ function TipBar({ text }) {
 }
 
 /** Social tier row */
-function TierRow({ tierKey, count, total }) {
+function TierRow({ tierKey, count, total }: { tierKey: keyof typeof TIER_CONFIG; count: number; total: number }) {
   const tier = TIER_CONFIG[tierKey];
   const IconComponent = ROLE_ICONS[tier.icon] || Users;
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -131,7 +162,7 @@ function TierRow({ tierKey, count, total }) {
 }
 
 /** Morale gauge — vertical thermometer */
-function MoraleGauge({ morale }) {
+function MoraleGauge({ morale }: { morale: number }) {
   const fillPct = Math.max(2, morale);
   let fillColor = C.crimson;
   if (morale >= 81) fillColor = C.green;
@@ -187,7 +218,7 @@ function MoraleGauge({ morale }) {
 }
 
 /** Labor allocation slider */
-function LaborSlider({ label, icon, color, value, max, onChange, leftLabel, rightLabel, detail }) {
+function LaborSlider({ label, icon, color, value, max, onChange, leftLabel, rightLabel, detail }: LaborSliderProps) {
   const SliderIcon = icon;
   return (
     <div className="mb-4">
@@ -225,7 +256,7 @@ function LaborSlider({ label, icon, color, value, max, onChange, leftLabel, righ
 }
 
 /** Notable family card */
-function FamilyCard({ family }) {
+function FamilyCard({ family }: { family: Readonly<NotableFamily> }) {
   const IconComponent = ROLE_ICONS[family.roleIcon] || Users;
   const tierColor = family.tier === "serf" ? C.serfBrown : family.tier === "freeman" ? C.freemanTeal : C.purple;
   const tierLabel = family.tier === "serf" ? "Serf" : family.tier === "freeman" ? "Freeman" : "Skilled";
@@ -314,7 +345,7 @@ function FamilyCard({ family }) {
 }
 
 /** Village feed entry */
-function FeedEntry({ event, season, year }) {
+function FeedEntry({ event, season, year }: { event: VillageFeedEvent; season?: string; year?: number }) {
   const typeColor = event.type === "warning" ? C.crimson : event.type === "population" ? C.green : C.textDim;
   const prefix = event.type === "warning" ? "\u26A0" : "\u2767";
 
@@ -340,7 +371,7 @@ function FeedEntry({ event, season, year }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function PeopleTab({ state, dispatch }) {
+export default function PeopleTab({ state, dispatch }: { state: PeopleViewState; dispatch: (command: PeopleViewCommand) => void }) {
   const {
     population,
     inventory,
@@ -351,21 +382,21 @@ export default function PeopleTab({ state, dispatch }) {
     resourceDeltas,
   } = state;
   const people = state.people || {};
-  const tiers = people.tiers || { serfs: Math.round(population * 0.55), freemen: Math.round(population * 0.32), skilled: Math.max(2, population - Math.round(population * 0.55) - Math.round(population * 0.32)) };
+  const tiers = people.tiers || getInitialTiers(population);
   const families = people.notableFamilies || [];
 
-  // Labor allocation from state (or defaults)
-  const [localFarming, setLocalFarming] = useState(people.laborFarming ?? LABOR_DEFAULTS.farming);
-  const [localGarrison, setLocalGarrison] = useState(people.laborGarrison ?? LABOR_DEFAULTS.garrison);
-  const [localChurch, setLocalChurch] = useState(people.laborChurch ?? LABOR_DEFAULTS.church);
+  // Durable labor values belong to the reducer, including when loading a save.
+  const farmingPct = people.laborFarming ?? LABOR_DEFAULTS.farming;
+  const garrisonPct = people.laborGarrison ?? LABOR_DEFAULTS.garrison;
+  const churchPct = people.laborChurch ?? LABOR_DEFAULTS.church;
 
   // Compute workforce
   const totalFamilies = population;
-  const garrisonFamilies = Math.round(totalFamilies * (localGarrison / 100));
-  const churchFamilies = Math.round(totalFamilies * (localChurch / 100));
+  const garrisonFamilies = Math.round(totalFamilies * (garrisonPct / 100));
+  const churchFamilies = Math.round(totalFamilies * (churchPct / 100));
   const workingFamilies = Math.max(0, totalFamilies - garrisonFamilies - churchFamilies);
   const assignable = tiers.serfs + tiers.freemen;
-  const farmingFamilies = Math.round(Math.min(workingFamilies, assignable) * (localFarming / 100));
+  const farmingFamilies = Math.round(Math.min(workingFamilies, assignable) * (farmingPct / 100));
   const craftingFamilies = Math.max(0, Math.min(workingFamilies, assignable) - farmingFamilies);
 
   // Food calculations
@@ -379,8 +410,8 @@ export default function PeopleTab({ state, dispatch }) {
     ...state,
     people: {
       ...people,
-      laborGarrison: localGarrison,
-      laborChurch: localChurch,
+      laborGarrison: garrisonPct,
+      laborChurch: churchPct,
     },
   };
   const moraleResult = computeMorale(moraleState);
@@ -400,7 +431,7 @@ export default function PeopleTab({ state, dispatch }) {
   const growthColor = foodBalance > 0 && morale > 50 ? C.green : foodBalance >= 0 ? C.amber : C.crimson;
 
   // Contextual tip
-  const tipText = getContextualTip(morale, taxRate, localGarrison, localChurch, foodBalance);
+  const tipText = getContextualTip(morale, taxRate, garrisonPct, churchPct, foodBalance);
 
   // Village feed
   const feedEvents = people.villageFeed || [];
@@ -420,26 +451,19 @@ export default function PeopleTab({ state, dispatch }) {
   const tannerMod = tannerPresent ? 1.1 : 1.0;
   const estCraftGold = Math.round(craftingFamilies * baseCraftGold * smithMod * tannerMod);
 
-  // Tax revenue estimate (used in tax card display below)
-  // eslint-disable-next-line no-unused-vars
-  const taxRateValue = TAX_RATES[taxRate]?.rate ?? 4;
-
   // Slider change handler — dispatch immediately
-  function handleFarmingChange(val) {
-    setLocalFarming(val);
-    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: val, laborGarrison: localGarrison, laborChurch: localChurch } });
+  function handleFarmingChange(val: number) {
+    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: val, laborGarrison: garrisonPct, laborChurch: churchPct } });
   }
 
-  function handleGarrisonChange(val) {
+  function handleGarrisonChange(val: number) {
     const clamped = Math.min(val, 40);
-    setLocalGarrison(clamped);
-    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: localFarming, laborGarrison: clamped, laborChurch: localChurch } });
+    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: farmingPct, laborGarrison: clamped, laborChurch: churchPct } });
   }
 
-  function handleChurchChange(val) {
+  function handleChurchChange(val: number) {
     const clamped = Math.min(val, 15);
-    setLocalChurch(clamped);
-    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: localFarming, laborGarrison: localGarrison, laborChurch: clamped } });
+    dispatch({ type: "PEOPLE_SET_LABOR", payload: { laborFarming: farmingPct, laborGarrison: garrisonPct, laborChurch: clamped } });
   }
 
   return (
@@ -553,7 +577,7 @@ export default function PeopleTab({ state, dispatch }) {
           label="Farming"
           icon={Wheat}
           color={C.serfBrown}
-          value={localFarming}
+          value={farmingPct}
           max={100}
           onChange={handleFarmingChange}
           leftLabel="Farm"
@@ -566,12 +590,12 @@ export default function PeopleTab({ state, dispatch }) {
           label="Garrison Duty"
           icon={Swords}
           color={C.crimson}
-          value={localGarrison}
+          value={garrisonPct}
           max={40}
           onChange={handleGarrisonChange}
           leftLabel="Guard"
           rightLabel="Work"
-          detail={`${garrisonFamilies} families on guard duty \u00B7 ${workingFamilies} available for work`}
+          detail={`${garrisonFamilies} ${garrisonFamilies === 1 ? "family" : "families"} on guard duty \u00B7 ${workingFamilies} available for work`}
         />
 
         {/* Slider 3: Church Labor */}
@@ -579,7 +603,7 @@ export default function PeopleTab({ state, dispatch }) {
           label="Chapel Work"
           icon={Church}
           color={C.blue}
-          value={localChurch}
+          value={churchPct}
           max={15}
           onChange={handleChurchChange}
           leftLabel="Chapel"
@@ -653,6 +677,7 @@ export default function PeopleTab({ state, dispatch }) {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {Object.entries(TAX_RATES).map(([key, config]) => {
+            if (!isTaxRate(key)) return null;
             const isActive = taxRate === key;
             const income = population * config.rate;
             const consequence = TAX_CONSEQUENCES[key];
