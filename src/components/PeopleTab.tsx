@@ -139,7 +139,7 @@ function TierRow({ tierKey, count, total }: { tierKey: keyof typeof TIER_CONFIG;
         <IconComponent size={16} color={tier.color} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className="text-sm font-semibold uppercase tracking-wider"
             style={{ fontFamily: "Cinzel, serif", color: tier.color }}
@@ -480,12 +480,12 @@ export default function PeopleTab({ state, dispatch }: { state: PeopleViewState;
          Section 1: Population Overview + Morale Gauge
          ============================================================ */}
       <div
-        className="rounded p-4 mb-4"
+        className="people-overview rounded p-4 mb-4"
         style={cardStyle}
       >
-        <div className="flex gap-4">
+        <div className="people-population-layout">
           {/* Left: Population */}
-          <div className="flex-1">
+          <div className="min-w-0">
             <h3
               className="text-sm font-bold uppercase tracking-wider mb-3"
               style={{ fontFamily: "Cinzel, serif", color: C.gold }}
@@ -521,7 +521,7 @@ export default function PeopleTab({ state, dispatch }: { state: PeopleViewState;
           </div>
 
           {/* Right: Morale gauge */}
-          <div className="flex flex-col items-center justify-between" style={{ minWidth: "80px" }}>
+          <div className="people-morale flex flex-col items-center justify-between">
             <h4
               className="text-xs font-bold uppercase tracking-wider mb-2 text-center"
               style={{ fontFamily: "Cinzel, serif", color: C.textDim }}

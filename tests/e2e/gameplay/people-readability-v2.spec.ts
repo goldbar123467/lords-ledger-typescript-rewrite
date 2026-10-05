@@ -54,6 +54,8 @@ for (const width of [390, 1366]) for (const rootSize of [16, 24]) {
         return r.top >= top + 3 && r.bottom <= (footer?.top ?? innerHeight) - 3 &&
           e.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
       })).toBe(true);
+      await expect(slider).toHaveCSS('outline-style', 'solid');
+      await expect(slider).toHaveCSS('outline-width', '3px');
       if (name === 'Farming') await page.screenshot({ path: info.outputPath('farming-focus.png'), animations: 'disabled' });
       await page.keyboard.press('ArrowRight');
       await expect(slider).toHaveValue(name === 'Farming' ? '75' : name === 'Garrison Duty' ? '5' : '10');

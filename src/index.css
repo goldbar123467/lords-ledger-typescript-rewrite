@@ -1373,6 +1373,13 @@ input[type="range"].labor-slider::-moz-range-thumb {
 /* People descriptions and controls must remain readable as text is enlarged. */
 .people-view .text-xs { font-size: 0.875rem; line-height: 1.5; }
 .people-view .labor-slider { min-width: 0; }
+.people-view input[type="range"].labor-slider:focus-visible { outline: 3px solid #e8c44a; outline-offset: 5px; }
+.people-overview { container: people-overview / inline-size; }
+.people-population-layout { display: grid; grid-template-columns: minmax(0, 1fr) 8rem; gap: 1rem; }
+@container people-overview (max-width: 28rem) {
+  .people-population-layout { grid-template-columns: minmax(0, 1fr); }
+  .people-morale { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+}
 .military-watchtower { position: relative; overflow: hidden; background: #1a1e24; border: 1px solid #4a6a8a; }
 .military-watchtower:hover, .military-watchtower:focus-visible { background: #1e2530; border-color: #6a8aaa; }
 .military-watchtower:focus-visible { outline: 2px solid #8ab4d6; outline-offset: 3px; }
