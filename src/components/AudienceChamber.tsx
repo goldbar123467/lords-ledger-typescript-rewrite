@@ -1,5 +1,5 @@
 /**
- * AudienceChamber.jsx
+ * AudienceChamber.tsx
  *
  * The Audience Chamber — one-on-one NPC conversations within the Great Hall.
  * Queue of visitors, typewriter speech reveal, response selection with
@@ -8,7 +8,20 @@
  * Flow: queue -> herald -> speech -> response -> aftermath -> queue
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
+import type { AudienceEncounter, AudienceResponse, AudiencePetitionerType, AudienceTone } from '../data/audience.ts';
+import type { HallMeterEffects } from '../data/decrees.ts';
+
+interface AudienceChamberProps {
+  encounters: readonly AudienceEncounter[];
+  resolvedIds: readonly string[];
+  onRespond: (encounterId: string, responseIndex: number) => void;
+  onReturn: () => void;
+}
+type AudienceView = { kind: 'queue' } | { kind: 'active'; encounter: AudienceEncounter }
+  | { kind: 'aftermath'; encounter: AudienceEncounter; response: AudienceResponse };
+type PortraitType = AudiencePetitionerType | 'peasant' | 'clergy' | 'military';
+type PortraitTone = AudienceTone | 'neutral' | 'light' | 'mysterious';
 import { Users, ChevronRight, BookOpen, ArrowLeft } from "lucide-react";
 
 // ─── Color Palette ───────────────────────────────────────────────
@@ -28,7 +41,7 @@ const HALL = {
 
 // ─── Type badge color map ────────────────────────────────────────
 
-const TYPE_COLORS = {
+const TYPE_COLORS: Record<AudiencePetitionerType | 'clergy' | 'military', string> = {
   beggar:        "#8b6b4a",
   merchant:      "#2d5a2d",
   priest:        "#6a4a8a",
@@ -54,7 +67,7 @@ const TYPE_COLORS = {
 
 // ─── Portrait background map ────────────────────────────────────
 
-const PORTRAIT_BG = {
+const PORTRAIT_BG: Partial<Record<PortraitType, string>> = {
   peasant:    "linear-gradient(135deg, #4a3728, #2d2018)",
   beggar:     "linear-gradient(135deg, #4a3728, #2d2018)",
   child:      "linear-gradient(135deg, #4a3728, #2d2018)",
@@ -77,7 +90,7 @@ const PORTRAIT_BG = {
   staff:      "linear-gradient(135deg, #3a3020, #252018)",
 };
 
-const MOOD_BORDER = {
+const MOOD_BORDER: Partial<Record<PortraitTone, string>> = {
   serious:    "#a89070",
   neutral:    "#d4a44c",
   light:      "#44aa88",
@@ -87,7 +100,7 @@ const MOOD_BORDER = {
 
 // ─── Typewriter Text ─────────────────────────────────────────────
 
-function TypewriterText({ text, speed = 25, onComplete }) {
+function TypewriterText({ text, speed = 25, onComplete }: { text: string; speed?: number; onComplete?: () => void }) {
   const [len, setLen] = useState(0);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -99,6 +112,10 @@ function TypewriterText({ text, speed = 25, onComplete }) {
 
     let i = 0;
     const timer = setInterval(() => {
+      if (completedRef.current) {
+        clearInterval(timer);
+        return;
+      }
       i++;
       if (i >= text.length) {
         setLen(text.length);
@@ -138,7 +155,7 @@ function TypewriterText({ text, speed = 25, onComplete }) {
 
 // ─── NPC Portrait ────────────────────────────────────────────────
 
-function NpcPortrait({ initial, type = "peasant", tone = "neutral", size = 64 }) {
+function NpcPortrait({ initial, type = "peasant", tone = "neutral", size = 64 }: { initial: string; type?: PortraitType; tone?: PortraitTone; size?: number }) {
   const bg = PORTRAIT_BG[type] || PORTRAIT_BG.peasant;
   const borderColor = MOOD_BORDER[tone] || MOOD_BORDER.neutral;
 
@@ -166,7 +183,7 @@ function NpcPortrait({ initial, type = "peasant", tone = "neutral", size = 64 })
 
 // ─── Type Badge ──────────────────────────────────────────────────
 
-function TypeBadge({ type }) {
+function TypeBadge({ type }: { type: AudiencePetitionerType }) {
   const color = TYPE_COLORS[type] || TYPE_COLORS.petitioner;
   return (
     <span
@@ -189,15 +206,16 @@ function TypeBadge({ type }) {
 
 // ─── Consequence Preview (arrows on hover) ───────────────────────
 
-function ConsequencePreview({ consequences }) {
-  const labels = {
+function ConsequencePreview({ consequences }: { consequences: Readonly<HallMeterEffects> }) {
+  const labels: Record<keyof HallMeterEffects, { name: string; color: string }> = {
     people:   { name: "People",   color: HALL.forestGreen },
     treasury: { name: "Treasury", color: "#c4a24a" },
     church:   { name: "Church",   color: "#6a4a8a" },
     military: { name: "Military", color: HALL.bloodRed },
   };
 
-  const items = Object.entries(consequences).filter(([, v]) => v !== 0);
+  const items = (['people', 'treasury', 'church', 'military'] as const)
+    .filter(key => consequences[key] !== 0).map(key => [key, consequences[key]] as const);
   if (items.length === 0) return null;
 
   return (
@@ -229,15 +247,16 @@ function ConsequencePreview({ consequences }) {
 
 // ─── Consequence Result (shows actual numbers in aftermath) ──────
 
-function ConsequenceResult({ consequences }) {
-  const colors = {
+function ConsequenceResult({ consequences }: { consequences: Readonly<HallMeterEffects> }) {
+  const colors: Record<keyof HallMeterEffects, string> = {
     people:   HALL.forestGreen,
     treasury: "#c4a24a",
     church:   "#6a4a8a",
     military: HALL.bloodRed,
   };
 
-  const items = Object.entries(consequences).filter(([, v]) => v !== 0);
+  const items = (['people', 'treasury', 'church', 'military'] as const)
+    .filter(key => consequences[key] !== 0).map(key => [key, consequences[key]] as const);
   if (items.length === 0) return null;
 
   return (
@@ -268,7 +287,7 @@ function ConsequenceResult({ consequences }) {
 
 // ─── Styled Button ───────────────────────────────────────────────
 
-function HallButton({ children, onClick, variant = "primary", style: extraStyle }) {
+function HallButton({ children, onClick, variant = "primary", style: extraStyle }: { children: ReactNode; onClick: () => void; variant?: "primary" | "secondary"; style?: CSSProperties }) {
   const isPrimary = variant === "primary";
   const baseColor = isPrimary ? HALL.torchGold : HALL.dimText;
 
@@ -303,7 +322,7 @@ function HallButton({ children, onClick, variant = "primary", style: extraStyle 
 
 // ─── QUEUE VIEW ──────────────────────────────────────────────────
 
-function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }) {
+function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }: Pick<AudienceChamberProps, 'encounters' | 'resolvedIds' | 'onReturn'> & { onSelectEncounter: (encounter: AudienceEncounter) => void }) {
   const pendingCount = encounters.filter((e) => !resolvedIds.includes(e.id)).length;
   const allDone = pendingCount === 0;
 
@@ -471,9 +490,9 @@ function QueueView({ encounters, resolvedIds, onSelectEncounter, onReturn }) {
 
 // ─── ACTIVE ENCOUNTER VIEW ───────────────────────────────────────
 
-function ActiveEncounter({ encounter, onSelectResponse }) {
+function ActiveEncounter({ encounter, onSelectResponse }: { encounter: AudienceEncounter; onSelectResponse: (index: number) => void }) {
   const [speechDone, setSpeechDone] = useState(false);
-  const [hoveredIdx, setHoveredIdx] = useState(null);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const handleSpeechComplete = useCallback(() => {
     setSpeechDone(true);
@@ -625,7 +644,7 @@ function ActiveEncounter({ encounter, onSelectResponse }) {
 
 // ─── AFTERMATH VIEW ──────────────────────────────────────────────
 
-function AftermathView({ encounter, response, onNext, onReturn, hasMore }) {
+function AftermathView({ encounter, response, onNext, onReturn, hasMore }: { encounter: AudienceEncounter; response: AudienceResponse; onNext: () => void; onReturn: () => void; hasMore: boolean }) {
   const [showHistNote, setShowHistNote] = useState(false);
 
   return (
@@ -798,77 +817,31 @@ function AftermathView({ encounter, response, onNext, onReturn, hasMore }) {
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────
 
-export default function AudienceChamber({ encounters, resolvedIds, onRespond, onReturn }) {
-  // view: "queue" | "active" | "aftermath"
-  const [view, setView] = useState("queue");
-  const [selectedEncounter, setSelectedEncounter] = useState(null);
-  const [selectedResponseIdx, setSelectedResponseIdx] = useState(null);
-
-  // Limit to 5 encounters per session
+export default function AudienceChamber({ encounters, resolvedIds, onRespond, onReturn }: AudienceChamberProps) {
+  const [view, setView] = useState<AudienceView>({ kind: 'queue' });
   const sessionEncounters = encounters.slice(0, 5);
-
-  const handleSelectEncounter = (enc) => {
-    setSelectedEncounter(enc);
-    setSelectedResponseIdx(null);
-    setView("active");
+  const returnToQueue = () => setView({ kind: 'queue' });
+  const selectResponse = (index: number) => {
+    if (view.kind !== 'active') return;
+    const response = view.encounter.responses[index];
+    if (!response) return;
+    onRespond(view.encounter.id, index);
+    setView({ kind: 'aftermath', encounter: view.encounter, response });
   };
-
-  const handleSelectResponse = (responseIdx) => {
-    if (!selectedEncounter) return;
-    setSelectedResponseIdx(responseIdx);
-
-    // Notify parent
-    onRespond(selectedEncounter.id, responseIdx);
-
-    setView("aftermath");
-  };
-
-  const handleNextVisitor = () => {
-    setSelectedEncounter(null);
-    setSelectedResponseIdx(null);
-    setView("queue");
-  };
-
-  const handleReturnToQueue = () => {
-    setSelectedEncounter(null);
-    setSelectedResponseIdx(null);
-    setView("queue");
-  };
-
-  // Check if there are more unresolved encounters
-  const currentResolvedIds = selectedEncounter
-    ? [...resolvedIds, selectedEncounter.id]
-    : resolvedIds;
-  const hasMore = sessionEncounters.some(
-    (e) => !currentResolvedIds.includes(e.id)
-  );
 
   return (
     <div>
-      {view === "queue" && (
-        <QueueView
-          encounters={sessionEncounters}
-          resolvedIds={resolvedIds}
-          onSelectEncounter={handleSelectEncounter}
-          onReturn={onReturn}
-        />
+      {view.kind === 'queue' && (
+        <QueueView encounters={sessionEncounters} resolvedIds={resolvedIds}
+          onSelectEncounter={encounter => setView({ kind: 'active', encounter })} onReturn={onReturn} />
       )}
-
-      {view === "active" && selectedEncounter && (
-        <ActiveEncounter
-          encounter={selectedEncounter}
-          onSelectResponse={handleSelectResponse}
-        />
+      {view.kind === 'active' && (
+        <ActiveEncounter encounter={view.encounter} onSelectResponse={selectResponse} />
       )}
-
-      {view === "aftermath" && selectedEncounter && selectedResponseIdx !== null && (
-        <AftermathView
-          encounter={selectedEncounter}
-          response={selectedEncounter.responses[selectedResponseIdx]}
-          onNext={handleNextVisitor}
-          onReturn={handleReturnToQueue}
-          hasMore={hasMore}
-        />
+      {view.kind === 'aftermath' && (
+        <AftermathView encounter={view.encounter} response={view.response}
+          onNext={returnToQueue} onReturn={returnToQueue}
+          hasMore={sessionEncounters.some(encounter => encounter.id !== view.encounter.id && !resolvedIds.includes(encounter.id))} />
       )}
     </div>
   );
