@@ -6,6 +6,8 @@ import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
 import { validateChapelState, restartSavedManuscript, type ChapelSaveState } from '../engine/chapelState.ts';
+import { validatePeopleState } from '../engine/peopleState.ts';
+import type { CompatiblePeopleState } from '../data/people.ts';
 import type { GameOverReason } from '../engine/meterUtils.ts';
 import { isGambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
@@ -87,6 +89,7 @@ export interface GameSnapshot {
   };
   military: MilitaryDefenseState;
   chapel: ChapelSaveState;
+  people: CompatiblePeopleState;
   greatHall: { meters: { treasury: number; people: number; church: number; military: number } };
   synergies: {
     activated: SynergyTierId[];
@@ -319,6 +322,8 @@ function validateSnapshot(value: unknown): string | null {
 
   const chapelIssue = validateChapelState(value.chapel);
   if (chapelIssue) return chapelIssue;
+  const peopleIssue = validatePeopleState(value.people);
+  if (peopleIssue) return peopleIssue;
   const hallMeters = isRecord(value.greatHall) ? value.greatHall.meters : null;
   if (!isRecord(hallMeters) ||
       (['treasury', 'people', 'church', 'military'] as const).some(key =>
