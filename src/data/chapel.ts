@@ -75,7 +75,7 @@ export const SHOP_ITEMS: readonly ChapelItem[] = [
     icon: "\u2618",
     cost: 10,
     description: "Medicinal herbs grown by monks who talk to the plants. The plants seem to like it.",
-    effectText: "Heals 5 pop during plague events",
+    effectText: "Adds 5 food to your stores",
     effects: { food: 5 },
   },
   {
@@ -208,7 +208,7 @@ export const MORAL_DILEMMAS: readonly ChapelDilemma[] = [
   {
     id: "bishops_demand",
     title: "The Bishop's Demand",
-    narrative: "A letter arrives bearing the bishop's seal. He demands an extra tithe \u2014 10% of your treasury \u2014 to fund a new cathedral in the city. Father Anselm reads it aloud, then looks at you nervously. 'The bishop is... not someone you want as an enemy, my lord.'",
+    narrative: "A letter arrives bearing the bishop's seal. He demands an extra tithe \u2014 60 denarii \u2014 to fund a new cathedral in the city. Father Anselm reads it aloud, then looks at you nervously. 'The bishop is... not someone you want as an enemy, my lord.'",
     choices: [
       {
         label: "Pay in full \u2014 stay in the Church's good graces",
