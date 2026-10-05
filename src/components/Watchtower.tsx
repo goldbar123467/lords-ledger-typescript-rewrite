@@ -1,5 +1,5 @@
 /**
- * Watchtower.jsx
+ * Watchtower.tsx
  *
  * The Watchtower — military pillar made spatial.
  * Interactive location with Horizon Scan mini-game, Captain Roderic NPC,
@@ -8,12 +8,13 @@
  * Rendered as an overlay within the Map tab (same pattern as Tavern).
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import WatchtowerDefenseStatus from './WatchtowerDefenseStatus.tsx';
 import { createRandomCursor } from "../engine/random.ts";
-import { createScanPlan, summarizeScan } from "../engine/watchtowerScan.ts";
+import { createScanPlan, summarizeScan, type ScanAnomaly, type ScanPlan, type ScanReport, type ScanWarnings } from "../engine/watchtowerScan.ts";
 import {
   WATCHTOWER_SUBTITLES,
+  type RodericState,
   RODERIC_DEFENSE_ASSESSMENTS,
   RODERIC_HISTORICAL_LESSONS,
   RODERIC_STRATEGIC_TIPS,
@@ -22,15 +23,65 @@ import {
   SCAN_DURATION_SECONDS,
 } from "../data/watchtower.ts";
 
+
+import type { RaidState } from '../engine/raidEngine.ts';
+
+interface WatchtowerProgress {
+  scannedThisSeason?: boolean;
+  scanScribesNoteSeen?: boolean;
+  rodericScribesNoteSeen?: boolean;
+  totalScans?: number;
+  totalAnomaliesSpotted?: number;
+  totalAnomaliesMissed?: number;
+  perfectScans?: number;
+  warnings?: Partial<ScanWarnings>;
+  signalLog?: readonly { season: string; year: number; type: string; text: string }[];
+}
+interface WatchtowerViewState extends RodericState {
+  phase: string;
+  rngState: number;
+  raids?: Partial<RaidState>;
+  watchtower?: WatchtowerProgress;
+}
+type WatchtowerCommand =
+  | { type: 'WATCHTOWER_SCAN_SCRIBES_NOTE_SEEN' | 'WATCHTOWER_RODERIC_SCRIBES_NOTE_SEEN' | 'DISMISS_SCRIBES_NOTE' }
+  | { type: 'WATCHTOWER_SCAN_COMPLETE'; payload: { scanSeed: number; foundKeys: string[] } };
+interface SectionProps {
+  state: WatchtowerViewState;
+  dispatch: (command: WatchtowerCommand) => void;
+  onBack: () => void;
+}
+interface VisibleAnomaly extends ScanAnomaly { found: boolean; missed: boolean }
+interface LandscapeProps {
+  anomalies: readonly VisibleAnomaly[];
+  onClickAnomaly: (key: string) => void;
+  timeLeft: number;
+  scanActive: boolean;
+  scanDone: boolean;
+}
+interface BriefingContent { type: 'assessment' | 'lesson' | 'recommendation'; text: string }
+interface StationProps {
+  title: string;
+  subtitle: string;
+  icon: string;
+  borderColor: string;
+  disabled: boolean;
+  disabledText?: string;
+  onClick: () => void;
+}
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function shuffle(arr) {
+function shuffle<T,>(arr: readonly T[]): T[] {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+    const left = copy[i];
+    const right = copy[j];
+    if (left === undefined || right === undefined) throw new Error('Invalid briefing shuffle index.');
+    copy[i] = right;
+    copy[j] = left;
   }
   return copy;
 }
@@ -39,7 +90,7 @@ function shuffle(arr) {
 // Watchtower Header
 // ---------------------------------------------------------------------------
 
-function WatchtowerHeader({ subtitle }) {
+function WatchtowerHeader({ subtitle }: { subtitle: string }) {
   return (
     <div className="text-center mb-4">
       <h2
@@ -67,7 +118,7 @@ function WatchtowerHeader({ subtitle }) {
 // Horizon Scan — SVG Landscape Scene
 // ---------------------------------------------------------------------------
 
-function LandscapeScene({ anomalies, onClickAnomaly, timeLeft, scanActive, scanDone }) {
+function LandscapeScene({ anomalies, onClickAnomaly, timeLeft, scanActive, scanDone }: LandscapeProps) {
   return (
     <div
       className="relative w-full overflow-hidden rounded-lg border-2"
@@ -177,10 +228,10 @@ function LandscapeScene({ anomalies, onClickAnomaly, timeLeft, scanActive, scanD
 // Individual anomaly elements
 // ---------------------------------------------------------------------------
 
-function AnomalyElement({ anomaly, onClick }) {
+function AnomalyElement({ anomaly, onClick }: { anomaly: VisibleAnomaly; onClick: () => void }) {
   const { id, x, y, found, missed } = anomaly;
 
-  const baseStyle = {
+  const baseStyle: CSSProperties = {
     position: "absolute",
     left: `${x}%`,
     top: `${y}%`,
@@ -316,18 +367,18 @@ function AnomalyElement({ anomaly, onClick }) {
 // Horizon Scan — Main Mini-Game Component
 // ---------------------------------------------------------------------------
 
-function HorizonScan({ state, dispatch, onBack }) {
+function HorizonScan({ state, dispatch, onBack }: SectionProps) {
   const wt = state.watchtower ?? {};
   const scannedThisSeason = wt.scannedThisSeason ?? false;
   const [showScribesNote, setShowScribesNote] = useState(!(wt.scanScribesNoteSeen ?? false));
-  const [phase, setPhase] = useState("ready"); // ready | scanning | report
-  const [anomalies, setAnomalies] = useState([]);
-  const anomaliesRef = useRef([]);
-  const scanPlanRef = useRef(null);
-  const scanSeedRef = useRef(null);
+  const [phase, setPhase] = useState<"ready" | "scanning" | "report">("ready"); // ready | scanning | report
+  const [anomalies, setAnomalies] = useState<VisibleAnomaly[]>([]);
+  const anomaliesRef = useRef<VisibleAnomaly[]>([]);
+  const scanPlanRef = useRef<ScanPlan | null>(null);
+  const scanSeedRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(SCAN_DURATION_SECONDS);
-  const [report, setReport] = useState(null);
-  const timerRef = useRef(null);
+  const [report, setReport] = useState<ScanReport | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function startScan() {
     if (state.phase !== "management" || scannedThisSeason) return;
@@ -351,25 +402,11 @@ function HorizonScan({ state, dispatch, onBack }) {
     }
   }
 
-  function handleClickAnomaly(key) {
+  function handleClickAnomaly(key: string) {
     if (phase !== "scanning") return;
     const updated = anomaliesRef.current.map((a) => (a.key === key && !a.found ? { ...a, found: true } : a));
     anomaliesRef.current = updated;
     setAnomalies(updated);
-  }
-
-  function finishScan() {
-    clearInterval(timerRef.current);
-
-    const final = anomaliesRef.current.map((a) => (a.found ? a : { ...a, missed: true }));
-    anomaliesRef.current = final;
-    setAnomalies(final);
-
-    if (!scanPlanRef.current) return;
-    const reportData = summarizeScan(scanPlanRef.current, final.filter((anomaly) => anomaly.found).map((anomaly) => anomaly.key));
-    if (!reportData) return;
-    setReport(reportData);
-    setPhase("report");
   }
 
   // Timer — use a ref to track remaining time so we don't nest state setters
@@ -377,21 +414,39 @@ function HorizonScan({ state, dispatch, onBack }) {
 
   useEffect(() => {
     if (phase !== "scanning") return;
+    function clearScanTimer() {
+      if (timerRef.current !== null) clearInterval(timerRef.current);
+    }
+
+    function finishScan() {
+      clearScanTimer();
+
+      const final = anomaliesRef.current.map((a) => (a.found ? a : { ...a, missed: true }));
+      anomaliesRef.current = final;
+      setAnomalies(final);
+
+      if (!scanPlanRef.current) return;
+      const reportData = summarizeScan(scanPlanRef.current, final.filter((anomaly) => anomaly.found).map((anomaly) => anomaly.key));
+      if (!reportData) return;
+      setReport(reportData);
+      setPhase("report");
+    }
+
     timeLeftRef.current = SCAN_DURATION_SECONDS;
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
       setTimeLeft(timeLeftRef.current);
       if (timeLeftRef.current <= 0) {
-        clearInterval(timerRef.current);
+        clearScanTimer();
         finishScan();
       }
     }, 1000);
 
-    return () => clearInterval(timerRef.current);
+    return () => clearScanTimer();
   }, [phase]);
 
   function acknowledgeReport() {
-    if (!report) return;
+    if (!report || scanSeedRef.current === null) return;
 
     dispatch({
       type: "WATCHTOWER_SCAN_COMPLETE",
@@ -699,7 +754,7 @@ function HorizonScan({ state, dispatch, onBack }) {
 // Captain's Briefing — NPC Panel
 // ---------------------------------------------------------------------------
 
-function CaptainBriefing({ state, dispatch, onBack }) {
+function CaptainBriefing({ state, dispatch, onBack }: SectionProps) {
   const wt = state.watchtower ?? {};
   const scribesNoteSeen = wt.rodericScribesNoteSeen ?? false;
   const [showScribesNote, setShowScribesNote] = useState(!scribesNoteSeen);
@@ -709,7 +764,7 @@ function CaptainBriefing({ state, dispatch, onBack }) {
   const lessonQueue = useRef(shuffle(Array.from({ length: RODERIC_HISTORICAL_LESSONS.length }, (_, i) => i)));
   const lessonIndex = useRef(0);
 
-  function getAssessment() {
+  function getAssessment(): BriefingContent {
     // Try each assessment function; skip nulls
     const shuffled = shuffle(RODERIC_DEFENSE_ASSESSMENTS);
     for (const fn of shuffled) {
@@ -719,16 +774,18 @@ function CaptainBriefing({ state, dispatch, onBack }) {
     return { type: "assessment", text: "The walls hold. For now." };
   }
 
-  function getLesson() {
+  function getLesson(): BriefingContent {
     if (lessonIndex.current >= lessonQueue.current.length) {
       lessonQueue.current = shuffle(Array.from({ length: RODERIC_HISTORICAL_LESSONS.length }, (_, i) => i));
       lessonIndex.current = 0;
     }
     const idx = lessonQueue.current[lessonIndex.current++];
-    return { type: "lesson", text: RODERIC_HISTORICAL_LESSONS[idx] };
+    const lesson = idx === undefined ? undefined : RODERIC_HISTORICAL_LESSONS[idx];
+    if (lesson === undefined) throw new Error('Captain lesson queue is empty.');
+    return { type: 'lesson', text: lesson };
   }
 
-  function getRecommendation() {
+  function getRecommendation(): BriefingContent {
     const shuffled = shuffle(RODERIC_STRATEGIC_TIPS);
     for (const fn of shuffled) {
       const result = typeof fn === "function" ? fn(state) : fn;
@@ -737,7 +794,7 @@ function CaptainBriefing({ state, dispatch, onBack }) {
     return { type: "recommendation", text: "Maintain the garrison. Watch the horizon. Upgrade when you can afford it. Defense is patience, my lord." };
   }
 
-  function makeContent() {
+  function makeContent(): BriefingContent {
     const roll = Math.random();
     if (roll < 0.40) return getAssessment();
     if (roll < 0.75) return getLesson();
@@ -952,7 +1009,7 @@ function CaptainBriefing({ state, dispatch, onBack }) {
 // Signal Fire Log
 // ---------------------------------------------------------------------------
 
-function SignalFireLog({ state }) {
+function SignalFireLog({ state }: { state: WatchtowerViewState }) {
   const wt = state.watchtower ?? {};
   const log = wt.signalLog ?? [];
 
@@ -1003,7 +1060,7 @@ function SignalFireLog({ state }) {
 // Station Cards for Watchtower sections
 // ---------------------------------------------------------------------------
 
-function WatchtowerStation({ title, subtitle, icon, borderColor, disabled, disabledText, onClick }) {
+function WatchtowerStation({ title, subtitle, icon, borderColor, disabled, disabledText, onClick }: StationProps) {
   return (
     <button
       onClick={onClick}
@@ -1097,15 +1154,19 @@ const WATCHTOWER_STYLES = `
 // Main Watchtower Component
 // ---------------------------------------------------------------------------
 
-export default function Watchtower({ state, dispatch, onClose }) {
-  const [activeSection, setActiveSection] = useState(null);
+export default function Watchtower({ state, dispatch, onClose }: Omit<SectionProps, 'onBack'> & { onClose: () => void }) {
+  const [activeSection, setActiveSection] = useState<"scan" | "roderic" | null>(null);
   const [entering, setEntering] = useState(true);
 
   const wt = state.watchtower ?? {};
 
   // Random subtitle picked once per mount
   const [subtitle] = useState(
-    () => WATCHTOWER_SUBTITLES[Math.floor(Math.random() * WATCHTOWER_SUBTITLES.length)]
+    () => {
+      const text = WATCHTOWER_SUBTITLES[Math.floor(Math.random() * WATCHTOWER_SUBTITLES.length)];
+      if (text === undefined) throw new Error('Watchtower subtitle pool is empty.');
+      return text;
+    }
   );
 
   // Entry animation
