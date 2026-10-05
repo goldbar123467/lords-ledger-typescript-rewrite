@@ -32,6 +32,7 @@ import {
   MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS,
   PIETY_FLAVOR,
 } from "../data/chapel.ts";
+import { isPositivePrice } from "../engine/transactionValidation.ts";
 import { chapelChoiceCost, canAffordChapelChoice } from "../engine/chapelChoices.ts";
 
 // ---------------------------------------------------------------------------
@@ -344,9 +345,11 @@ function AnselmView({ state, dispatch }: ChapelProps) {
   const [titheInput, setTitheInput] = useState("");
   const titheResponse = chapel?.titheResponse;
   const suggestedTithe = Math.floor(state.denarii * 0.1);
+  const titheAmount = Number(titheInput);
+  const canGive = isPositivePrice(titheAmount) && titheAmount <= state.denarii;
 
   function handleTithe(amount: number) {
-    if (amount <= 0 || amount > state.denarii) return;
+    if (!isPositivePrice(amount) || amount > state.denarii) return;
     dispatch({ type: "CHAPEL_PAY_TITHE", payload: { amount } });
     setTitheInput("");
   }
@@ -371,30 +374,34 @@ function AnselmView({ state, dispatch }: ChapelProps) {
           {"\u271D"} Tithe Offering
         </div>
 
-        <div className="flex gap-2 mb-3">
+        <label htmlFor="chapel-tithe-amount" className="block mb-2 text-sm" style={{ color: COLORS.text }}>
+          Donation amount (denarii)
+        </label>
+        <div className="flex gap-2 mb-3 flex-wrap">
           <input
+            id="chapel-tithe-amount"
+            step="any"
             type="number"
             min="0"
             max={state.denarii}
             value={titheInput}
             onChange={(e) => setTitheInput(e.target.value)}
             placeholder={`${suggestedTithe}d (10%)`}
-            className="flex-1 px-3 py-2 rounded text-sm"
+            className="flex-1 min-w-0 px-3 py-2 rounded text-sm"
             style={{
               background: "rgba(15, 12, 10, 0.8)",
               border: `1px solid ${COLORS.cardBorder}`,
               color: COLORS.text,
               fontFamily: "'Crimson Text', serif",
-              outline: "none",
             }}
           />
           <button
-            onClick={() => handleTithe(parseInt(titheInput, 10) || 0)}
-            disabled={!titheInput || parseInt(titheInput, 10) <= 0 || parseInt(titheInput, 10) > state.denarii}
+            onClick={() => handleTithe(titheAmount)}
+            disabled={!canGive}
             className="px-4 py-2 text-xs uppercase tracking-wider"
             style={{
               ...goldButton,
-              opacity: !titheInput || parseInt(titheInput, 10) <= 0 ? 0.5 : 1,
+              opacity: canGive ? 1 : 0.5,
             }}
           >
             Give
