@@ -38,7 +38,7 @@ import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import { getChapelChoice, canAffordChapelChoice } from "./chapelChoices.ts";
-import { getManuscriptRound, isManuscriptSymbol } from "./chapelManuscript.ts";
+import { planManuscriptAction } from "./chapelManuscript.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -67,7 +67,7 @@ import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_R
 import {
   ANSELM_GREETINGS, TITHE_RESPONSES, TITHE_EFFECTS,
   CAEDMON_GREETINGS, SHOP_ITEMS,
-  MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS, MANUSCRIPT_FACTS,
+  MORAL_DILEMMAS,
 } from "../data/chapel.ts";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.js";
 import {
@@ -2994,135 +2994,22 @@ function reduceGame(state, action, random) {
       };
     }
 
-    case "CHAPEL_MS_START": {
-      if (state.phase !== "management") return state;
-      const prevChapel = state.chapel ?? {};
-      const patternLength = 3;
-      const pattern = Array.from({ length: patternLength }, () =>
-        Math.floor(random() * MANUSCRIPT_SYMBOLS.length)
-      );
-      return {
-        ...state,
-        chapel: {
-          ...prevChapel,
-          view: "manuscript",
-          msPhase: "showing",
-          msPattern: pattern,
-          msPlayerInput: [],
-          msRound: 1,
-          msMaxRound: 4,
-          msActiveSymbol: null,
-          msFact: null,
-          msReward: 0,
-        },
-      };
-    }
-
-    case "CHAPEL_MS_FLASH": {
-      const { index } = action.payload ?? {};
-      const chapel = state.chapel ?? {};
-      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
-        || !getManuscriptRound(chapel) || !isManuscriptSymbol(index)) return state;
-      return {
-        ...state,
-        chapel: { ...(state.chapel ?? {}), msActiveSymbol: index },
-      };
-    }
-
-    case "CHAPEL_MS_CLEAR_FLASH": {
-      const chapel = state.chapel ?? {};
-      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
-        || !getManuscriptRound(chapel)) return state;
-      return {
-        ...state,
-        chapel: { ...(state.chapel ?? {}), msActiveSymbol: null },
-      };
-    }
-
-    case "CHAPEL_MS_DONE_SHOWING": {
-      const chapel = state.chapel ?? {};
-      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
-        || !getManuscriptRound(chapel)) return state;
-      return {
-        ...state,
-        chapel: { ...(state.chapel ?? {}), msPhase: "input" },
-      };
-    }
-
+    case "CHAPEL_MS_START":
+    case "CHAPEL_MS_FLASH":
+    case "CHAPEL_MS_CLEAR_FLASH":
+    case "CHAPEL_MS_DONE_SHOWING":
     case "CHAPEL_MS_INPUT": {
-      const { index } = action.payload ?? {};
-      const prevChapel = state.chapel ?? {};
-      if (state.phase !== "management" || prevChapel.view !== "manuscript" || prevChapel.msPhase !== "input") return state;
-      const roundState = getManuscriptRound(prevChapel);
-      if (!roundState || !isManuscriptSymbol(index)) return state;
-
-      const newInput = [...roundState.input, index];
-      const expected = roundState.pattern;
-      const pos = newInput.length - 1;
-
-      // Wrong answer
-      if (newInput[pos] !== expected[pos]) {
-        const fact = MANUSCRIPT_FACTS[Math.floor(random() * MANUSCRIPT_FACTS.length)];
-        return {
-          ...state,
-          chapel: { ...prevChapel, msPhase: "fail", msPlayerInput: newInput, msFact: fact },
-        };
-      }
-
-      // Correct so far, sequence not complete
-      if (newInput.length < expected.length) {
-        return {
-          ...state,
-          chapel: { ...prevChapel, msPlayerInput: newInput },
-        };
-      }
-
-      // Sequence complete — check if more rounds
-      const round = roundState.round;
-      const maxRound = prevChapel.msMaxRound ?? 4;
-
-      if (round < maxRound) {
-        // Next round — longer pattern
-        const nextLength = 3 + round; // round 1=3, round 2=4, round 3=5, round 4=6
-        const nextPattern = Array.from({ length: nextLength }, () =>
-          Math.floor(random() * MANUSCRIPT_SYMBOLS.length)
-        );
-        return {
-          ...state,
-          chapel: {
-            ...prevChapel,
-            msRound: round + 1,
-            msPattern: nextPattern,
-            msPlayerInput: [],
-            msPhase: "showing",
-            msActiveSymbol: null,
-          },
-        };
-      }
-
-      // All rounds complete — success!
-      const hasQuill = (prevChapel.inventory ?? []).includes("quill_ink");
-      const reward = hasQuill ? 20 : 15;
-      const fact = MANUSCRIPT_FACTS[Math.floor(random() * MANUSCRIPT_FACTS.length)];
-      const newFaith = Math.min(100, (prevChapel.faith ?? 50) + 5);
-      const newPiety = Math.min(100, (prevChapel.piety ?? 30) + 3);
-
-      const logEntry = { text: `Completed manuscript copying: +${reward}d, +5 Faith, +3 Piety.`, turn: state.turn, season: state.season };
-
+      const change = planManuscriptAction(state, action.type, action.payload, random);
+      if (!change) return state;
+      const chapel = { ...(state.chapel ?? {}), ...change.chapel };
+      if (change.logText) chapel.gameLog = [...(chapel.gameLog ?? []), {
+        text: change.logText, turn: state.turn, season: state.season,
+      }];
       return {
-        ...state,
-        denarii: state.denarii + reward,
-        chapel: {
-          ...prevChapel,
-          msPhase: "success",
-          msPlayerInput: newInput,
-          msReward: reward,
-          msFact: fact,
-          faith: newFaith,
-          piety: newPiety,
-          gameLog: [...(prevChapel.gameLog ?? []), logEntry],
-        },
-        chronicle: addChronicle(state.chronicle, `Completed manuscript in the Scriptorium. Earned ${reward}d.`, state.season, state.year, state.turn, "action"),
+        ...state, chapel,
+        ...(change.denarii === undefined ? {} : { denarii: change.denarii }),
+        ...(change.chronicleText ? { chronicle: addChronicle(state.chronicle,
+          change.chronicleText, state.season, state.year, state.turn, "action") } : {}),
       };
     }
 
