@@ -573,5 +573,9 @@ export function readLegacySave(raw: string, options?: { restartManuscript: true 
 export function writeV2Save(state: unknown): string {
   assertSnapshot(state);
   const envelope: SaveEnvelope = { format: 'lords-ledger', version: SAVE_VERSION, state: withRandomState(state) };
-  return JSON.stringify(envelope);
+  const raw = JSON.stringify(envelope);
+  // JSON may drop inherited fields or invoke toJSON. Check the bytes the reader will receive.
+  const serialized = readV2Save(raw);
+  if (!serialized.ok) throw new Error(serialized.error);
+  return raw;
 }
