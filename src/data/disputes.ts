@@ -1938,7 +1938,7 @@ const DISPUTES = [
       "scribes, and even abbots.",
   },
 
-];
+] as const satisfies readonly Dispute[];
 
 export type DisputeId = typeof DISPUTES[number]['id'];
 
