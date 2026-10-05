@@ -57,13 +57,18 @@ const ICON_MAP = {
 // Styles
 // ---------------------------------------------------------------------------
 
+const SYMBOL_DESCRIPTIONS = [
+  "Cross of Jerusalem", "Four-pointed star", "Shamrock", "Fleur-de-lis",
+  "Maltese cross", "Diamond", "Four diamonds", "Church",
+] as const;
+
 const COLORS = {
   bg: "#0d0b0e",
   cardBg: "linear-gradient(135deg, rgba(35, 30, 25, 0.95), rgba(28, 24, 20, 0.98))",
   cardBorder: "rgba(140, 110, 70, 0.25)",
-  text: "#d4c9a8",
-  dim: "#8a7e6b",
-  muted: "#6a6050",
+  text: "var(--chapel-text)",
+  dim: "var(--chapel-secondary)",
+  muted: "var(--chapel-secondary)",
   gold: "#c9a84c",
   faithBlue: "#7eb8d4",
   piety: "#b89adb",
@@ -113,12 +118,13 @@ function ChapelNav({ view, onSetView, onStartManuscript }: ChapelNavigation & { 
     { id: "manuscript", label: "Scriptorium", Icon: BookOpen },
   ];
   return (
-    <div className="flex overflow-x-auto gap-1 mb-4">
+    <nav aria-label="Chapel" className="chapel-nav mb-4">
       {tabs.map((tab) => {
         const active = view === tab.id;
         return (
           <button
             key={tab.id}
+            aria-current={active ? "page" : undefined}
             onClick={() => {
               if (tab.id === "manuscript") {
                 onStartManuscript();
@@ -126,7 +132,7 @@ function ChapelNav({ view, onSetView, onStartManuscript }: ChapelNavigation & { 
                 onSetView(tab.id);
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs uppercase tracking-wider whitespace-nowrap transition-all duration-200"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs uppercase tracking-wider transition-all duration-200"
             style={{
               fontFamily: "'Cinzel', serif",
               fontWeight: 600,
@@ -138,12 +144,11 @@ function ChapelNav({ view, onSetView, onStartManuscript }: ChapelNavigation & { 
             }}
           >
             <tab.Icon size={14} />
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.label.split(" ").pop()}</span>
+            <span>{tab.label}</span>
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
@@ -156,16 +161,16 @@ function NpcPortrait({ symbol, borderColor, name, subtitle }: { symbol: string; 
           width: 48, height: 48, borderRadius: "50%",
           border: `2px solid ${borderColor}`,
           background: "rgba(20, 16, 12, 0.8)",
-          fontSize: "20px", color: borderColor,
+          fontSize: "1.5rem", color: borderColor,
         }}
       >
         {symbol}
       </div>
       <div>
-        <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, color: borderColor, fontSize: "15px" }}>
+        <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, color: borderColor, fontSize: "1.125rem" }}>
           {name}
         </div>
-        <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "13px", fontStyle: "italic" }}>
+        <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1rem", fontStyle: "italic" }}>
           {subtitle}
         </div>
       </div>
@@ -181,12 +186,12 @@ function MeterBar({ label, value, max, color }: { label: string; value: number; 
         <span style={{ color }}>{label}</span>
         <span style={{ color: COLORS.dim }}>{value}/{max}</span>
       </div>
-      <div style={{ height: 8, background: "rgba(20, 16, 12, 0.8)", borderRadius: 4, overflow: "hidden" }}>
+      <div role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} style={{ height: 8, background: "rgba(20, 16, 12, 0.8)", borderRadius: 4, overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
             width: `${pct}%`,
-            background: `linear-gradient(90deg, ${color}88, ${color})`,
+            background: color,
             borderRadius: 4,
             transition: "width 400ms ease",
           }}
@@ -209,7 +214,7 @@ function HistoricalContext({ children, title }: { children: ReactNode; title?: s
       <div className="text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ fontFamily: "'Cinzel', serif", color: COLORS.piety }}>
         <span>{"\u2726"}</span> {title || "Historical Context"}
       </div>
-      <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "14px", lineHeight: 1.6 }}>
+      <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1.125rem", lineHeight: 1.6 }}>
         {children}
       </div>
     </div>
@@ -277,17 +282,17 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
     <div>
       {/* Chapel header */}
       <div className="text-center mb-6">
-        <div style={{ fontSize: "28px", color: COLORS.gold, marginBottom: "4px" }}>{"\u26EA"}</div>
-        <h2 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "22px", margin: 0 }}>
+        <div style={{ fontSize: "2rem", color: COLORS.gold, marginBottom: "4px" }}>{"\u26EA"}</div>
+        <h2 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "1.625rem", margin: 0 }}>
           The Chapel of St. Dunstan
         </h2>
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "14px", fontStyle: "italic", marginTop: "6px" }}>
+        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1.125rem", fontStyle: "italic", marginTop: "6px" }}>
           Stone walls echo with whispered prayers. Candlelight flickers across weathered saints.
         </p>
       </div>
 
       {/* Action cards 2x2 */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="chapel-actions mb-6">
         {actions.map((a) => (
           <button
             key={a.label}
@@ -296,7 +301,7 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
             className="p-4 text-left transition-all duration-200"
             style={{
               ...cardStyle,
-              opacity: a.disabled ? 0.45 : 1,
+              borderStyle: a.disabled ? "dashed" : "solid",
               cursor: a.disabled ? "not-allowed" : "pointer",
             }}
             onMouseEnter={(e) => {
@@ -311,10 +316,10 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
             }}
           >
             <a.Icon size={20} style={{ color: COLORS.gold, marginBottom: "8px" }} />
-            <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "13px" }}>
+            <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "1rem" }}>
               {a.label}
             </div>
-            <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "12px", marginTop: "2px" }}>
+            <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: ".875rem", marginTop: "2px" }}>
               {a.desc}
             </div>
           </button>
@@ -433,7 +438,7 @@ function AnselmView({ state, dispatch }: ChapelProps) {
         </div>
 
         {titheResponse && (
-          <div style={{ ...speechBubble, marginTop: "12px", fontSize: "14px" }}>
+          <div style={{ ...speechBubble, marginTop: "12px", fontSize: "1.125rem" }}>
             {titheResponse}
           </div>
         )}
@@ -490,10 +495,10 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
             return (
               <div
                 key={item.id}
-                className="flex items-center gap-3 p-3 transition-all duration-200"
+                className="chapel-shop-item gap-3 p-3 transition-all duration-200"
                 style={{
                   ...cardStyle,
-                  opacity: owned ? 0.45 : 1,
+                  borderColor: owned ? "rgba(141, 186, 110, 0.45)" : COLORS.cardBorder,
                 }}
               >
                 {/* Icon */}
@@ -503,7 +508,7 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
                     width: 36, height: 36, borderRadius: "4px",
                     background: "rgba(15, 12, 10, 0.8)",
                     border: `1px solid ${COLORS.cardBorder}`,
-                    fontSize: "18px", color: COLORS.gold,
+                    fontSize: "1.375rem", color: COLORS.gold,
                   }}
                 >
                   {item.icon}
@@ -511,24 +516,24 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "13px" }}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "1rem" }}>
                       {item.name}
                     </span>
-                    <span style={{ fontFamily: "'Cinzel', serif", color: COLORS.gold, fontSize: "12px" }}>
+                    <span style={{ fontFamily: "'Cinzel', serif", color: COLORS.gold, fontSize: ".875rem" }}>
                       {item.cost}d
                     </span>
                   </div>
-                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "12px", fontStyle: "italic" }}>
+                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: ".875rem", fontStyle: "italic" }}>
                     {item.description}
                   </div>
-                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.faithBlue, fontSize: "11px", marginTop: "2px" }}>
+                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.faithBlue, fontSize: ".875rem", marginTop: "2px" }}>
                     {item.effectText}
                   </div>
                 </div>
 
                 {/* Buy button */}
-                <div className="shrink-0">
+                <div className="chapel-shop-action">
                   {owned ? (
                     <span className="text-xs font-semibold" style={{ color: COLORS.happiness, fontFamily: "'Cinzel', serif" }}>
                       {"\u2713"} Owned
@@ -540,13 +545,19 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
                       className="px-3 py-1.5 text-xs uppercase tracking-wider"
                       style={{
                         ...goldButton,
-                        opacity: canAfford ? 1 : 0.4,
+                        background: canAfford ? goldButton.background : "#302a20",
+                        color: canAfford ? goldButton.color : COLORS.text,
                         cursor: canAfford ? "pointer" : "not-allowed",
-                        fontSize: "11px",
+                        fontSize: ".875rem",
                       }}
                     >
                       Buy
                     </button>
+                  )}
+                  {!owned && !canAfford && (
+                    <p className="text-xs mt-2" style={{ color: COLORS.danger }}>
+                      Requires {item.cost}d · Treasury: {state.denarii}d
+                    </p>
                   )}
                 </div>
               </div>
@@ -673,17 +684,18 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
   return (
     <div>
       <div className="text-center mb-4">
-        <h3 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "18px" }}>
+        <h3 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "1.375rem" }}>
           The Scriptorium
         </h3>
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "13px", fontStyle: "italic" }}>
+        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1rem", fontStyle: "italic" }}>
           Copy the illuminated symbols in order. The patterns grow longer each round.
         </p>
       </div>
 
       {/* Status */}
-      <div className="text-center mb-3">
-        <div className="mb-1">{roundDots}</div>
+      <div role="status" aria-live="polite" className="text-center mb-3">
+        <div aria-hidden="true" className="mb-1">{roundDots}</div>
+        <p className="text-xs mb-2" style={{ color: COLORS.dim }}>Round {msRound} of {msMaxRound}</p>
         <span className="text-sm" style={{ fontFamily: "'Cinzel', serif", color: statusColors[msPhase] }}>
           {statusText[msPhase]}
         </span>
@@ -702,6 +714,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
           return (
             <button
               key={idx}
+              aria-description={SYMBOL_DESCRIPTIONS[idx]}
               onClick={() => handleSymbolClick(idx)}
               disabled={!isClickable}
               className="flex items-center justify-center transition-all duration-200"
@@ -709,7 +722,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
                 width: "100%",
                 aspectRatio: "1",
                 borderRadius: "6px",
-                fontSize: "24px",
+                fontSize: "1.75rem",
                 background: isFlashing
                   ? "rgba(201, 168, 76, 0.3)"
                   : "rgba(20, 16, 12, 0.8)",
@@ -732,7 +745,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
 
       {/* Completion panel */}
       {(msPhase === "success" || msPhase === "fail") && (
-        <div className="p-4 mb-4" style={cardStyle}>
+        <section role="region" aria-label="Manuscript result" tabIndex={0} className="chapel-result p-4 mb-4" style={cardStyle}>
           {msPhase === "success" && (
             <div className="text-center mb-3">
               <div className="text-lg mb-1" style={{ color: COLORS.happiness, fontFamily: "'Cinzel', serif", fontWeight: 700 }}>
@@ -756,7 +769,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
               <div className="text-lg mb-1" style={{ color: COLORS.danger, fontFamily: "'Cinzel', serif" }}>
                 The ink smudges...
               </div>
-              <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "13px" }}>
+              <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1rem" }}>
                 No penalty — even the best scribes make mistakes. Try again!
               </p>
             </div>
@@ -775,13 +788,13 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
               <div className="text-xs uppercase mb-1" style={{ fontFamily: "'Cinzel', serif", color: COLORS.faithBlue }}>
                 {"\u2726"} Did You Know?
               </div>
-              <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "13px", lineHeight: 1.6 }}>
+              <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "1rem", lineHeight: 1.6 }}>
                 {msFact}
               </p>
             </div>
           )}
 
-          <div className="flex justify-center gap-3 mt-4">
+          <div className="flex justify-center gap-3 mt-4 flex-wrap">
             <button
               onClick={() => dispatch({ type: "CHAPEL_MS_START" })}
               className="px-4 py-2 text-xs uppercase tracking-wider"
@@ -802,7 +815,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
               Return to Chapel
             </button>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
@@ -829,14 +842,14 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
       {/* Header */}
       <div className="text-center mb-4">
         <Scale size={28} style={{ color: COLORS.gold, margin: "0 auto 8px" }} />
-        <h3 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "20px" }}>
+        <h3 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "1.5rem" }}>
           {dilemma.title}
         </h3>
       </div>
 
       {/* Narrative */}
       <div className="p-4 mb-4" style={cardStyle}>
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "15px", lineHeight: 1.7 }}>
+        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "1.125rem", lineHeight: 1.7 }}>
           {dilemma.narrative}
         </p>
       </div>
@@ -853,11 +866,6 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
                 key={i}
                 disabled={!affordable}
                 onClick={() => handleChoice(i)}
-                onFocus={(event) => {
-                  if (event.currentTarget.matches(":focus-visible")) {
-                    event.currentTarget.scrollIntoView({ block: "center", behavior: "instant" });
-                  }
-                }}
                 className="w-full flex items-center gap-3 p-4 text-left transition-all duration-200 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
                 style={cardStyle}
                 onMouseEnter={(e) => {
@@ -886,7 +894,7 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
         </div>
       ) : (
         <div className="p-4 mb-4" style={cardStyle}>
-          <p className="mb-3" style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "14px", lineHeight: 1.7 }}>
+          <p className="mb-3" style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "1.125rem", lineHeight: 1.7 }}>
             {result.text}
           </p>
           <div className="flex flex-wrap">
@@ -931,7 +939,12 @@ export default function ChapelTab({ state, dispatch }: ChapelProps) {
 
   return (
     <div
-      className="w-full max-w-2xl mx-auto"
+      className="chapel w-full max-w-2xl mx-auto"
+      onFocusCapture={(event) => {
+        if (event.target.matches(":focus-visible")) {
+          event.target.scrollIntoView({ block: "center", behavior: "instant" });
+        }
+      }}
       style={{
         background: "linear-gradient(170deg, #0d0b0e 0%, #1a1520 40%, #12100e 100%)",
         minHeight: "60vh",
@@ -979,7 +992,7 @@ export default function ChapelTab({ state, dispatch }: ChapelProps) {
 
       {/* Footer */}
       <div className="text-center mt-8 pb-4">
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.muted, fontSize: "12px", fontStyle: "italic" }}>
+        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.muted, fontSize: ".875rem", fontStyle: "italic" }}>
           "The Church forgets nothing, forgives selectively, and charges for both." — Father Anselm
         </p>
       </div>
