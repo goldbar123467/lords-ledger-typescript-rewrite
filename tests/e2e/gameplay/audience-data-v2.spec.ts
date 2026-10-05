@@ -1,0 +1,35 @@
+import { expect, test } from '@playwright/test';
+import encounters from '../../../src/data/audience.ts';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
+for (const width of [390, 1366]) {
+  test(`authored audience response and history survive Save/Load at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 844 });
+    const state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    const raw = writeV2Save(state), encounter = encounters[0];
+    if (!encounter) throw new Error('Missing first audience encounter');
+    const response = encounter.responses[0]; if (!response) throw new Error('Missing authored response');
+    const expected = gameReducer(state, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex: 0, consequences: response.consequences } });
+    const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+    await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
+    await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
+    await page.getByRole('button', { name: 'Audience', exact: true }).click();
+    await page.getByRole('button', { name: new RegExp(encounter.name) }).click();
+    const reply = page.getByRole('button', { name: new RegExp(response.label) });
+    await expect(reply).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(encounter.speech, { exact: false })).toBeVisible();
+    await reply.click(); await expect(page.getByText(response.aftermath, { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'Show Historical Context', exact: true }).click();
+    await expect(page.getByText(encounter.historicalNote, { exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath('audience-aftermath.png'), fullPage: true, animations: 'disabled' });
+    await page.getByRole('button', { name: 'Save game', exact: true }).click();
+    const saved = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
+    if (!saved) throw new Error('Missing audience save');
+    const loaded = readV2Save(saved); if (!loaded.ok) throw new Error(loaded.error);
+    expect(loaded.state.greatHall).toEqual(expected.greatHall); expect(loaded.state.rngState).toBe(expected.rngState);
+    await page.reload(); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
+    await page.getByRole('button', { name: 'Save game', exact: true }).click();
+    expect(await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'))).toBe(saved);
+    expect(errors).toEqual([]);
+  });
+}

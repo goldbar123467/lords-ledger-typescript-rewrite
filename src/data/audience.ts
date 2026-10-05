@@ -1,5 +1,5 @@
 /**
- * audience.js
+ * audience.ts
  *
  * Great Hall Phase 3 — Audience Encounters for The Lord's Ledger.
  *
@@ -28,7 +28,31 @@
  *   Large: +/-6-8 | Massive: +/-9-12
  */
 
-const AUDIENCE_ENCOUNTERS = [
+import type { HallMeterEffects } from './decrees.ts';
+
+export type AudiencePetitionerType =
+  | 'beggar' | 'merchant' | 'priest' | 'soldier' | 'gossip' | 'inventor' | 'child'
+  | 'healer' | 'monk' | 'criminal' | 'entertainer' | 'petitioner' | 'advisor'
+  | 'mystery' | 'tradition' | 'staff' | 'collective' | 'specialist' | 'dispute_light';
+export type AudienceTone = 'serious' | 'comedic' | 'tense';
+export interface AudienceResponse {
+  readonly label: string;
+  readonly text: string;
+  readonly consequences: Readonly<HallMeterEffects>;
+  readonly aftermath: string;
+}
+export interface AudienceEncounter {
+  readonly id: `aud_${string}`;
+  readonly name: string;
+  readonly type: AudiencePetitionerType;
+  readonly tone: AudienceTone;
+  readonly preview: string;
+  readonly speech: string;
+  readonly responses: readonly AudienceResponse[];
+  readonly historicalNote: string;
+}
+
+const AUDIENCE_ENCOUNTERS: readonly AudienceEncounter[] = [
 
   // ---------------------------------------------------------------
   // 1. OLD MARTHA (Beggar, Serious)
