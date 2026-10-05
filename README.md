@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-Outcome, Military and Watchtower views use checked TypeScript within their recorded scopes. Chapel authored data is checked; malformed tithes, unaffordable rewards, repeated outcomes, enlarged keyboard visibility and misleading effect/cost claims are repaired with independent review. All 141 unit tests, strict typecheck, lint, build and two latest claim/save browser journeys pass. Production remains 1,221 lines above baseline; 28 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
+Outcome, Military and Watchtower views use checked TypeScript within their recorded scopes. Chapel authored data is checked; malformed tithes, unaffordable rewards, repeated outcomes, enlarged keyboard visibility and misleading effect/cost claims are repaired with independent review. Manuscript phase/terminal guards preserve legal play and partial saves; sparse-array validation still needs correction. All 146 unit tests, strict typecheck, lint, build and two real-timer manuscript browser journeys pass. Production remains 1,264 lines above baseline; 28 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Characterize and migrate Chapel manuscript state transitions and the remaining view.
+1. Correct sparse manuscript validation, then migrate its domain logic and remaining view.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

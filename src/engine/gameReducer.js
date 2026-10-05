@@ -38,6 +38,7 @@ import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import { getChapelChoice, canAffordChapelChoice } from "./chapelChoices.ts";
+import { getManuscriptRound, isManuscriptSymbol } from "./chapelManuscript.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -2994,6 +2995,7 @@ function reduceGame(state, action, random) {
     }
 
     case "CHAPEL_MS_START": {
+      if (state.phase !== "management") return state;
       const prevChapel = state.chapel ?? {};
       const patternLength = 3;
       const pattern = Array.from({ length: patternLength }, () =>
@@ -3018,6 +3020,9 @@ function reduceGame(state, action, random) {
 
     case "CHAPEL_MS_FLASH": {
       const { index } = action.payload ?? {};
+      const chapel = state.chapel ?? {};
+      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
+        || !getManuscriptRound(chapel) || !isManuscriptSymbol(index)) return state;
       return {
         ...state,
         chapel: { ...(state.chapel ?? {}), msActiveSymbol: index },
@@ -3025,6 +3030,9 @@ function reduceGame(state, action, random) {
     }
 
     case "CHAPEL_MS_CLEAR_FLASH": {
+      const chapel = state.chapel ?? {};
+      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
+        || !getManuscriptRound(chapel)) return state;
       return {
         ...state,
         chapel: { ...(state.chapel ?? {}), msActiveSymbol: null },
@@ -3032,6 +3040,9 @@ function reduceGame(state, action, random) {
     }
 
     case "CHAPEL_MS_DONE_SHOWING": {
+      const chapel = state.chapel ?? {};
+      if (state.phase !== "management" || chapel.view !== "manuscript" || chapel.msPhase !== "showing"
+        || !getManuscriptRound(chapel)) return state;
       return {
         ...state,
         chapel: { ...(state.chapel ?? {}), msPhase: "input" },
@@ -3041,10 +3052,12 @@ function reduceGame(state, action, random) {
     case "CHAPEL_MS_INPUT": {
       const { index } = action.payload ?? {};
       const prevChapel = state.chapel ?? {};
-      if (prevChapel.msPhase !== "input") return state;
+      if (state.phase !== "management" || prevChapel.view !== "manuscript" || prevChapel.msPhase !== "input") return state;
+      const roundState = getManuscriptRound(prevChapel);
+      if (!roundState || !isManuscriptSymbol(index)) return state;
 
-      const newInput = [...(prevChapel.msPlayerInput ?? []), index];
-      const expected = prevChapel.msPattern ?? [];
+      const newInput = [...roundState.input, index];
+      const expected = roundState.pattern;
       const pos = newInput.length - 1;
 
       // Wrong answer
@@ -3065,7 +3078,7 @@ function reduceGame(state, action, random) {
       }
 
       // Sequence complete — check if more rounds
-      const round = prevChapel.msRound ?? 1;
+      const round = roundState.round;
       const maxRound = prevChapel.msMaxRound ?? 4;
 
       if (round < maxRound) {
