@@ -37,6 +37,8 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { name: 'The Chapel of St. Dunstan' })).toBeVisible();
     await expect(page.getByRole('alert')).toContainText('Stored saves are unchanged');
+    await expect(page.getByText('Recovered', { exact: true })).toBeVisible();
+    await expect(page.getByText('Save error', { exact: true })).toHaveCount(0);
     expect(await slots()).toEqual({ v2: v2Raw, legacy: legacyRaw });
     await page.screenshot({ path: info.outputPath('recovery-loaded.png'), animations: 'disabled' });
     await page.getByRole('button', { name: 'Save game', exact: true }).click();

@@ -225,7 +225,7 @@ export default function App() {
   const [tavernOpen, setTavernOpen] = useState(false);
   const [watchtowerOpen, setWatchtowerOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
-  const [saveFlash, setSaveFlash] = useState(null); // "saved" | "loaded" | "error"
+  const [saveFlash, setSaveFlash] = useState(null); // saved | loaded | imported | recovered | error
   const [saveError, setSaveError] = useState("");
   const [saveRecovery, setSaveRecovery] = useState(null);
   const [hasSavedGame, setHasSavedGame] = useState(() => {
@@ -486,7 +486,7 @@ export default function App() {
               marginRight: "2px",
               animation: "tab-fade-in 0.2s",
             }}>
-              {saveFlash === "saved" ? "Saved!" : saveFlash === "loaded" ? "Loaded!" : saveFlash === "imported" ? "Imported" : "Save error"}
+              {saveFlash === "saved" ? "Saved!" : saveFlash === "loaded" ? "Loaded!" : saveFlash === "imported" ? "Imported" : saveFlash === "recovered" ? "Recovered" : "Save error"}
             </span>
           )}
           <button
