@@ -1380,3 +1380,12 @@ input[type="range"].labor-slider::-moz-range-thumb {
 @container watchtower-readiness (min-width: 30rem) {
   .watchtower-readiness-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+.watchtower-report { container: watchtower-report / inline-size; }
+.watchtower-report-summary { grid-template-columns: minmax(0, 1fr); }
+@container watchtower-report (min-width: 28rem) {
+  .watchtower-report-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.watchtower-report-findings { min-height: 8rem; max-height: 50dvh; overflow-y: auto; }
+.watchtower-report-findings:focus-visible { outline: 2px solid #e8c44a; outline-offset: 3px; }
+.watchtower-report-actions { position: sticky; bottom: 8px; background: #231e16; padding-bottom: 8px; }

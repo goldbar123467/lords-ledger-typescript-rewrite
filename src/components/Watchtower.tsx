@@ -603,13 +603,12 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
   // Report
   if (phase === "report" && report) {
     return (
-      <div className="max-w-xl mx-auto">
+      <div className="watchtower-report max-w-xl mx-auto">
         <div
-          className="rounded-lg border-2 p-4 flex flex-col"
+          data-watchtower-report className="rounded-lg border-2 p-4 flex flex-col"
           style={{
             backgroundColor: "var(--bg-card, #231e16)",
             borderColor: "var(--gold, #c4a24a)",
-            maxHeight: "calc(100dvh - 280px)",
           }}
         >
           <h3
@@ -619,7 +618,7 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
             Scout{"'"}s Report
           </h3>
 
-          <div className="watchtower-scan-summary grid grid-cols-3 gap-2 mb-4 text-center text-sm" style={{ color: "#a89070" }}>
+          <div className="watchtower-scan-summary watchtower-report-summary grid gap-2 mb-4 text-center text-sm" style={{ color: "#a89070" }}>
             <div>
               <span style={{ color: "var(--gold-bright, #e8c44a)", fontWeight: "bold", fontSize: "1.2em" }}>
                 {report.found}/{report.total}
@@ -643,7 +642,7 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
           {/* Rating */}
           <div className="text-center mb-4">
             <span
-              className="text-sm font-bold uppercase tracking-wider px-3 py-1 rounded"
+              className="inline-block max-w-full text-sm font-bold uppercase tracking-wider px-3 py-1 rounded"
               style={{
                 backgroundColor:
                   report.rating.label === "Eagle-eyed" ? "rgba(74, 138, 58, 0.2)" :
@@ -663,7 +662,7 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
           <p className="text-xs text-center mb-1" style={{ color: "#a89070" }}>
             Scout observations (scroll to read all)
           </p>
-          <div className="min-h-0 overflow-y-auto rounded border px-2 py-1" aria-label="Scout's findings"
+          <div className="watchtower-report-findings rounded border px-2 py-1" role="region" tabIndex={0} aria-label="Scout's findings"
             style={{ backgroundColor: "#1a1713", borderColor: "#3a3228" }}>
           {/* Spotted anomalies */}
           {report.foundList.length > 0 && (
@@ -721,10 +720,10 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
             </p>
           </div>
 
-          <div className="text-center mt-2 pt-2 shrink-0" style={{ borderTop: "1px solid #3a3228" }}>
+          <div className="watchtower-report-actions text-center mt-2 pt-2 shrink-0" style={{ borderTop: "1px solid #3a3228" }}>
             <button
               onClick={acknowledgeReport}
-              className="px-6 py-2 rounded-md border-2 font-bold text-sm uppercase tracking-wider"
+              className="max-w-full px-3 py-2 rounded-md border-2 font-bold text-sm uppercase tracking-wider"
               style={{
                 background: "linear-gradient(135deg, #8b1a1a 0%, #4a0a0a 50%, #8b1a1a 100%)",
                 border: "2px solid var(--gold, #c4a24a)",
@@ -739,7 +738,7 @@ function HorizonScan({ state, dispatch, onBack }: SectionProps) {
                 e.currentTarget.style.background = "linear-gradient(135deg, #8b1a1a 0%, #4a0a0a 50%, #8b1a1a 100%)";
               }}
             >
-              Acknowledged
+              Acknow<wbr />ledged
             </button>
           </div>
         </div>
