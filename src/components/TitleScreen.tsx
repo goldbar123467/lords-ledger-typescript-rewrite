@@ -1,10 +1,22 @@
+import type { ReactNode } from 'react';
+import type { DIFFICULTY_CONFIGS } from '../data/economy.ts';
+
+type Difficulty = keyof typeof DIFFICULTY_CONFIGS;
+interface TitleScreenProps {
+  onStart: (difficulty: Difficulty) => void;
+  onImportLegacy: () => void;
+  hasLegacySave: boolean;
+  saveMessage?: string | null;
+  recoveryNotice?: ReactNode;
+}
+
 const DIFFICULTIES = [
   { key: "easy", label: "Easy", desc: "More resources, gentler penalties", icon: "\u2741" },
   { key: "normal", label: "Normal", desc: "The standard experience", icon: "\u2696" },
   { key: "hard", label: "Hard", desc: "Fewer resources, harsher realm", icon: "\u2620" },
-];
+] as const satisfies readonly { key: Difficulty; label: string; desc: string; icon: string }[];
 
-export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, saveMessage, recoveryNotice }) {
+export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, saveMessage, recoveryNotice }: TitleScreenProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
       style={{ backgroundColor: "#0f0d0a" }}

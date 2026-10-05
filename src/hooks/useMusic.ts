@@ -1,5 +1,5 @@
 /**
- * useMusic.js
+ * useMusic.ts
  *
  * Simple background music manager. Cycles through tracks,
  * persists mute preference to localStorage, and handles
@@ -12,13 +12,20 @@ const TRACKS = [
   "/audio/medieval-background.mp3",
   "/audio/medieval-waltz.mp3",
   "/audio/medieval-happy.mp3",
-];
+] as const;
 
 const STORAGE_KEY = "lords-ledger-music-muted";
 const VOLUME = 0.3;
 
-export default function useMusic() {
-  const audioRef = useRef(null);
+interface MusicControls {
+  muted: boolean;
+  playing: boolean;
+  toggleMute: () => void;
+  ensurePlaying: () => void;
+}
+
+export default function useMusic(): MusicControls {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const trackIndexRef = useRef(0);
   const hasInteractedRef = useRef(false);
   const [muted, setMuted] = useState(() => {
@@ -41,7 +48,9 @@ export default function useMusic() {
     const handlePause = () => setPlaying(false);
     const handleEnded = () => {
       trackIndexRef.current = (trackIndexRef.current + 1) % TRACKS.length;
-      audio.src = TRACKS[trackIndexRef.current];
+      const track = TRACKS[trackIndexRef.current];
+      if (!track) return;
+      audio.src = track;
       audio.play().catch(() => {});
     };
 
