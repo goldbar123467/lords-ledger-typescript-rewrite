@@ -1,10 +1,75 @@
 /**
- * greatHall.js — Data constants for the Great Hall tab
+ * greatHall.ts — Data constants for the Great Hall tab
  *
  * Phase 1: Ambient atmosphere, steward dialogue, queue placeholders.
  * Phase 2+: Dispute database, audience encounters, decrees, council topics.
  * Phase 4: Edmund dialogue matrix, trust/mood system, reputation tracks.
  */
+
+import type { HallMeterEffects } from './decrees.ts';
+import type { HallLogEntry } from '../engine/hallAudienceState.ts';
+
+type MeterId = keyof HallMeterEffects;
+const reputationTrackIds = ['merciful', 'stern', 'wealthy', 'pious', 'militant', 'balanced'] as const;
+export type ReputationTrack = typeof reputationTrackIds[number];
+export interface HallRuling {
+  disputeId?: string;
+  consequences?: Readonly<Partial<HallMeterEffects>> | null;
+}
+export interface HallMeterSnapshot {
+  turn: number;
+  season: string;
+  year: number;
+  meters: HallMeterEffects;
+}
+export interface HallDialogueState {
+  season: string;
+  greatHall: {
+    meters: HallMeterEffects;
+    audienceResolved?: readonly string[] | null;
+    activeDecrees?: readonly string[] | null;
+  };
+}
+export interface HallPitchState {
+  greatHall?: {
+    meters?: HallMeterEffects | null;
+    rulingHistory?: readonly HallRuling[] | null;
+    disputesResolved?: number | null;
+    audienceResolved?: readonly string[] | null;
+    activeDecrees?: readonly string[] | null;
+    feastHistory?: readonly unknown[] | null;
+    councilResolved?: readonly string[] | null;
+    stewardTrust?: number | null;
+    meterHistory?: readonly HallMeterSnapshot[] | null;
+    hallLog?: readonly HallLogEntry[] | null;
+  } | null;
+}
+type EdmundCategory = 'throne' | 'preDispute' | 'postRuling' | 'audience' | 'decree' | 'council'
+  | 'crisis' | 'idle' | 'personal' | 'season';
+interface EdmundLine {
+  readonly text: string;
+  readonly condition?: (state: HallDialogueState, trust: number) => boolean;
+}
+interface TrustTier {
+  readonly min: number; readonly max: number; readonly label: string; readonly color: string; readonly desc: string;
+}
+interface ReputationConfig {
+  readonly label: string;
+  readonly titles: readonly { readonly threshold: number; readonly title: string }[];
+}
+interface HallThresholdEvent {
+  readonly text: string;
+  readonly chronicle: string;
+  readonly effects: Readonly<HallMeterEffects>;
+}
+interface CompoundRule {
+  readonly flag: string;
+  readonly label: string;
+  readonly check: (history: readonly HallRuling[]) => boolean;
+}
+export type ReputationResult =
+  | { track: null; title: 'Unknown Lord'; scores: Record<string, never> }
+  | { track: ReputationTrack; title: string; scores: Record<ReputationTrack, number> };
 
 // Atmospheric text that cycles in the hall footer (8-second rotation)
 export const AMBIENT_TEXTS = [
@@ -20,7 +85,7 @@ export const AMBIENT_TEXTS = [
   "Someone coughs in the gallery above. The sound echoes.",
   "The steward's quill scratches against parchment.",
   "Footsteps echo on the flagstone floor as a guard changes post.",
-];
+] as const;
 
 // ─── Edmund Dialogue Matrix (Phase 4) ───────────────────────────
 
@@ -128,7 +193,7 @@ export const EDMUND_DIALOGUE = {
     { text: "The first frost came early this year. I pray it does not take the last of the crops.", condition: (s) => s.season === "winter" && s.greatHall.meters.treasury < 40 },
     { text: "The harvest looks promising. Perhaps this winter will not be so cruel.", condition: (s) => s.season === "autumn" && s.greatHall.meters.treasury >= 50 },
   ],
-};
+} as const satisfies Readonly<Record<EdmundCategory, readonly EdmundLine[]>>;
 
 // ─── Trust Tiers ─────────────────────────────────────────────────
 
@@ -138,9 +203,9 @@ export const TRUST_TIERS = [
   { min: 51, max: 70,  label: "Respectful", color: "#c4a24a", desc: "Edmund trusts your instincts" },
   { min: 71, max: 85,  label: "Devoted",    color: "#88aa44", desc: "Edmund speaks freely and truly" },
   { min: 86, max: 100, label: "Bonded",     color: "#44aa66", desc: "Edmund would lay down his life" },
-];
+] as const satisfies readonly [TrustTier, ...TrustTier[]];
 
-export function getTrustTier(trust) {
+export function getTrustTier(trust: number) {
   return TRUST_TIERS.find((t) => trust >= t.min && trust <= t.max) || TRUST_TIERS[0];
 }
 
@@ -152,9 +217,9 @@ export const EDMUND_MOODS = {
   steady:    { label: "Steady",    color: "#b8a880", icon: "dutiful",   threshold: 60 },
   pleased:   { label: "Pleased",   color: "#88aa44", icon: "content",   threshold: 80 },
   proud:     { label: "Proud",     color: "#44aa66", icon: "proud",     threshold: 101 },
-};
+} as const;
 
-export function getEdmundMood(treasury) {
+export function getEdmundMood(treasury: number) {
   if (treasury < 20) return EDMUND_MOODS.worried;
   if (treasury < 40) return EDMUND_MOODS.concerned;
   if (treasury < 60) return EDMUND_MOODS.steady;
@@ -218,13 +283,13 @@ export const REPUTATION_TRACKS = {
       { threshold: 15, title: "Solomon of the Shire" },
     ],
   },
-};
+} as const satisfies Readonly<Record<ReputationTrack, ReputationConfig>>;
 
 /**
  * Analyze ruling history to determine dominant track and title.
  * Returns { track, title, scores } where track is the key in REPUTATION_TRACKS.
  */
-export function computeReputation(rulingHistory) {
+export function computeReputation(rulingHistory: readonly HallRuling[] | null | undefined): ReputationResult {
   if (!rulingHistory || rulingHistory.length === 0) {
     return { track: null, title: "Unknown Lord", scores: {} };
   }
@@ -260,9 +325,10 @@ export function computeReputation(rulingHistory) {
   }
 
   // Find dominant track
-  let dominantTrack = "balanced";
+  let dominantTrack: ReputationTrack = "balanced";
   let maxScore = scores.balanced;
-  for (const [track, score] of Object.entries(scores)) {
+  for (const track of reputationTrackIds) {
+    const score = scores[track];
     if (score > maxScore) {
       maxScore = score;
       dominantTrack = track;
@@ -286,12 +352,12 @@ export function computeReputation(rulingHistory) {
  * Priority: crisis > season > view-specific > personal > idle
  * Returns a string.
  */
-export function selectEdmundLine(state, currentView, trust) {
-  const eligible = [];
+export function selectEdmundLine(state: HallDialogueState, currentView: string, trust: number): string {
+  const eligible: Array<{ text: string; priority: number }> = [];
 
   // Helper to filter eligible lines from a category
-  const collect = (category, priority) => {
-    const lines = EDMUND_DIALOGUE[category] || [];
+  const collect = (category: EdmundCategory, priority: number) => {
+    const lines: readonly EdmundLine[] = EDMUND_DIALOGUE[category] || [];
     for (const line of lines) {
       if (!line.condition || line.condition(state, trust)) {
         eligible.push({ text: line.text, priority });
@@ -306,16 +372,15 @@ export function selectEdmundLine(state, currentView, trust) {
   collect("season", 80);
 
   // View-specific lines
-  const viewMap = {
+  const viewMap: Readonly<Partial<Record<string, EdmundCategory>>> = {
     throne: "throne",
     dispute: "preDispute",
     audience: "audience",
     decrees: "decree",
     council: "council",
   };
-  if (viewMap[currentView]) {
-    collect(viewMap[currentView], 60);
-  }
+  const viewCategory = viewMap[currentView];
+  if (viewCategory) collect(viewCategory, 60);
 
   // Personal moments (trust-gated)
   collect("personal", 40);
@@ -333,7 +398,7 @@ export function selectEdmundLine(state, currentView, trust) {
   const topTier = eligible.filter((e) => e.priority >= maxPriority - 20);
 
   // Pick randomly from top tier
-  return topTier[Math.floor(Math.random() * topTier.length)].text;
+  return topTier[Math.floor(Math.random() * topTier.length)]?.text ?? "The hall awaits your command, my lord.";
 }
 
 // ─── Phase 5: Crisis & Peak Events ───────────────────────────────
@@ -364,7 +429,7 @@ export const CRISIS_EVENTS = {
     chronicle: "Bandits raid unchecked — the garrison is too weak to respond.",
     effects: { people: -5, treasury: -5, church: 0, military: -3 },
   },
-};
+} as const satisfies Readonly<Record<MeterId, HallThresholdEvent>>;
 
 export const PEAK_EVENTS = {
   people: {
@@ -387,7 +452,7 @@ export const PEAK_EVENTS = {
     chronicle: "The garrison earns a royal commendation for excellence.",
     effects: { people: 2, treasury: 0, church: 0, military: 3 },
   },
-};
+} as const satisfies Readonly<Record<MeterId, HallThresholdEvent>>;
 
 // ─── Phase 5: Compound Consequences ─────────────────────────────
 
@@ -441,15 +506,17 @@ export const COMPOUND_RULES = [
       return sternRulings.length >= 3;
     },
   },
-];
+] as const satisfies readonly CompoundRule[];
 
 /**
  * Scan rulingHistory and return active compound flags.
  * Returns { [flag]: true } for each active compound consequence.
  */
-export function computeCompoundFlags(rulingHistory) {
+export type CompoundFlag = typeof COMPOUND_RULES[number]['flag'];
+
+export function computeCompoundFlags(rulingHistory: readonly HallRuling[] | null | undefined): Partial<Record<CompoundFlag, true>> {
   if (!rulingHistory || rulingHistory.length === 0) return {};
-  const flags = {};
+  const flags: Partial<Record<CompoundFlag, true>> = {};
   for (const rule of COMPOUND_RULES) {
     if (rule.check(rulingHistory)) {
       flags[rule.flag] = true;
@@ -464,7 +531,7 @@ export function computeCompoundFlags(rulingHistory) {
  * Package Great Hall data for the Kingdom Investor Pitch (PBL assessment).
  * Returns a structured summary suitable for student presentations.
  */
-export function exportPitchData(state) {
+export function exportPitchData(state: HallPitchState) {
   const hall = state.greatHall || {};
   const history = hall.rulingHistory || [];
   const repResult = computeReputation(history);
@@ -530,14 +597,14 @@ export const EDMUND_GREETINGS = [
   "Another season turns. The hall stands ready.",
   "The fire is lit and the seats are filled. Your court awaits.",
   "Your steward stands ready, my lord. What is your will?",
-];
+] as const;
 
 // Placeholder queue items for the throne room (replaced by real disputes in Phase 2)
 export const QUEUE_ITEMS = [
   { title: "A dispute over trampled crops", category: "property", urgency: "pending" },
   { title: "A widow requests an audience", category: "audience", urgency: "waiting" },
   { title: "The blacksmith complains of an apprentice", category: "trade", urgency: "waiting" },
-];
+] as const;
 
 // Meter configuration for the four Great Hall approval gauges
 export const METER_CONFIG = [
@@ -545,7 +612,7 @@ export const METER_CONFIG = [
   { key: "treasury", label: "Treasury", color: "#c4a24a" },
   { key: "church", label: "Church", color: "#6a4a8a" },
   { key: "military", label: "Military", color: "#8b2020" },
-];
+] as const satisfies readonly { readonly key: MeterId; readonly label: string; readonly color: string }[];
 
 // Default meter values (used when greatHall state hasn't been initialized)
-export const DEFAULT_METERS = { people: 50, treasury: 50, church: 50, military: 50 };
+export const DEFAULT_METERS = { people: 50, treasury: 50, church: 50, military: 50 } as const satisfies Readonly<HallMeterEffects>;

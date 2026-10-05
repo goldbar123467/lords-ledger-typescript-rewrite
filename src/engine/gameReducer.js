@@ -66,7 +66,7 @@ import {
 } from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
-import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.js";
+import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.ts";
 import { getInitialPeopleState } from "../data/people.ts";
 import {
   generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
