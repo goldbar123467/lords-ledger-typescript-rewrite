@@ -39,6 +39,7 @@ import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
+import { advancePeopleSeason } from "./advancePeopleSeason.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -65,10 +66,7 @@ import {
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.js";
-import {
-  getInitialPeopleState, reconcileTiers, updateFamilyLoyalty,
-  checkFamilyDepartures, checkFamilyReturns, pickFeedEvents, computeMorale,
-} from "../data/people.ts";
+import { getInitialPeopleState } from "../data/people.ts";
 import {
   generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
 } from "../data/blacksmith.js";
@@ -1243,16 +1241,11 @@ function reduceGame(state, action, random) {
       }].slice(-8);
 
       // 3.7 PEOPLE — tiers, loyalty, departures, feed
-      const prevPeople = state.people ?? getInitialPeopleState(state.population);
-      const foodBal = econResult.food - state.food;
-      const reconciledTiers = reconcileTiers(econResult.population, prevPeople.tiers ?? { serfs: 12, freemen: 6, skilled: 2 });
-      const peopleMorale = computeMorale({ ...state, population: econResult.population, resourceDeltas: { ...state.resourceDeltas, food: foodBal }, people: prevPeople });
-      let pFamilies = updateFamilyLoyalty(prevPeople.notableFamilies || [], state.taxRate, peopleMorale.value, prevPeople.laborGarrison ?? 0, prevPeople.laborChurch ?? 5, foodBal);
-      for (const fid of checkFamilyDepartures(pFamilies, peopleMorale.value)) { pFamilies = pFamilies.map((f) => f.id !== fid ? f : (nextChronicle = addChronicle(nextChronicle, f.leaveNarrative || `${f.name} has left.`, season, year, turn, "event"), { ...f, present: false, turnsGone: 0 })); }
-      for (const fid of checkFamilyReturns(pFamilies, peopleMorale.value)) { pFamilies = pFamilies.map((f) => f.id !== fid ? f : (nextChronicle = addChronicle(nextChronicle, f.returnNarrative || `${f.name} has returned.`, season, year, turn, "event"), { ...f, present: true, turnsGone: 0, loyalty: 1 })); }
-      const pFeed = pickFeedEvents(season, peopleMorale.value, foodBal, econResult.population, pFamilies, random);
-      const pTaxRev = season === "autumn" ? econResult.population * (({ low: 2, medium: 4, high: 6, crushing: 8 })[state.taxRate] || 4) : 0;
-      const updatedPeople = { ...prevPeople, tiers: reconciledTiers, notableFamilies: pFamilies, villageFeed: pFeed, taxHistory: [...(prevPeople.taxHistory || []), { season, year, revenue: pTaxRev }].slice(-8) };
+      const peopleSeason = advancePeopleSeason({ ...state, season, year }, econResult, random);
+      const updatedPeople = peopleSeason.people;
+      for (const text of peopleSeason.chronicleTexts) {
+        nextChronicle = addChronicle(nextChronicle, text, season, year, turn, "event");
+      }
 
       // 4. Check game over from economy
       const afterState = {
