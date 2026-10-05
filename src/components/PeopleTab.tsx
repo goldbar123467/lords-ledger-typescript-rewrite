@@ -66,8 +66,8 @@ const C = {
   border: "rgba(140, 110, 70, 0.25)",
   borderSolid: "#6a5a42",
   text: "#d4c9a8",
-  textDim: "#8a7e6b",
-  textMuted: "#6a6050",
+  textDim: "#c1b49b",
+  textMuted: "#b4a58a",
   gold: "#c9a84c",
   goldBright: "#e8c44a",
   green: "#8dba6e",
@@ -75,7 +75,7 @@ const C = {
   crimson: "#d4726a",
   blue: "#7eb8d4",
   purple: "#b89adb",
-  serfBrown: "#a08060",
+  serfBrown: "#c59b73",
   freemanTeal: "#6ab0a0",
 };
 
@@ -240,6 +240,11 @@ function LaborSlider({ label, icon, color, value, max, onChange, leftLabel, righ
           step={5}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
+          onFocus={(e) => {
+            if (e.currentTarget.matches(':focus-visible')) {
+              e.currentTarget.scrollIntoView({ block: 'center', inline: 'nearest' });
+            }
+          }}
           className="flex-1 labor-slider"
           style={{ accentColor: color }}
           aria-label={`${label} allocation`}
@@ -269,7 +274,7 @@ function FamilyCard({ family }: { family: Readonly<NotableFamily> }) {
       className="people-card rounded p-3 flex-1 min-w-[140px]"
       style={{
         ...cardStyle,
-        opacity: family.present ? 1 : 0.5,
+        borderStyle: family.present ? 'solid' : 'dashed',
       }}
     >
       {/* Header */}
@@ -292,7 +297,7 @@ function FamilyCard({ family }: { family: Readonly<NotableFamily> }) {
             color: tierColor,
             border: `1px solid ${tierColor}44`,
             fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
+            fontSize: "0.75rem",
             letterSpacing: "1px",
             textTransform: "uppercase",
           }}
@@ -467,7 +472,7 @@ export default function PeopleTab({ state, dispatch }: { state: PeopleViewState;
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="people-view w-full max-w-2xl mx-auto">
       {/* Tip Bar */}
       <TipBar text={tipText} />
 

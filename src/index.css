@@ -1369,6 +1369,10 @@ input[type="range"].labor-slider::-moz-range-thumb {
 @container terminal-card (max-width: 14rem) { .terminal-resources { grid-template-columns: 1fr; } }
 .terminal-strategy-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: baseline; column-gap: 0.5rem; }
 .terminal-strategy-name { overflow-wrap: normal; }
+
+/* People descriptions and controls must remain readable as text is enlarged. */
+.people-view .text-xs { font-size: 0.875rem; line-height: 1.5; }
+.people-view .labor-slider { min-width: 0; }
 .military-watchtower { position: relative; overflow: hidden; background: #1a1e24; border: 1px solid #4a6a8a; }
 .military-watchtower:hover, .military-watchtower:focus-visible { background: #1e2530; border-color: #6a8aaa; }
 .military-watchtower:focus-visible { outline: 2px solid #8ab4d6; outline-offset: 3px; }
