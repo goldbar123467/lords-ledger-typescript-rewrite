@@ -37,6 +37,7 @@ import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "
 import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
+import { getChapelChoice, canAffordChapelChoice } from "./chapelChoices.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -2847,7 +2848,9 @@ function reduceGame(state, action, random) {
     case "CHAPEL_PAY_TITHE": {
       if (state.phase !== "management") return state;
       const { amount } = action.payload ?? {};
-      if (!amount || amount <= 0 || state.denarii < amount) return state;
+      if (!isPositivePrice(amount) || !Number.isFinite(state.denarii) || state.denarii < amount) return state;
+      const churchDonation = (state.churchDonation ?? 0) + amount;
+      if (!Number.isFinite(churchDonation)) return state;
 
       const prevChapel = state.chapel ?? {};
       const pct = amount / state.denarii;
@@ -2864,7 +2867,7 @@ function reduceGame(state, action, random) {
       return {
         ...state,
         denarii: state.denarii - amount,
-        churchDonation: (state.churchDonation || 0) + amount,
+        churchDonation,
         chapel: {
           ...prevChapel,
           faith: newFaith,
@@ -2945,10 +2948,10 @@ function reduceGame(state, action, random) {
       const { choiceIndex } = action.payload ?? {};
       const prevChapel = state.chapel ?? {};
       const dilemma = prevChapel.currentDilemma;
-      if (!dilemma || choiceIndex == null) return state;
+      if (!dilemma || prevChapel.dilemmaResult || (prevChapel.dilemmasCompleted ?? []).includes(dilemma.id)) return state;
 
-      const choice = dilemma.choices[choiceIndex];
-      if (!choice) return state;
+      const choice = getChapelChoice(dilemma.id, choiceIndex);
+      if (!choice || !canAffordChapelChoice(choice, state.denarii)) return state;
 
       const effects = choice.effects ?? {};
 

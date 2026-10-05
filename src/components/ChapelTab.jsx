@@ -18,6 +18,7 @@ import {
   MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS, MANUSCRIPT_FACTS,
   PIETY_FLAVOR,
 } from "../data/chapel.ts";
+import { chapelChoiceCost, canAffordChapelChoice } from "../engine/chapelChoices.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -847,13 +848,17 @@ function DilemmaView({ state, dispatch }) {
         <div className="space-y-2">
           {dilemma.choices.map((choice, i) => {
             const IconComp = ICON_MAP[choice.iconName] || ChevronRight;
+            const affordable = canAffordChapelChoice(choice, state.denarii);
+            const cost = chapelChoiceCost(choice);
             return (
               <button
                 key={i}
+                disabled={!affordable}
                 onClick={() => handleChoice(i)}
-                className="w-full flex items-center gap-3 p-4 text-left transition-all duration-200"
+                className="w-full flex items-center gap-3 p-4 text-left transition-all duration-200 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
                 style={cardStyle}
                 onMouseEnter={(e) => {
+                  if (!affordable) return;
                   e.currentTarget.style.transform = "translateX(4px)";
                   e.currentTarget.style.borderColor = "rgba(201, 168, 76, 0.5)";
                 }}
@@ -863,8 +868,13 @@ function DilemmaView({ state, dispatch }) {
                 }}
               >
                 <IconComp size={20} style={{ color: COLORS.gold, flexShrink: 0 }} />
-                <span style={{ fontFamily: "'Cinzel', serif", color: COLORS.text, fontSize: "13px", fontWeight: 600 }}>
-                  {choice.label}
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold" style={{ fontFamily: "'Cinzel', serif", color: COLORS.text }}>
+                    {choice.label}
+                  </span>
+                  {cost > 0 && <span className="block text-sm mt-1" style={{ color: affordable ? COLORS.text : "#ffb3aa" }}>
+                    {affordable ? `Cost: ${cost}d` : `Requires ${cost}d · Treasury: ${state.denarii}d`}
+                  </span>}
                 </span>
                 <ChevronRight size={16} style={{ color: COLORS.muted, marginLeft: "auto", flexShrink: 0 }} />
               </button>
