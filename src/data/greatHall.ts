@@ -206,7 +206,9 @@ export const TRUST_TIERS = [
 ] as const satisfies readonly [TrustTier, ...TrustTier[]];
 
 export function getTrustTier(trust: number) {
-  return TRUST_TIERS.find((t) => trust >= t.min && trust <= t.max) || TRUST_TIERS[0];
+  // Tier thresholds are integer scores; retain the fractional value in state.
+  const tierScore = Math.floor(trust);
+  return TRUST_TIERS.find((t) => tierScore >= t.min && tierScore <= t.max) || TRUST_TIERS[0];
 }
 
 // ─── Edmund Mood (tied to treasury) ──────────────────────────────
@@ -569,7 +571,7 @@ export function exportPitchData(state: HallPitchState) {
     reputationScores: repResult.scores,
 
     // Trust
-    stewardTrust: hall.stewardTrust || 50,
+    stewardTrust: hall.stewardTrust ?? 50,
 
     // Meter trends (for Recharts visualization)
     meterHistory: hall.meterHistory || [],

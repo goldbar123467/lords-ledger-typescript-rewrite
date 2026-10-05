@@ -46,11 +46,10 @@ test('dialogue retains priority and cosmetic draw selection without changing sta
   } finally { Math.random = random; }
 });
 
-test('trust, mood and pitch compatibility retain existing boundary behavior', () => {
-  for (const [trust, label] of [[0, 'Wary'], [30, 'Wary'], [31, 'Cautious'], [51, 'Respectful'], [71, 'Devoted'], [86, 'Bonded'], [100, 'Bonded'], [50.5, 'Wary']] as const) assert.equal(hall.getTrustTier(trust).label, label);
+test('trust, mood and pitch retain authored thresholds and valid zero values', () => {
+  for (const [trust, label] of [[0, 'Wary'], [30, 'Wary'], [31, 'Cautious'], [51, 'Respectful'], [71, 'Devoted'], [86, 'Bonded'], [100, 'Bonded'], [50.5, 'Cautious']] as const) assert.equal(hall.getTrustTier(trust).label, label);
   assert.equal(hall.getEdmundMood(19.5).label, 'Worried'); assert.equal(hall.getEdmundMood(20).label, 'Concerned');
   const pitch = hall.exportPitchData({ greatHall: { stewardTrust: 0, audienceResolved: ['aud_001'], rulingHistory: [{ consequences: { people: 3 } }] } });
   assert.equal(pitch.totalAudienceHeld, 1); assert.equal(pitch.rulingDistribution.merciful, 1);
-  // Characterize the existing truthy default here; correction is a separate reviewable section.
-  assert.equal(pitch.stewardTrust, 50);
+  assert.equal(pitch.stewardTrust, 0);
 });

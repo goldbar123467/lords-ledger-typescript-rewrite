@@ -1847,7 +1847,7 @@ function reduceGame(state, action, random) {
         || prevHallAdvance.decreeSlotsUsed > 0
         || (prevHallAdvance.disputesResolved || 0) > 0;
       const trustDecay = hallWasActive ? 0 : -2;
-      const advanceTrust = Math.max(0, Math.min(100, (prevHallAdvance.stewardTrust || 50) + trustDecay));
+      const advanceTrust = Math.max(0, Math.min(100, (prevHallAdvance.stewardTrust ?? 50) + trustDecay));
 
       // Phase 4: Recompute reputation from full ruling history each season
       const advanceRep = computeReputation(prevHallAdvance.rulingHistory || []);
@@ -2853,7 +2853,7 @@ function reduceGame(state, action, random) {
 
       // Phase 4: Trust shifts — small trust bump for each ruling (engagement reward)
       const trustDelta = 2;
-      const newTrust = Math.max(0, Math.min(100, (prevHall.stewardTrust || 50) + trustDelta));
+      const newTrust = Math.max(0, Math.min(100, (prevHall.stewardTrust ?? 50) + trustDelta));
 
       // Phase 5: Compound flags and hall log
       const newCompoundFlags = computeCompoundFlags(newHistory);
@@ -3051,7 +3051,7 @@ function reduceGame(state, action, random) {
       const conText = conParts.length > 0 ? ` (${conParts.join(", ")})` : "";
 
       // Trust +1 for convening the council
-      const cncTrust = Math.min(100, (prevHall.stewardTrust || 50) + 1);
+      const cncTrust = Math.min(100, (prevHall.stewardTrust ?? 50) + 1);
 
       // Phase 5: Hall log
       const councilLogEntry = {
@@ -3108,7 +3108,7 @@ function reduceGame(state, action, random) {
       const conText = conParts.length > 0 ? ` (${conParts.join(", ")})` : "";
 
       // Trust +3 for hosting a feast (shows generosity)
-      const fstTrust = Math.min(100, (prevHall.stewardTrust || 50) + 3);
+      const fstTrust = Math.min(100, (prevHall.stewardTrust ?? 50) + 3);
 
       // Phase 5: Hall log
       const feastLogEntry = {

@@ -29,7 +29,7 @@ For each vertical slice, inspect definitions, consumers, save shape, and tests; 
 
 The screenshot matrix uses 1366x768 as primary, 1280x720 for existing comparisons, 1920x1080 wide, and about 390x844 narrow. Cover title/navigation, all nine tabs, deeper interactions, phase/outcome screens, and stress states. Open actual before and after images and critique text, contrast, clipping, focus, and scroll; screenshot existence or pixel change alone is not approval. Update goldens only after the intended image was inspected and independently accepted. Browser screenshots do not establish gameplay correctness.
 
-Tester and grader are independent reviewers. They may write only under assigned `artifacts/v2/` review directories and must not edit production or shared tests. Tester provides reproducible player-flow failures; grader inspects diff and actual images and marks uninspected areas `NOT REVIEWED`. Primary agent owns production changes and test integration.
+Use GPT-6.1 Sol with medium reasoning for both supporting agents, as requested by the user. Tester and grader are independent reviewers. They may write only under assigned `artifacts/v2/` review directories and must not edit production or shared tests. Tester provides reproducible player-flow failures; grader inspects diff and actual images and marks uninspected areas `NOT REVIEWED`. Primary agent owns production changes and test integration.
 
 ## Required commits after every loop or section
 
@@ -102,3 +102,6 @@ Exactserializedwriter baseline69a68ff/fingerprint12935FBE9A3BC090E8D3A4D685045B9
 
 
 Shared Hall data migration baselinea8a8256/fingerprintAE3E451B21257C4D92EEA115B15DF5D2F6861C52943E25853824F4202C4D3B96: greatHall.ts preserves18exports/55dialogue/allstaticcontent;197units/static/build and36focusedbrowsers pass. Root13,440dialogue/700history archive pairs and two Sol6.1medium independent probes/nativeSaveLoad/images accept bounded preservation. Reports artifacts/v2/{tester,grader}-hall-data/{report,review}.md. OPEN inheritedP2 T-HD01/G-HD01 fractionaltrust gaps;P3 T-HD02/G-HD02 pitchzero→50. Next separate fractional-tier/nullish-trust correction, then remainingHall commands/schemas/views. Production47,287(+1,940original);20sourceJS/JSX/fullgoal/reduction IN PROGRESS. Commit/push eachsection; README Run locally removed.
+
+
+Halltrustcorrection baselineffc97c0/fingerprint949CF0BDC6809D8F0690DE4D73756468D7F4AA637BC7A2FA42FAB93DE2A6FE37 closesT-HD01/G-HD01P2fractiontiers andT-HD02/G-HD02P3pitchzero. Floorclassificationpreservesfractions;five??defaults preservezero.201units/static/build+32focusedbrowsers pass;root7000fullstatepairs only400intendedzerochanges. Sol6.1medium independentprobes/fournativeflows each/images/hashaccept; reports artifacts/v2/{tester,grader}-hall-trust/{report,review}.md. Production47,289(+1,942original),20sourceJS/JSX/fullgoal/reduction IN PROGRESS. Next authored disputeTS and authoritative guardeddispute/Council choices, then remainingHallviews/nestedsaves/readability/parentnav. Commit/push everysection; README Run locally removed.
