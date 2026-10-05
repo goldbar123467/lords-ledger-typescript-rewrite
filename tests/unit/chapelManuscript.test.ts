@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
+import { getManuscriptRound } from '../../src/engine/chapelManuscript.ts';
 
 function management(quill = false) {
   const base = createInitialState(104);
@@ -103,4 +104,23 @@ test('partial manuscript save resumes the same prefix, RNG and outcome; mistakes
   assert.equal(failed.chapel.msReward, 0);
   assert.equal(failed.chapel.gameLog.length, 0);
   assert.equal(typeof failed.chapel.msFact, 'string');
+});
+
+test('sparse and inherited symbol slots cannot validate or create a null saved prefix', () => {
+  const showing = gameReducer(management(), { type: 'CHAPEL_MS_START' });
+  const input = gameReducer(showing, { type: 'CHAPEL_MS_DONE_SHOWING' });
+  const inherited = new Array<number>(3);
+  Object.setPrototypeOf(inherited, Object.assign(Object.create(Array.prototype), { 0: 0, 1: 1, 2: 2 }));
+  for (const patch of [{ msPattern: new Array<number>(3) }, { msPattern: [0, , 2] },
+    { msPattern: inherited }, { msPlayerInput: new Array<number>(1) }]) {
+    for (const base of [showing, input]) {
+      const state = { ...base, chapel: { ...base.chapel, ...patch } };
+      const raw = writeV2Save(state);
+      assert.equal(getManuscriptRound(state.chapel), null);
+      for (const type of ['CHAPEL_MS_FLASH', 'CHAPEL_MS_CLEAR_FLASH', 'CHAPEL_MS_DONE_SHOWING', 'CHAPEL_MS_INPUT']) {
+        assert.equal(gameReducer(state, { type, payload: { index: input.chapel.msPattern[1] } }), state);
+      }
+      assert.equal(writeV2Save(state), raw);
+    }
+  }
 });
