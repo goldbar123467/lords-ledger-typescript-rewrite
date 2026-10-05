@@ -22,7 +22,7 @@ import {
   getContextualTip,
   TAX_CONSEQUENCES,
   LABOR_DEFAULTS,
-} from "../data/people.js";
+} from "../data/people.ts";
 
 // ---------------------------------------------------------------------------
 // Color palette (matches Lord's Ledger global)

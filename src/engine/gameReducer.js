@@ -67,7 +67,7 @@ import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } f
 import {
   getInitialPeopleState, reconcileTiers, updateFamilyLoyalty,
   checkFamilyDepartures, checkFamilyReturns, pickFeedEvents, computeMorale,
-} from "../data/people.js";
+} from "../data/people.ts";
 import {
   generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
 } from "../data/blacksmith.js";

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createInitialState, gameReducer, initialState } from '../../src/engine/gameReducer.js';
 import { generateMarketPrices } from '../../src/data/economy.ts';
-import { INITIAL_FAMILIES } from '../../src/data/people.js';
+import { INITIAL_FAMILIES } from '../../src/data/people.ts';
 
 test('new title states own every mutable subsystem', () => {
   const first = createInitialState(42);

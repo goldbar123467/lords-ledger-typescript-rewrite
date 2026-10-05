@@ -1,5 +1,47 @@
+import type { TAX_RATES, SEASON_INFO } from './economy.ts';
+
+export type TaxRate = keyof typeof TAX_RATES;
+type Season = keyof typeof SEASON_INFO;
+export interface SocialTiers { serfs: number; freemen: number; skilled: number }
+export interface NotableFamily {
+  id: string;
+  name: string;
+  tier: 'serf' | 'freeman' | 'skilled';
+  role: string;
+  roleIcon: 'Scissors' | 'Wheat' | 'Hammer' | 'Crown';
+  loyalty: number;
+  maxLoyalty: number;
+  generations: number;
+  present: boolean;
+  turnsGone: number;
+  narrative: string;
+  leaveNarrative: string | null;
+  returnNarrative: string | null;
+  bonus: { type: 'trade' | 'food' | 'military' | 'farming'; amount: number; desc: string };
+  sensitivity: 'tax' | 'respect' | 'military' | 'stability';
+}
+export interface VillageFeedEvent { text: string; type: 'life' | 'population' | 'warning' }
+export interface PeopleState {
+  tiers: SocialTiers;
+  laborFarming: number;
+  laborGarrison: number;
+  laborChurch: number;
+  notableFamilies: NotableFamily[];
+  villageFeed: VillageFeedEvent[];
+  taxHistory: { season: Season; year: number; revenue: number }[];
+}
+export interface MoraleInput {
+  taxRate?: TaxRate;
+  resourceDeltas?: { food?: number | null } | null;
+  people?: {
+    laborChurch?: number | null;
+    laborGarrison?: number | null;
+    notableFamilies?: readonly Pick<NotableFamily, 'loyalty'>[] | null;
+  } | null;
+}
+
 /**
- * people.js
+ * people.ts
  *
  * Data definitions for the People tab: social tiers, labor allocation,
  * notable families, morale system, village feed events, and contextual tips.
@@ -36,7 +78,7 @@ export const TIER_CONFIG = {
 };
 
 /** Starting tier distribution for a given population */
-export function getInitialTiers(population) {
+export function getInitialTiers(population: number): SocialTiers {
   const skilled = Math.max(2, Math.min(4, Math.round(population * 0.14)));
   const freemen = Math.max(3, Math.round(population * 0.32));
   const serfs = Math.max(3, population - skilled - freemen);
@@ -48,7 +90,7 @@ export function getInitialTiers(population) {
  * Freemen leave first (mobile). Serfs absorb growth.
  * Skilled only change with notable family departures/arrivals.
  */
-export function reconcileTiers(newPopulation, currentTiers) {
+export function reconcileTiers(newPopulation: number, currentTiers: Readonly<SocialTiers>): SocialTiers {
   const currentTotal = currentTiers.serfs + currentTiers.freemen + currentTiers.skilled;
   const delta = newPopulation - currentTotal;
   if (delta === 0) return { ...currentTiers };
@@ -98,12 +140,12 @@ export const LABOR_DEFAULTS = {
 };
 
 /** Farming labor modifier for economy engine. 70% is baseline (1.0). */
-export function getFarmingLaborMod(farmingPct) {
+export function getFarmingLaborMod(farmingPct: number): number {
   return farmingPct / 70;
 }
 
 /** Crafts labor modifier. 30% is baseline (1.0). */
-export function getCraftsLaborMod(farmingPct) {
+export function getCraftsLaborMod(farmingPct: number): number {
   const craftsPct = 100 - farmingPct;
   return craftsPct / 30;
 }
@@ -131,7 +173,7 @@ export const MORALE_LEVELS = [
  * Compute morale from game state. Returns { value, factors, level }.
  * Morale is DERIVED, not stored — recalculated every render.
  */
-export function computeMorale(state) {
+export function computeMorale(state: MoraleInput) {
   const { taxRate = "medium" } = state;
   const people = state.people || {};
   const laborChurch = people.laborChurch ?? LABOR_DEFAULTS.church;
@@ -157,6 +199,7 @@ export function computeMorale(state) {
   const raw = Object.values(factors).reduce((s, v) => s + v, 0);
   const value = Math.max(0, Math.min(100, raw));
   const level = MORALE_LEVELS.find((l) => value >= l.min) || MORALE_LEVELS[MORALE_LEVELS.length - 1];
+  if (!level) throw new Error("Missing authored morale levels.");
 
   return { value, factors, level };
 }
@@ -165,7 +208,7 @@ export function computeMorale(state) {
 // NOTABLE FAMILIES
 // ---------------------------------------------------------------------------
 
-export const INITIAL_FAMILIES = [
+export const INITIAL_FAMILIES: readonly NotableFamily[] = [
   {
     id: "tanner",
     name: "The Tanners",
@@ -240,7 +283,7 @@ export const INITIAL_FAMILIES = [
  * Update family loyalty for a season tick.
  * Returns new families array.
  */
-export function updateFamilyLoyalty(families, taxRate, morale, garrisonPct, churchPct, foodBalance) {
+export function updateFamilyLoyalty(families: readonly NotableFamily[], taxRate: TaxRate, morale: number, garrisonPct: number, churchPct: number, foodBalance: number): NotableFamily[] {
   return families.map((f) => {
     if (!f.present && f.tier !== "serf") {
       // Absent family: tick toward return
@@ -280,7 +323,7 @@ export function updateFamilyLoyalty(families, taxRate, morale, garrisonPct, chur
  * Freemen leave at loyalty 0 with low morale. Skilled at loyalty 0.
  * Serfs never leave but their loyalty affects productivity.
  */
-export function checkFamilyDepartures(families, morale) {
+export function checkFamilyDepartures(families: readonly NotableFamily[], morale: number): string[] {
   const departures = [];
   for (const f of families) {
     if (!f.present) continue;
@@ -296,7 +339,7 @@ export function checkFamilyDepartures(families, morale) {
  * Check if an absent family should return.
  * Returns after 3+ turns gone AND morale > 60.
  */
-export function checkFamilyReturns(families, morale) {
+export function checkFamilyReturns(families: readonly NotableFamily[], morale: number): string[] {
   const returns = [];
   for (const f of families) {
     if (f.present) continue;
@@ -311,6 +354,12 @@ export function checkFamilyReturns(families, morale) {
 // ---------------------------------------------------------------------------
 // VILLAGE FEED EVENTS
 // ---------------------------------------------------------------------------
+
+function pickFeedText(pool: readonly string[], random: () => number): string {
+  const text = pool[Math.floor(random() * pool.length)];
+  if (text === undefined) throw new RangeError("Village feed draw must select an authored entry.");
+  return text;
+}
 
 const LIFE_EVENTS = [
   "The Cooper family welcomed a son this season. The father is already teaching him to make barrels.",
@@ -357,19 +406,19 @@ const SEASONAL_LIFE = {
  * Pick 3-4 feed events for the current season/state.
  * Mixes seasonal flavor with state-dependent events.
  */
-export function pickFeedEvents(season, morale, foodBalance, population, families, random) {
-  const events = [];
+export function pickFeedEvents(season: Season, morale: number, foodBalance: number, population: number, families: readonly NotableFamily[] | null | undefined, random: () => number): VillageFeedEvent[] {
+  const events: VillageFeedEvent[] = [];
 
   // 1. Always include a seasonal flavor event
   const seasonPool = SEASONAL_LIFE[season] || SEASONAL_LIFE.spring;
   events.push({
-    text: seasonPool[Math.floor(random() * seasonPool.length)],
+    text: pickFeedText(seasonPool, random),
     type: "life",
   });
 
   // 2. A general life event
   events.push({
-    text: LIFE_EVENTS[Math.floor(random() * LIFE_EVENTS.length)],
+    text: pickFeedText(LIFE_EVENTS, random),
     type: "life",
   });
 
@@ -438,7 +487,7 @@ export const PEOPLE_TIPS = {
 /**
  * Pick the most relevant tip for the current state.
  */
-export function getContextualTip(morale, taxRate, garrisonPct, churchPct, foodBalance) {
+export function getContextualTip(morale: number, taxRate: TaxRate, garrisonPct: number, churchPct: number, foodBalance: number): string {
   if (morale < 20) return PEOPLE_TIPS.revolt;
   if (morale < 40) return PEOPLE_TIPS.lowMorale;
   if (taxRate === "high" || taxRate === "crushing") return PEOPLE_TIPS.highTax;
@@ -484,7 +533,7 @@ export const TAX_CONSEQUENCES = {
 // INITIAL STATE
 // ---------------------------------------------------------------------------
 
-export function getInitialPeopleState(population) {
+export function getInitialPeopleState(population: number): PeopleState {
   return {
     tiers: getInitialTiers(population),
     laborFarming: LABOR_DEFAULTS.farming,
