@@ -39,6 +39,7 @@ import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
 import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
+import { planAudienceResponse } from "./audienceActions.ts";
 import { advancePeopleSeason } from "./advancePeopleSeason.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
@@ -2921,46 +2922,30 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_AUDIENCE_RESPOND": {
-      const { encounterId, consequences } = action.payload;
+      const plan = planAudienceResponse(state, action.payload);
+      if (!plan) return state;
       const prevHall = state.greatHall;
-      const prevMeters = prevHall.meters;
-
-      const clamp = (v) => Math.max(0, Math.min(100, v));
-      const newMeters = {
-        people: clamp(prevMeters.people + (consequences.people || 0)),
-        treasury: clamp(prevMeters.treasury + (consequences.treasury || 0)),
-        church: clamp(prevMeters.church + (consequences.church || 0)),
-        military: clamp(prevMeters.military + (consequences.military || 0)),
-      };
-
-      const conParts = Object.entries(consequences)
-        .filter(([, v]) => v !== 0)
-        .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)} ${v > 0 ? "+" : ""}${v}`);
-      const conText = conParts.length > 0 ? ` (${conParts.join(", ")})` : "";
-
-      // Trust +1 for engaging with the people
-      const audTrust = Math.min(100, (prevHall.stewardTrust || 50) + 1);
 
       // Phase 5: Hall log
       const audLogEntry = {
         type: "audience",
         text: `Held audience with petitioner`,
         turn: state.turn, season: state.season, year: state.year,
-        consequences,
+        consequences: plan.consequences,
       };
 
       return {
         ...state,
         greatHall: {
           ...prevHall,
-          meters: newMeters,
-          audienceResolved: [...prevHall.audienceResolved, encounterId],
-          stewardTrust: audTrust,
+          meters: plan.meters,
+          audienceResolved: [...(prevHall.audienceResolved ?? []), plan.encounterId],
+          stewardTrust: plan.stewardTrust,
           hallLog: [...(prevHall.hallLog || []), audLogEntry],
         },
         chronicle: addChronicle(
           state.chronicle,
-          `Held audience in the Great Hall${conText}`,
+          plan.chronicleText,
           state.season, state.year, state.turn, "action"
         ),
       };

@@ -937,10 +937,10 @@ export default function GreatHall({ state, dispatch }) {
     switchView("throne");
   };
 
-  const handleAudienceRespond = (encounterId, responseIndex, consequences) => {
+  const handleAudienceRespond = (encounterId, responseIndex) => {
     dispatch({
       type: "HALL_AUDIENCE_RESPOND",
-      payload: { encounterId, responseIndex, consequences },
+      payload: { encounterId, responseIndex },
     });
   };
 

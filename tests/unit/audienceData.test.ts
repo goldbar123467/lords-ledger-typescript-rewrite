@@ -22,7 +22,7 @@ test('Every authored audience response retains meter changes, logs and save cont
     }
     assert.deepEqual(next.greatHall.audienceResolved, [encounter.id]);
     assert.deepEqual(next.greatHall.hallLog.at(-1).consequences, response.consequences);
-    assert.equal(next.greatHall.stewardTrust, Math.min(100, (state.greatHall.stewardTrust || 50) + 1));
+    assert.equal(next.greatHall.stewardTrust, Math.min(100, (state.greatHall.stewardTrust ?? 50) + 1));
     assert.equal(next.chronicle.length, state.chronicle.length + 1);
     assert.equal(next.rngState, state.rngState); assert.deepEqual(state, before);
     const loaded = readV2Save(writeV2Save(next)); assert.ok(loaded.ok);

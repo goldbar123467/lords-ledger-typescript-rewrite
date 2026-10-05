@@ -815,11 +815,10 @@ export default function AudienceChamber({ encounters, resolvedIds, onRespond, on
 
   const handleSelectResponse = (responseIdx) => {
     if (!selectedEncounter) return;
-    const response = selectedEncounter.responses[responseIdx];
     setSelectedResponseIdx(responseIdx);
 
     // Notify parent
-    onRespond(selectedEncounter.id, responseIdx, response.consequences);
+    onRespond(selectedEncounter.id, responseIdx);
 
     setView("aftermath");
   };
