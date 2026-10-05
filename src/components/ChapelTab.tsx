@@ -1,5 +1,5 @@
 /**
- * ChapelTab.jsx
+ * ChapelTab.tsx
  *
  * The Chapel of St. Dunstan — Faith pillar of Lord's Ledger.
  * Sub-views: Nave (hub), Father Anselm (tithe), Brother Caedmon (shop),
@@ -7,15 +7,29 @@
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { CSSProperties, Dispatch, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import type { ChapelItem } from "../data/chapel.ts";
+import type { ChapelAction, ChapelView, ChapelViewState } from "../engine/chapelState.ts";
+
+interface ChapelProps {
+  state: { denarii: number; chapel?: ChapelViewState | null };
+  dispatch: Dispatch<ChapelAction>;
+}
+interface ChapelNavigation {
+  onSetView: (view: ChapelView) => void;
+  onStartManuscript: () => void;
+}
+
 import {
   Church, Cross, BookOpen, ShoppingBag, Scale, Heart,
   Shield, AlertTriangle, Eye, Star, Scroll, ChevronRight,
   Coins, X, MessageSquare,
 } from "lucide-react";
 import {
-  ANSELM_GREETINGS, TITHE_RESPONSES, TITHE_EFFECTS,
+  ANSELM_GREETINGS,
   CAEDMON_GREETINGS, SHOP_ITEMS,
-  MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS, MANUSCRIPT_FACTS,
+  MORAL_DILEMMAS, MANUSCRIPT_SYMBOLS,
   PIETY_FLAVOR,
 } from "../data/chapel.ts";
 import { chapelChoiceCost, canAffordChapelChoice } from "../engine/chapelChoices.ts";
@@ -24,11 +38,11 @@ import { chapelChoiceCost, canAffordChapelChoice } from "../engine/chapelChoices
 // Helpers
 // ---------------------------------------------------------------------------
 
-function pickRandom(arr) {
+function pickRandom(arr: readonly string[]) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function clamp(val, min, max) {
+function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
 }
 
@@ -56,13 +70,13 @@ const COLORS = {
   danger: "#d4726a",
 };
 
-const cardStyle = {
+const cardStyle: CSSProperties = {
   background: COLORS.cardBg,
   border: `1px solid ${COLORS.cardBorder}`,
   borderRadius: "4px",
 };
 
-const speechBubble = {
+const speechBubble: CSSProperties = {
   background: "linear-gradient(135deg, rgba(40, 32, 24, 0.95), rgba(30, 25, 18, 0.98))",
   border: "1px solid rgba(160, 130, 70, 0.2)",
   borderLeft: "3px solid rgba(160, 130, 70, 0.4)",
@@ -74,7 +88,7 @@ const speechBubble = {
   color: COLORS.text,
 };
 
-const goldButton = {
+const goldButton: CSSProperties = {
   background: "linear-gradient(135deg, #8a7a3a 0%, #c9a84c 50%, #8a7a3a 100%)",
   color: "#1a1510",
   border: "1px solid rgba(201, 168, 76, 0.6)",
@@ -90,32 +104,8 @@ const goldButton = {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function ResourceBar({ state }) {
-  const items = [
-    { label: "Faith", value: state.chapel?.faith ?? 50, color: COLORS.faithBlue },
-    { label: "Piety", value: state.chapel?.piety ?? 30, color: COLORS.piety },
-  ];
-  return (
-    <div
-      className="flex items-center justify-center gap-6 px-4 py-2 mb-3"
-      style={{
-        background: "linear-gradient(135deg, rgba(20, 16, 12, 0.95), rgba(15, 12, 10, 0.98))",
-        border: `1px solid ${COLORS.cardBorder}`,
-        borderRadius: "4px",
-      }}
-    >
-      {items.map((r) => (
-        <div key={r.label} className="flex items-center gap-1 text-xs uppercase tracking-wider" style={{ fontFamily: "'Cinzel', serif" }}>
-          <span style={{ color: r.color, fontWeight: 600 }}>{r.value}</span>
-          <span style={{ color: COLORS.muted }}>{r.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChapelNav({ view, onSetView, onStartManuscript }) {
-  const tabs = [
+function ChapelNav({ view, onSetView, onStartManuscript }: ChapelNavigation & { view: ChapelView }) {
+  const tabs: { id: ChapelView; label: string; Icon: LucideIcon }[] = [
     { id: "nave", label: "The Nave", Icon: Church },
     { id: "anselm", label: "Father Anselm", Icon: Cross },
     { id: "caedmon", label: "Brother Caedmon", Icon: ShoppingBag },
@@ -156,7 +146,7 @@ function ChapelNav({ view, onSetView, onStartManuscript }) {
   );
 }
 
-function NpcPortrait({ symbol, borderColor, name, subtitle }) {
+function NpcPortrait({ symbol, borderColor, name, subtitle }: { symbol: string; borderColor: string; name: string; subtitle: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div
@@ -182,7 +172,7 @@ function NpcPortrait({ symbol, borderColor, name, subtitle }) {
   );
 }
 
-function MeterBar({ label, value, max, color }) {
+function MeterBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = clamp((value / max) * 100, 0, 100);
   return (
     <div className="mb-2">
@@ -205,7 +195,7 @@ function MeterBar({ label, value, max, color }) {
   );
 }
 
-function HistoricalContext({ children, title }) {
+function HistoricalContext({ children, title }: { children: ReactNode; title?: string }) {
   return (
     <div
       className="mt-4 p-4"
@@ -225,7 +215,7 @@ function HistoricalContext({ children, title }) {
   );
 }
 
-function EffectBadge({ label, value }) {
+function EffectBadge({ label, value }: { label: string; value: number }) {
   const isPositive = value > 0;
   return (
     <span
@@ -246,7 +236,7 @@ function EffectBadge({ label, value }) {
 // Nave View
 // ---------------------------------------------------------------------------
 
-function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }) {
+function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<ChapelProps, "state"> & ChapelNavigation & { onStartDilemma: () => void }) {
   const chapel = state.chapel;
   const dilemmasRemaining = MORAL_DILEMMAS.length - (chapel?.dilemmasCompleted?.length ?? 0);
   const faith = chapel?.faith ?? 50;
@@ -348,14 +338,14 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }) {
 // Father Anselm View
 // ---------------------------------------------------------------------------
 
-function AnselmView({ state, dispatch }) {
+function AnselmView({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
   const greeting = chapel?.anselmGreeting ?? pickRandom(ANSELM_GREETINGS);
   const [titheInput, setTitheInput] = useState("");
   const titheResponse = chapel?.titheResponse;
   const suggestedTithe = Math.floor(state.denarii * 0.1);
 
-  function handleTithe(amount) {
+  function handleTithe(amount: number) {
     if (amount <= 0 || amount > state.denarii) return;
     dispatch({ type: "CHAPEL_PAY_TITHE", payload: { amount } });
     setTitheInput("");
@@ -461,12 +451,12 @@ function AnselmView({ state, dispatch }) {
 // Brother Caedmon View
 // ---------------------------------------------------------------------------
 
-function CaedmonView({ state, dispatch }) {
+function CaedmonView({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
   const greeting = chapel?.caedmonGreeting ?? pickRandom(CAEDMON_GREETINGS);
   const ownedItems = chapel?.inventory ?? [];
 
-  function handleBuy(item) {
+  function handleBuy(item: ChapelItem) {
     if (state.denarii < item.cost) return;
     if (ownedItems.includes(item.id)) return;
     dispatch({ type: "CHAPEL_BUY_ITEM", payload: { itemId: item.id } });
@@ -577,7 +567,7 @@ function CaedmonView({ state, dispatch }) {
 // Scriptorium View (Manuscript Mini-Game)
 // ---------------------------------------------------------------------------
 
-function ScriptoriumView({ state, dispatch }) {
+function ScriptoriumView({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
   const msPhase = chapel?.msPhase ?? "idle";
   const rawPattern = chapel?.msPattern;
@@ -591,7 +581,7 @@ function ScriptoriumView({ state, dispatch }) {
   const hasQuill = (chapel?.inventory ?? []).includes("quill_ink");
 
   const showingRef = useRef(false);
-  const timeoutsRef = useRef([]);
+  const timeoutsRef = useRef<number[]>([]);
 
   // Flash sequence during "showing" phase
   useEffect(() => {
@@ -599,7 +589,7 @@ function ScriptoriumView({ state, dispatch }) {
     showingRef.current = true;
 
     const clear = () => {
-      timeoutsRef.current.forEach(clearTimeout);
+      timeoutsRef.current.forEach(window.clearTimeout);
       timeoutsRef.current = [];
     };
 
@@ -610,17 +600,17 @@ function ScriptoriumView({ state, dispatch }) {
       const clearDelay = flashDelay + 500;
 
       timeoutsRef.current.push(
-        setTimeout(() => dispatch({ type: "CHAPEL_MS_FLASH", payload: { index: symbolIdx } }), flashDelay)
+        window.setTimeout(() => dispatch({ type: "CHAPEL_MS_FLASH", payload: { index: symbolIdx } }), flashDelay)
       );
       timeoutsRef.current.push(
-        setTimeout(() => dispatch({ type: "CHAPEL_MS_CLEAR_FLASH" }), clearDelay)
+        window.setTimeout(() => dispatch({ type: "CHAPEL_MS_CLEAR_FLASH" }), clearDelay)
       );
     });
 
     // Transition to input phase after sequence
     const totalTime = msPattern.length * 850 + 200;
     timeoutsRef.current.push(
-      setTimeout(() => {
+      window.setTimeout(() => {
         dispatch({ type: "CHAPEL_MS_DONE_SHOWING" });
         showingRef.current = false;
       }, totalTime)
@@ -639,7 +629,7 @@ function ScriptoriumView({ state, dispatch }) {
     }
   }, [msPhase]);
 
-  function handleSymbolClick(index) {
+  function handleSymbolClick(index: number) {
     if (msPhase !== "input") return;
     dispatch({ type: "CHAPEL_MS_INPUT", payload: { index } });
   }
@@ -815,14 +805,14 @@ function ScriptoriumView({ state, dispatch }) {
 // Dilemma View
 // ---------------------------------------------------------------------------
 
-function DilemmaView({ state, dispatch }) {
+function DilemmaView({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
   const dilemma = chapel?.currentDilemma;
   const result = chapel?.dilemmaResult;
 
   if (!dilemma) return null;
 
-  function handleChoice(choiceIndex) {
+  function handleChoice(choiceIndex: number) {
     dispatch({ type: "CHAPEL_RESOLVE_DILEMMA", payload: { choiceIndex } });
   }
 
@@ -915,11 +905,11 @@ function DilemmaView({ state, dispatch }) {
 // Main ChapelTab Component
 // ---------------------------------------------------------------------------
 
-export default function ChapelTab({ state, dispatch }) {
+export default function ChapelTab({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
   const view = chapel?.view ?? "nave";
 
-  const handleSetView = useCallback((v) => {
+  const handleSetView = useCallback((v: ChapelView) => {
     dispatch({ type: "CHAPEL_SET_VIEW", payload: { view: v } });
   }, [dispatch]);
 

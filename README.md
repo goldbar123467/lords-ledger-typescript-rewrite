@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-Outcome, Military and Watchtower views use checked TypeScript within their recorded scopes. Chapel authored data is checked; malformed tithes, unaffordable rewards, repeated outcomes, enlarged keyboard visibility and misleading effect/cost claims are repaired with independent review. All five manuscript transitions now use checked TypeScript domain logic, preserving legal play, partial saves, RNG and logs. All 149 unit tests, strict typecheck, lint, build, 24,200 subsystem parity transitions and two current real-timer manuscript browser journeys pass, with scoped independent review. Production remains 1,235 lines above baseline; 28 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
+Outcome, Military, Watchtower and Chapel views use checked TypeScript within their recorded scopes. Chapel authored data is checked; malformed tithes, unaffordable rewards, repeated outcomes, enlarged keyboard visibility and misleading effect/cost claims are repaired with independent review. All five manuscript transitions now use checked TypeScript domain logic, preserving legal play, partial saves, RNG and logs. All 149 units, strict typecheck, lint and build pass. The Chapel conversion has 18 passing focused browsers and two new test-selector failures pending correction; both real-timer manuscript journeys pass. Independent reviewers accept the source migration within scope. Production remains 1,259 lines above baseline; 27 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate the remaining Chapel view and complete saved-state contracts and recovery.
+1. Correct the Chapel all-goods test selector, then complete Chapel saved-state contracts and recovery.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
