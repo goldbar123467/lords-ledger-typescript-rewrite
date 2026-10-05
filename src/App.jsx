@@ -8,6 +8,7 @@ import { LEGACY_SAVE_KEY, SAVE_KEY_V2, readLegacySave, readV2Save, writeV2Save }
 
 import TitleScreen from "./components/TitleScreen";
 import Dashboard from "./components/Dashboard.tsx";
+import GameHeader from "./components/GameHeader.tsx";
 import TabBar from "./components/TabBar";
 import EstateTab from "./components/EstateTab";
 import MarketSquare from "./components/MarketSquare";
@@ -455,7 +456,7 @@ export default function App() {
       )}
 
       {/* Sticky header: Dashboard + TabBar */}
-      <div className="game-header sticky top-0 z-40">
+      <GameHeader>
         {/* Save / Load / Music controls */}
         <div className="flex justify-end items-center gap-2 px-3 py-1" style={{ backgroundColor: "#1a1610", borderBottom: "1px solid #4a3a22" }}>
           {saveFlash && (
@@ -546,7 +547,7 @@ export default function App() {
             {saveError}
           </p>
         )}
-      </div>
+      </GameHeader>
 
       {/* Tab content — pb-24 (96px) leaves space for the sticky Simulate-Season bar (~88px) so scrolled content isn't hidden beneath it (B-54).
           An explicit 96px spacer is appended at the end of the tab content below so the final rows of tall tables (Market commodity list, Forge info panels, Chronicle entries) can always scroll above the sticky bar. */}

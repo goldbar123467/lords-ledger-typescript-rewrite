@@ -855,6 +855,11 @@ function DilemmaView({ state, dispatch }) {
                 key={i}
                 disabled={!affordable}
                 onClick={() => handleChoice(i)}
+                onFocus={(event) => {
+                  if (event.currentTarget.matches(":focus-visible")) {
+                    event.currentTarget.scrollIntoView({ block: "center", behavior: "instant" });
+                  }
+                }}
                 className="w-full flex items-center gap-3 p-4 text-left transition-all duration-200 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
                 style={cardStyle}
                 onMouseEnter={(e) => {

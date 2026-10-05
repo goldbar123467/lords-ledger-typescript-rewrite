@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-Outcome, Military and Watchtower views use checked TypeScript within their recorded scopes. Chapel authored data is checked and preserved. Malformed tithes, unaffordable choice rewards and repeated outcomes are repaired;139 unit tests, strict/lint/build and six focused Chapel browser journeys pass. Enlarged desktop keyboard visibility and two misleading Chapel claims remain queued. Production remains1,188 lines above baseline;28 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for evidence and limits.
+Outcome, Military and Watchtower views use checked TypeScript within their recorded scopes. Chapel authored data is checked and preserved. Malformed tithes, unaffordable choice rewards and repeated outcomes are repaired;139 unit tests, strict/lint/build and six focused Chapel browser journeys pass. Enlarged desktop Chapel keyboard visibility is repaired with independent review; two misleading Chapel claims remain queued. Production remains1,221 lines above baseline;28 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct enlarged desktop Chapel keyboard visibility, then its effect/cost claims.
+1. Correct Chapel effect/cost claims, then migrate its manuscript lifecycle and remaining view.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

@@ -1133,6 +1133,8 @@ input[type="range"].labor-slider::-moz-range-thumb {
 }
 
 /* Tall resource/warning stacks must scroll away so game controls remain reachable. */
+.game-header[data-pinned="false"] { position: static; z-index: auto; }
+
 @media (max-width: 767px), (max-height: 600px) {
   .game-header { position: static; z-index: auto; }
 }
