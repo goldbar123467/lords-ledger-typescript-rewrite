@@ -27,6 +27,7 @@ import TutorialHint from "./components/TutorialHint";
 import Watchtower from "./components/Watchtower";
 import RaidScreen from "./components/RaidScreen.tsx";
 import ChapelTab from "./components/ChapelTab";
+import SaveRecoveryNotice from "./components/SaveRecoveryNotice.tsx";
 import TutorialPopup from "./components/TutorialPopup";
 
 // Lazy-loaded heavy tabs (split into separate chunks, fetched on first open)
@@ -226,6 +227,7 @@ export default function App() {
   const [isResolving, setIsResolving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(null); // "saved" | "loaded" | "error"
   const [saveError, setSaveError] = useState("");
+  const [saveRecovery, setSaveRecovery] = useState(null);
   const [hasSavedGame, setHasSavedGame] = useState(() => {
     try { return !!localStorage.getItem(SAVE_KEY_V2); } catch { return false; }
   });
@@ -233,12 +235,14 @@ export default function App() {
     try { return !!localStorage.getItem(LEGACY_SAVE_KEY); } catch { return false; }
   });
 
-  function reportSaveError(message) {
+  function reportSaveError(message, recovery = null) {
+    setSaveRecovery(recovery);
     setSaveError(message);
     setSaveFlash("error");
   }
 
   function reportSaveSuccess(kind) {
+    setSaveRecovery(null);
     setSaveError("");
     setSaveFlash(kind);
     setTimeout(() => setSaveFlash(null), 2000);
@@ -259,7 +263,7 @@ export default function App() {
       const raw = localStorage.getItem(SAVE_KEY_V2);
       if (!raw) { reportSaveError("No 2.0 save was found."); return; }
       const result = readV2Save(raw);
-      if (!result.ok) { reportSaveError(result.error); return; }
+      if (!result.ok) { reportSaveError(result.error, result.canRestartManuscript ? { raw, kind: "v2" } : null); return; }
       setTavernOpen(false);
       setWatchtowerOpen(false);
       dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
@@ -275,7 +279,7 @@ export default function App() {
       const raw = localStorage.getItem(LEGACY_SAVE_KEY);
       if (!raw) { reportSaveError("No old save was found."); return; }
       const result = readLegacySave(raw);
-      if (!result.ok) { reportSaveError(result.error); return; }
+      if (!result.ok) { reportSaveError(result.error, result.canRestartManuscript ? { raw, kind: "legacy" } : null); return; }
       const currentSaveExists = localStorage.getItem(SAVE_KEY_V2) !== null;
       if (!currentSaveExists) localStorage.setItem(SAVE_KEY_V2, writeV2Save(result.state));
       setTavernOpen(false);
@@ -291,6 +295,20 @@ export default function App() {
     } catch (error) {
       reportSaveError(error instanceof Error ? error.message : "Old save could not be imported.");
     }
+  }
+
+  function handleRecoverManuscript() {
+    if (!saveRecovery) return;
+    const result = saveRecovery.kind === "legacy"
+      ? readLegacySave(saveRecovery.raw, { restartManuscript: true })
+      : readV2Save(saveRecovery.raw, { restartManuscript: true });
+    if (!result.ok) { reportSaveError(result.error); return; }
+    setSaveRecovery(null);
+    setTavernOpen(false);
+    setWatchtowerOpen(false);
+    dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
+    setSaveError("Manuscript restarted. Estate resources and progress are kept. Stored saves are unchanged; choose Save game to save this recovery.");
+    setSaveFlash("recovered");
   }
 
   function handleSimulateSeason() {
@@ -395,6 +413,7 @@ export default function App() {
           onImportLegacy={handleImportLegacyGame}
           hasLegacySave={hasLegacySave}
           saveMessage={saveFlash === "error" ? saveError : saveFlash === "loaded" ? "Game loaded." : ""}
+          recoveryNotice={saveRecovery ? <SaveRecoveryNotice onRecover={handleRecoverManuscript} /> : null}
         />
       </div>
     );
@@ -542,11 +561,12 @@ export default function App() {
             disabled={isEventPhase}
           />
         )}
-        {(saveFlash === "error" || saveFlash === "imported") && (
+        {(saveFlash === "error" || saveFlash === "imported" || saveFlash === "recovered") && (
           <p role="alert" className="px-4 py-2 text-sm text-center" style={{ color: saveFlash === "error" ? "#ffd1c6" : "#e8c44a", background: saveFlash === "error" ? "#6b1b18" : "#2a2318" }}>
             {saveError}
           </p>
         )}
+        {saveRecovery && <SaveRecoveryNotice onRecover={handleRecoverManuscript} />}
       </GameHeader>
 
       {/* Tab content — pb-24 (96px) leaves space for the sticky Simulate-Season bar (~88px) so scrolled content isn't hidden beneath it (B-54).

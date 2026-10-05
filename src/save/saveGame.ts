@@ -5,6 +5,7 @@ import type { EventDefinition } from '../data/eventTypes.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
+import { validateChapelState, restartSavedManuscript, type ChapelSaveState } from '../engine/chapelState.ts';
 import type { GameOverReason } from '../engine/meterUtils.ts';
 import { isGambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
@@ -85,7 +86,7 @@ export interface GameSnapshot {
     aldricStoriesRemaining?: number[];
   };
   military: MilitaryDefenseState;
-  chapel: { faith: number };
+  chapel: ChapelSaveState;
   greatHall: { meters: { treasury: number; people: number; church: number; military: number } };
   synergies: {
     activated: SynergyTierId[];
@@ -109,7 +110,7 @@ export interface SaveEnvelope {
 
 export type SaveReadResult =
   | { ok: true; state: GameSnapshot }
-  | { ok: false; error: string };
+  | { ok: false; error: string; canRestartManuscript?: boolean };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -316,10 +317,8 @@ function validateSnapshot(value: unknown): string | null {
     }
   }
 
-  const chapel = value.chapel;
-  if (!isRecord(chapel) || !isFiniteNumber(chapel.faith) || chapel.faith < 0 || chapel.faith > 100) {
-    return 'Save Chapel faith is invalid.';
-  }
+  const chapelIssue = validateChapelState(value.chapel);
+  if (chapelIssue) return chapelIssue;
   const hallMeters = isRecord(value.greatHall) ? value.greatHall.meters : null;
   if (!isRecord(hallMeters) ||
       (['treasury', 'people', 'church', 'military'] as const).some(key =>
@@ -529,26 +528,43 @@ function decodeJson(raw: string): unknown {
   catch { throw new Error('Save data is not valid JSON. The stored save was left untouched.'); }
 }
 
-function readResult(fn: () => GameSnapshot): SaveReadResult {
-  try { return { ok: true, state: fn() }; }
+function readResult(fn: () => SaveReadResult): SaveReadResult {
+  try { return fn(); }
   catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Save could not be read.' }; }
 }
 
-export function readV2Save(raw: string): SaveReadResult {
+function readSnapshot(value: unknown, restartManuscript: boolean): SaveReadResult {
+  const issue = validateSnapshot(value);
+  if (!issue) {
+    assertSnapshot(value);
+    return { ok: true, state: withRandomState(value) };
+  }
+  const repaired = issue.startsWith('Save manuscript') ? restartSavedManuscript(value) : null;
+  if (repaired && validateSnapshot(repaired) === null) {
+    if (restartManuscript) {
+      // Older snapshots gain the same seed they would have gained before this recovery.
+      if (repaired.rngState === undefined) repaired.rngState = seedLegacySnapshot(value);
+      assertSnapshot(repaired);
+      return { ok: true, state: withRandomState(repaired) };
+    }
+    return { ok: false, error: issue, canRestartManuscript: true };
+  }
+  return { ok: false, error: issue };
+}
+
+export function readV2Save(raw: string, options?: { restartManuscript: true }): SaveReadResult {
   return readResult(() => {
     const envelope = decodeJson(raw);
     if (!isRecord(envelope) || envelope.format !== 'lords-ledger') throw new Error('This is not a Lord’s Ledger 2.0 save.');
     if (envelope.version !== SAVE_VERSION) throw new Error(`Save version ${String(envelope.version)} is not supported.`);
-    assertSnapshot(envelope.state);
-    return withRandomState(envelope.state);
+    return readSnapshot(envelope.state, options?.restartManuscript === true);
   });
 }
 
-export function readLegacySave(raw: string): SaveReadResult {
+export function readLegacySave(raw: string, options?: { restartManuscript: true }): SaveReadResult {
   return readResult(() => {
     const state = decodeJson(raw);
-    assertSnapshot(state);
-    return withRandomState(state);
+    return readSnapshot(state, options?.restartManuscript === true);
   });
 }
 

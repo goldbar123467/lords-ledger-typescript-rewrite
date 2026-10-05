@@ -4,7 +4,7 @@ const DIFFICULTIES = [
   { key: "hard", label: "Hard", desc: "Fewer resources, harsher realm", icon: "\u2620" },
 ];
 
-export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, saveMessage }) {
+export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, saveMessage, recoveryNotice }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8"
       style={{ backgroundColor: "#0f0d0a" }}
@@ -41,6 +41,7 @@ export default function TitleScreen({ onStart, onImportLegacy, hasLegacySave, sa
             {saveMessage}
           </p>
         )}
+        {recoveryNotice}
         <p className="text-base leading-relaxed mb-6" style={{ color: "#a89070" }}>
           The old lord has passed, and the estate is now yours. Manage your treasury,
           keep your people fed, defend your borders, and honor the Church — for ten

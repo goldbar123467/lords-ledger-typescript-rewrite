@@ -115,12 +115,14 @@ test('sparse and inherited symbol slots cannot validate or create a null saved p
     { msPattern: inherited }, { msPlayerInput: new Array<number>(1) }]) {
     for (const base of [showing, input]) {
       const state = { ...base, chapel: { ...base.chapel, ...patch } };
-      const raw = writeV2Save(state);
+      const raw = JSON.stringify(state);
+      assert.throws(() => writeV2Save(state), /manuscript/i);
       assert.equal(getManuscriptRound(state.chapel), null);
       for (const type of ['CHAPEL_MS_FLASH', 'CHAPEL_MS_CLEAR_FLASH', 'CHAPEL_MS_DONE_SHOWING', 'CHAPEL_MS_INPUT']) {
         assert.equal(gameReducer(state, { type, payload: { index: input.chapel.msPattern[1] } }), state);
       }
-      assert.equal(writeV2Save(state), raw);
+      assert.equal(JSON.stringify(state), raw);
+      assert.throws(() => writeV2Save(state), /manuscript/i);
     }
   }
 });

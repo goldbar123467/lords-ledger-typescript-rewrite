@@ -807,7 +807,8 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
 
 function DilemmaView({ state, dispatch }: ChapelProps) {
   const chapel = state.chapel;
-  const dilemma = chapel?.currentDilemma;
+  // Resolve stored identity against current authored copy, including older Bishop wording.
+  const dilemma = MORAL_DILEMMAS.find(item => item.id === chapel?.currentDilemma?.id);
   const result = chapel?.dilemmaResult;
 
   if (!dilemma) return null;
