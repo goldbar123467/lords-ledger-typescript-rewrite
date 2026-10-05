@@ -37,8 +37,7 @@ import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "
 import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
-import { getChapelChoice, canAffordChapelChoice } from "./chapelChoices.ts";
-import { planManuscriptAction } from "./chapelManuscript.ts";
+import { planChapelAction } from "./chapelActions.ts";
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -64,11 +63,6 @@ import {
 } from "../data/military.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
-import {
-  ANSELM_GREETINGS, TITHE_RESPONSES, TITHE_EFFECTS,
-  CAEDMON_GREETINGS, SHOP_ITEMS,
-  MORAL_DILEMMAS,
-} from "../data/chapel.ts";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.js";
 import {
   getInitialPeopleState, reconcileTiers, updateFamilyLoyalty,
@@ -2824,192 +2818,27 @@ function reduceGame(state, action, random) {
     // CHAPEL ACTIONS
     // -----------------------------------------------------------------------
 
-    case "CHAPEL_SET_VIEW": {
-      const { view } = action.payload ?? {};
-      const prevChapel = state.chapel ?? {};
-      const updates = { view };
-
-      // Randomize NPC greeting on first visit
-      if (view === "anselm" && !prevChapel.anselmGreeting) {
-        updates.anselmGreeting = ANSELM_GREETINGS[Math.floor(random() * ANSELM_GREETINGS.length)];
-      }
-      if (view === "caedmon" && !prevChapel.caedmonGreeting) {
-        updates.caedmonGreeting = CAEDMON_GREETINGS[Math.floor(random() * CAEDMON_GREETINGS.length)];
-      }
-      // Clear tithe response and dilemma result when navigating away
-      if (view === "nave") {
-        updates.titheResponse = null;
-        updates.dilemmaResult = null;
-        updates.currentDilemma = null;
-      }
-
-      return { ...state, chapel: { ...prevChapel, ...updates } };
-    }
-
-    case "CHAPEL_PAY_TITHE": {
-      if (state.phase !== "management") return state;
-      const { amount } = action.payload ?? {};
-      if (!isPositivePrice(amount) || !Number.isFinite(state.denarii) || state.denarii < amount) return state;
-      const churchDonation = (state.churchDonation ?? 0) + amount;
-      if (!Number.isFinite(churchDonation)) return state;
-
-      const prevChapel = state.chapel ?? {};
-      const pct = amount / state.denarii;
-      const category = pct >= 0.10 ? "generous" : pct >= 0.03 ? "stingy" : "none";
-      const responses = TITHE_RESPONSES[category];
-      const response = responses[Math.floor(random() * responses.length)];
-      const effects = TITHE_EFFECTS[category];
-
-      const newFaith = Math.min(100, Math.max(0, (prevChapel.faith ?? 50) + (effects.faith ?? 0)));
-      const newPiety = Math.min(100, Math.max(0, (prevChapel.piety ?? 30) + (effects.piety ?? 0)));
-
-      const logEntry = { text: `Tithed ${amount}d to Father Anselm (${category}).`, turn: state.turn, season: state.season };
-
-      return {
-        ...state,
-        denarii: state.denarii - amount,
-        churchDonation,
-        chapel: {
-          ...prevChapel,
-          faith: newFaith,
-          piety: newPiety,
-          titheResponse: response,
-          gameLog: [...(prevChapel.gameLog ?? []), logEntry],
-        },
-        chronicle: addChronicle(state.chronicle, `Tithed ${amount}d to the Chapel. Faith ${effects.faith >= 0 ? "+" : ""}${effects.faith}, Piety ${effects.piety >= 0 ? "+" : ""}${effects.piety}.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    case "CHAPEL_BUY_ITEM": {
-      if (state.phase !== "management") return state;
-      const { itemId } = action.payload ?? {};
-      const item = SHOP_ITEMS.find((i) => i.id === itemId);
-      if (!item) return state;
-
-      const prevChapel = state.chapel ?? {};
-      const owned = prevChapel.inventory ?? [];
-      if (owned.includes(itemId)) return state;
-      if (state.denarii < item.cost) return state;
-
-      const effects = item.effects ?? {};
-      const newFaith = Math.min(100, Math.max(0, (prevChapel.faith ?? 50) + (effects.faith ?? 0)));
-      const newPiety = Math.min(100, Math.max(0, (prevChapel.piety ?? 30) + (effects.piety ?? 0)));
-      const newHappiness = Math.min(100, Math.max(0, (prevChapel.happiness ?? 60) + (effects.happiness ?? 0)));
-
-      // Apply food effect to main inventory
-      let newInventory = state.inventory;
-      let newFood = state.food;
-      if (effects.food) {
-        const foodGain = effects.food;
-        newInventory = { ...state.inventory, grain: (state.inventory.grain || 0) + foodGain };
-        newFood = getTotalFood(newInventory);
-      }
-
-      const logEntry = { text: `Purchased ${item.name} for ${item.cost}d from Brother Caedmon.`, turn: state.turn, season: state.season };
-
-      return {
-        ...state,
-        denarii: state.denarii - item.cost,
-        inventory: newInventory,
-        food: newFood,
-        chapel: {
-          ...prevChapel,
-          inventory: [...owned, itemId],
-          faith: newFaith,
-          piety: newPiety,
-          happiness: newHappiness,
-          gameLog: [...(prevChapel.gameLog ?? []), logEntry],
-        },
-        chronicle: addChronicle(state.chronicle, `Purchased ${item.name} from Brother Caedmon for ${item.cost}d.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    case "CHAPEL_START_DILEMMA": {
-      if (state.phase !== "management") return state;
-      const prevChapel = state.chapel ?? {};
-      const completed = prevChapel.dilemmasCompleted ?? [];
-      const available = MORAL_DILEMMAS.filter((d) => !completed.includes(d.id));
-      if (available.length === 0) return state;
-
-      const dilemma = available[Math.floor(random() * available.length)];
-
-      return {
-        ...state,
-        chapel: {
-          ...prevChapel,
-          view: "dilemma",
-          currentDilemma: dilemma,
-          dilemmaResult: null,
-        },
-      };
-    }
-
-    case "CHAPEL_RESOLVE_DILEMMA": {
-      if (state.phase !== "management") return state;
-      const { choiceIndex } = action.payload ?? {};
-      const prevChapel = state.chapel ?? {};
-      const dilemma = prevChapel.currentDilemma;
-      if (!dilemma || prevChapel.dilemmaResult || (prevChapel.dilemmasCompleted ?? []).includes(dilemma.id)) return state;
-
-      const choice = getChapelChoice(dilemma.id, choiceIndex);
-      if (!choice || !canAffordChapelChoice(choice, state.denarii)) return state;
-
-      const effects = choice.effects ?? {};
-
-      // Apply resource effects
-      let newDenarii = state.denarii + (effects.denarii ?? 0);
-      newDenarii = Math.max(0, newDenarii);
-
-      const newFaith = Math.min(100, Math.max(0, (prevChapel.faith ?? 50) + (effects.faith ?? 0)));
-      const newPiety = Math.min(100, Math.max(0, (prevChapel.piety ?? 30) + (effects.piety ?? 0)));
-      const newHappiness = Math.min(100, Math.max(0, (prevChapel.happiness ?? 60) + (effects.happiness ?? 0)));
-
-      const logEntry = {
-        text: `Moral dilemma "${dilemma.title}" — chose: ${choice.label}`,
-        turn: state.turn,
-        season: state.season,
-      };
-
-      // Build chronicle effect summary
-      const effectParts = [];
-      if (effects.denarii) effectParts.push(`${effects.denarii > 0 ? "+" : ""}${effects.denarii}d`);
-      if (effects.faith) effectParts.push(`Faith ${effects.faith > 0 ? "+" : ""}${effects.faith}`);
-      if (effects.piety) effectParts.push(`Piety ${effects.piety > 0 ? "+" : ""}${effects.piety}`);
-      if (effects.happiness) effectParts.push(`Happiness ${effects.happiness > 0 ? "+" : ""}${effects.happiness}`);
-      const effectStr = effectParts.length ? ` (${effectParts.join(", ")})` : "";
-
-      return {
-        ...state,
-        denarii: newDenarii,
-        chapel: {
-          ...prevChapel,
-          faith: newFaith,
-          piety: newPiety,
-          happiness: newHappiness,
-          dilemmaResult: { text: choice.result, effects },
-          dilemmasCompleted: [...(prevChapel.dilemmasCompleted ?? []), dilemma.id],
-          gameLog: [...(prevChapel.gameLog ?? []), logEntry],
-        },
-        chronicle: addChronicle(state.chronicle, `Chapel dilemma: "${dilemma.title}" — ${choice.label}.${effectStr}`, state.season, state.year, state.turn, "event"),
-      };
-    }
-
+    case "CHAPEL_SET_VIEW":
+    case "CHAPEL_PAY_TITHE":
+    case "CHAPEL_BUY_ITEM":
+    case "CHAPEL_START_DILEMMA":
+    case "CHAPEL_RESOLVE_DILEMMA":
     case "CHAPEL_MS_START":
     case "CHAPEL_MS_FLASH":
     case "CHAPEL_MS_CLEAR_FLASH":
     case "CHAPEL_MS_DONE_SHOWING":
     case "CHAPEL_MS_INPUT": {
-      const change = planManuscriptAction(state, action.type, action.payload, random);
+      const change = planChapelAction(state, action.type, action.payload, random);
       if (!change) return state;
-      const chapel = { ...(state.chapel ?? {}), ...change.chapel };
-      if (change.logText) chapel.gameLog = [...(chapel.gameLog ?? []), {
-        text: change.logText, turn: state.turn, season: state.season,
+      const { chapel: patch, logText, chronicleText, chronicleKind, ...resources } = change;
+      const chapel = { ...(state.chapel ?? {}), ...patch };
+      if (logText) chapel.gameLog = [...(chapel.gameLog ?? []), {
+        text: logText, turn: state.turn, season: state.season,
       }];
       return {
-        ...state, chapel,
-        ...(change.denarii === undefined ? {} : { denarii: change.denarii }),
-        ...(change.chronicleText ? { chronicle: addChronicle(state.chronicle,
-          change.chronicleText, state.season, state.year, state.turn, "action") } : {}),
+        ...state, ...resources, chapel,
+        ...(chronicleText ? { chronicle: addChronicle(state.chronicle,
+          chronicleText, state.season, state.year, state.turn, chronicleKind ?? "action") } : {}),
       };
     }
 

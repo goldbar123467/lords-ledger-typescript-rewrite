@@ -13,7 +13,7 @@ export type ManuscriptCommand = 'CHAPEL_MS_START' | 'CHAPEL_MS_FLASH' |
 
 /** Sequence fields remain unknown until checked, including earlier partial saves. */
 export interface ManuscriptChapel {
-  view?: string;
+  view?: string | null;
   msPhase?: unknown;
   msRound?: unknown;
   msMaxRound?: unknown;
