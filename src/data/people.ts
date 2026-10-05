@@ -79,16 +79,18 @@ export const TIER_CONFIG = {
 
 /** Starting tier distribution for a given population */
 export function getInitialTiers(population: number): SocialTiers {
-  const skilled = Math.max(2, Math.min(4, Math.round(population * 0.14)));
-  const freemen = Math.max(3, Math.round(population * 0.32));
-  const serfs = Math.max(3, population - skilled - freemen);
+  if (population === 0) return { serfs: 0, freemen: 0, skilled: 0 };
+  // Preserve the normal distribution; tiny villages cannot supply all tier minimums.
+  const skilled = Math.min(population - 1, Math.max(2, Math.min(4, Math.round(population * 0.14))));
+  const freemen = Math.min(population - skilled - 1, Math.max(3, Math.round(population * 0.32)));
+  const serfs = population - skilled - freemen;
   return { serfs, freemen, skilled };
 }
 
 /**
  * Reconcile tiers after a population change.
  * Freemen leave first (mobile). Serfs absorb growth.
- * Skilled only change with notable family departures/arrivals.
+ * Preserve skilled counts unless the remaining population cannot contain them.
  */
 export function reconcileTiers(newPopulation: number, currentTiers: Readonly<SocialTiers>): SocialTiers {
   const currentTotal = currentTiers.serfs + currentTiers.freemen + currentTiers.skilled;
@@ -126,6 +128,18 @@ export function reconcileTiers(newPopulation: number, currentTiers: Readonly<Soc
     serfs = Math.max(1, serfs);
   }
 
+  // At tiny populations, tier minimums must yield to the actual family count.
+  // Remove excess mobile freemen, then serfs; skilled workers are the last resort.
+  let excess = serfs + freemen + skilled - newPopulation;
+  if (excess > 0) {
+    const freemanLoss = Math.min(freemen, excess);
+    freemen -= freemanLoss;
+    excess -= freemanLoss;
+    const serfLoss = Math.min(serfs, excess);
+    serfs -= serfLoss;
+    excess -= serfLoss;
+    skilled -= excess;
+  }
   return { serfs, freemen, skilled };
 }
 
@@ -477,7 +491,7 @@ export const PEOPLE_TIPS = {
   default: "Set your tax rate and assign labor here. Your people are your kingdom\u2019s greatest resource \u2014 and its greatest threat.",
   lowMorale: "Your people are unhappy. Lower taxes, assign fewer to garrison duty, or risk unrest.",
   highTax: "High taxes fill your coffers but empty your village. Families who leave don\u2019t come back easily.",
-  noGarrison: "You have no families on garrison duty. Your village is undefended.",
+  noGarrison: "No families are assigned to garrison duty. Hired soldiers and fortifications are managed in Military.",
   noChurch: "No one is assigned to the chapel. Father Anselm is writing you a very long letter.",
   foodShortage: "You\u2019re producing less food than you consume. Assign more families to farming or face famine.",
   surplus: "Food surplus attracts new families. Keep it up and your village will grow.",

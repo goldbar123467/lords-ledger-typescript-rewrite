@@ -571,7 +571,7 @@ export default function PeopleTab({ state, dispatch }) {
           onChange={handleGarrisonChange}
           leftLabel="Guard"
           rightLabel="Work"
-          detail={`${garrisonFamilies} on guard duty${garrisonFamilies === 0 ? " \u2014 village undefended" : ""} \u00B7 ${workingFamilies} available for work`}
+          detail={`${garrisonFamilies} families on guard duty \u00B7 ${workingFamilies} available for work`}
         />
 
         {/* Slider 3: Church Labor */}
