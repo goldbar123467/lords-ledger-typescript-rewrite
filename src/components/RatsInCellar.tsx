@@ -5,7 +5,7 @@ import {
   RATS_SCRIBES_NOTE,
 } from "../data/tavern";
 import { createRandomCursor } from "../engine/random.ts";
-import { planRatRun, scoreRatRun } from "../engine/ratsInCellar.ts";
+import { planRatRun, scoreRatRun, type RatSpawn } from "../engine/ratsInCellar.ts";
 import ScribesNote from "./ScribesNote";
 
 const TOTAL_CELLS = RATS_GRID_SIZE * RATS_GRID_SIZE;
@@ -49,7 +49,7 @@ function RatSilhouette() {
 }
 
 // Subtle variation in stone tile color per cell index
-function tileBg(index) {
+function tileBg(index: number): string {
   const variations = [
     "#2a2218",
     "#272016",
@@ -60,7 +60,9 @@ function tileBg(index) {
     "#26201c",
     "#2d251a",
   ];
-  return variations[index % variations.length];
+  const color = variations[index % variations.length];
+  if (color === undefined) throw new RangeError("Rat tile index is invalid.");
+  return color;
 }
 
 // ---- PHASES ----
@@ -69,6 +71,26 @@ const PHASE_COUNTDOWN = "countdown";
 const PHASE_ACTIVE = "active";
 const PHASE_RESULTS = "results";
 
+type RatPhase = typeof PHASE_INTRO | typeof PHASE_COUNTDOWN | typeof PHASE_ACTIVE | typeof PHASE_RESULTS;
+interface ActiveRat { readonly cellIndex: number }
+interface CellFlash { readonly type: "green" | "red"; readonly id: number }
+interface FloatText { readonly id: number; readonly cellIndex: number; readonly text: string }
+
+export interface RatRunResult {
+  readonly caught: number;
+  readonly escaped: number;
+  readonly seed: number;
+}
+
+export interface RatsInCellarProps {
+  readonly rngState: number;
+  readonly ratsPlayedThisSeason: boolean;
+  readonly ratsScribesNoteSeen: boolean;
+  readonly onResult: (result: RatRunResult) => void;
+  readonly onScribesNoteSeen: () => void;
+  readonly onBack: () => void;
+}
+
 export default function RatsInCellar({
   rngState,
   ratsPlayedThisSeason,
@@ -76,8 +98,8 @@ export default function RatsInCellar({
   onResult,
   onScribesNoteSeen,
   onBack,
-}) {
-  const [phase, setPhase] = useState(PHASE_INTRO);
+}: RatsInCellarProps) {
+  const [phase, setPhase] = useState<RatPhase>(PHASE_INTRO);
   const [run] = useState(() => ({
     seed: rngState,
     spawns: planRatRun(createRandomCursor(rngState).next),
@@ -94,40 +116,39 @@ export default function RatsInCellar({
   const [elapsedMs, setElapsedMs] = useState(0);
 
   // Active rat: { cellIndex }
-  const [activeRat, setActiveRat] = useState(null);
+  const [activeRat, setActiveRat] = useState<ActiveRat | null>(null);
   // Cell flash effects: Map<cellIndex, {type: "green"|"red", id}>
-  const [cellFlashes, setCellFlashes] = useState({});
+  const [cellFlashes, setCellFlashes] = useState<Readonly<Partial<Record<number, CellFlash>>>>({});
   // Float-up texts: [{id, cellIndex, text}]
-  const [floatTexts, setFloatTexts] = useState([]);
+  const [floatTexts, setFloatTexts] = useState<readonly FloatText[]>([]);
 
-  const startTimeRef = useRef(null);
-  const introActionRef = useRef(null);
-  const activeRatRef = useRef(null);
+  const introActionRef = useRef<HTMLButtonElement | null>(null);
+  const activeRatRef = useRef<ActiveRat | null>(null);
   const caughtRef = useRef(0);
-  const ratTimerRef = useRef(null);
-  const spawnTimerRef = useRef(null);
-  const animFrameRef = useRef(null);
+  const ratTimerRef = useRef<number | undefined>(undefined);
+  const spawnTimerRef = useRef<number | undefined>(undefined);
+  const animFrameRef = useRef(0);
   const floatIdRef = useRef(0);
 
   // ---- COUNTDOWN LOGIC ----
   // When countdown reaches 0, transition to active on the next tick via timeout
   useEffect(() => {
     if (phase !== PHASE_COUNTDOWN) return;
-    const t = setTimeout(() => {
+    const t = window.setTimeout(() => {
       if (countdownNum <= 0) {
         setPhase(PHASE_ACTIVE);
       } else {
         setCountdownNum((n) => n - 1);
       }
     }, 800);
-    return () => clearTimeout(t);
+    return () => window.clearTimeout(t);
   }, [phase, countdownNum]);
 
   // ---- Add a cell flash effect ----
-  const addCellFlash = useCallback((cellIndex, type) => {
+  const addCellFlash = useCallback((cellIndex: number, type: CellFlash['type']) => {
     const id = Date.now() + Math.random();
     setCellFlashes((prev) => ({ ...prev, [cellIndex]: { type, id } }));
-    setTimeout(() => {
+    window.setTimeout(() => {
       setCellFlashes((prev) => {
         const next = { ...prev };
         if (next[cellIndex]?.id === id) delete next[cellIndex];
@@ -137,16 +158,16 @@ export default function RatsInCellar({
   }, []);
 
   // ---- Add a float-up text ----
-  const addFloatText = useCallback((cellIndex, text) => {
+  const addFloatText = useCallback((cellIndex: number, text: string) => {
     const id = ++floatIdRef.current;
     setFloatTexts((prev) => [...prev, { id, cellIndex, text }]);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setFloatTexts((prev) => prev.filter((f) => f.id !== id));
     }, 800);
   }, []);
 
   // ---- Settle the current rat before replacing it ----
-  const escapeRat = useCallback((rat) => {
+  const escapeRat = useCallback((rat: ActiveRat) => {
     if (activeRatRef.current !== rat) return;
     activeRatRef.current = null;
     setActiveRat(null);
@@ -157,14 +178,14 @@ export default function RatsInCellar({
 
   // ---- Spawn a new rat ----
   const spawnRat = useCallback(
-    (spawn) => {
+    (spawn: Readonly<RatSpawn>) => {
       const cell = spawn.cellIndex;
-      clearTimeout(ratTimerRef.current);
+      window.clearTimeout(ratTimerRef.current);
       if (activeRatRef.current) escapeRat(activeRatRef.current);
       const rat = { cellIndex: cell };
       activeRatRef.current = rat;
       setActiveRat(rat);
-      ratTimerRef.current = setTimeout(() => escapeRat(rat), spawn.visibilityMs);
+      ratTimerRef.current = window.setTimeout(() => escapeRat(rat), spawn.visibilityMs);
     },
     [escapeRat]
   );
@@ -173,18 +194,18 @@ export default function RatsInCellar({
   useEffect(() => {
     if (phase !== PHASE_ACTIVE) return;
 
-    startTimeRef.current = Date.now();
+    const startTime = Date.now();
 
     // Timer update loop
     const updateTimer = () => {
       const now = Date.now();
-      const elapsed = now - startTimeRef.current;
+      const elapsed = now - startTime;
       setElapsedMs(elapsed);
 
       if (elapsed >= RATS_DURATION_MS) {
         // Time's up — end the game
-        clearTimeout(ratTimerRef.current);
-        clearTimeout(spawnTimerRef.current);
+        window.clearTimeout(ratTimerRef.current);
+        window.clearTimeout(spawnTimerRef.current);
         activeRatRef.current = null;
         setActiveRat(null);
         // Delayed browser timers cannot silently erase a scheduled rat.
@@ -192,14 +213,14 @@ export default function RatsInCellar({
         setPhase(PHASE_RESULTS);
         return;
       }
-      animFrameRef.current = requestAnimationFrame(updateTimer);
+      animFrameRef.current = window.requestAnimationFrame(updateTimer);
     };
-    animFrameRef.current = requestAnimationFrame(updateTimer);
+    animFrameRef.current = window.requestAnimationFrame(updateTimer);
 
     // Play the same seeded spawn sequence that the reducer will score.
     let spawnIndex = 0;
     const scheduleSpawn = () => {
-      const elapsed = Date.now() - startTimeRef.current;
+      const elapsed = Date.now() - startTime;
       if (elapsed >= RATS_DURATION_MS) return;
       const spawn = run.spawns[spawnIndex];
       if (!spawn) return;
@@ -207,28 +228,28 @@ export default function RatsInCellar({
       spawnIndex += 1;
       const next = run.spawns[spawnIndex];
       if (next) {
-        const delay = Math.max(0, next.atMs - (Date.now() - startTimeRef.current));
-        spawnTimerRef.current = setTimeout(scheduleSpawn, delay);
+        const delay = Math.max(0, next.atMs - (Date.now() - startTime));
+        spawnTimerRef.current = window.setTimeout(scheduleSpawn, delay);
       }
     };
-    spawnTimerRef.current = setTimeout(scheduleSpawn, run.spawns[0]?.atMs ?? 500);
+    spawnTimerRef.current = window.setTimeout(scheduleSpawn, run.spawns[0]?.atMs ?? 500);
 
     return () => {
-      cancelAnimationFrame(animFrameRef.current);
-      clearTimeout(ratTimerRef.current);
-      clearTimeout(spawnTimerRef.current);
+      window.cancelAnimationFrame(animFrameRef.current);
+      window.clearTimeout(ratTimerRef.current);
+      window.clearTimeout(spawnTimerRef.current);
     };
   }, [phase, run, spawnRat]);
 
   // ---- CLICK HANDLERS ----
   const handleCellClick = useCallback(
-    (cellIndex) => {
+    (cellIndex: number) => {
       if (phase !== PHASE_ACTIVE) return;
       setTotalClicks((c) => c + 1);
 
       if (activeRatRef.current?.cellIndex === cellIndex) {
         // Caught the rat
-        clearTimeout(ratTimerRef.current);
+        window.clearTimeout(ratTimerRef.current);
         activeRatRef.current = null;
         caughtRef.current += 1;
         setCaught((c) => c + 1);
@@ -668,3 +689,4 @@ export default function RatsInCellar({
     </div>
   );
 }
+

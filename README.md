@@ -20,7 +20,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military, raid, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Complete registry cross-reference and runtime audits |
-| React interface | Typed Market, Tavern companion, synergy notification, perspective-story, event-choice, continuation, Scribe's Note, tutorial, navigation, Dashboard and raid views; modal focus, resize-aware navigation and readable resource headers | Migrate app entry points and remaining views; complete interface review |
+| React interface | Typed management and interaction views, including Estate, Map, Chronicle, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Migrate the Tavern shell and App; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete remaining nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
@@ -37,7 +37,9 @@ Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate bu
 
 Gambit owns all four reveal and feedback timeouts and cancels them when its view closes. The Load and Walk Away regressions and existing paid-round flows pass with exact saved-state checks.
 
-Four source JavaScript/JSX files remain. Production has 44,280 lines versus the original 45,347, a reduction of 1,067 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-handle contracts. Real 20-second one-catch and zero-catch runs preserve scoring, saved RNG and once-per-season play. Cosmetic timer cleanup remains pending.
+
+Three source JavaScript/JSX files remain: Tavern, App and the reducer. Production has 44,302 lines versus the original 45,347, a reduction of 1,045 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
