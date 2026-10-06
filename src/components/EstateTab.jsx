@@ -1,3 +1,4 @@
+import WeatherVaneOutlook from "./WeatherVaneOutlook.tsx";
 import {getConditionAfterSeason, displayBuildingCondition} from '../engine/buildingWear.ts';
 import {getConstructionCost} from '../engine/forgeTools.ts';
 import {getBuildingOutput} from '../engine/economyEngine.ts';
@@ -121,7 +122,7 @@ function TipBar({ state }) {
   } else if (usedPlots >= totalPlots) {
     tip = "All plots are in use. You\u2019ll need to demolish a building to make room, or wait for land grants from the crown.";
   } else if (season === "winter") {
-    tip = "Winter is coming. Farm output drops to 25%. Make sure your granaries are stocked.";
+    tip = "Winter is coming. Farm output drops to 50%. Make sure your granaries are stocked.";
   } else if (season === "autumn") {
     tip = "Harvest season! Farms produce 50% bonus output this season. A good time to be a lord.";
   } else if (buildingsRuined) {
@@ -1094,6 +1095,7 @@ export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgr
 
       {/* Economy Overview */}
       <EconomyOverview state={state} />
+      <WeatherVaneOutlook state={state} />
 
       {/* Land & Inventory */}
       <LandAndInventory state={state} />
