@@ -1482,3 +1482,13 @@ input[type="range"].labor-slider::-moz-range-thumb {
   margin-inline: auto;
 }
 .audience-actions button { overflow-wrap: normal; }
+
+/* The Judgment Seat keeps testimony and controls readable for every input. */
+.dispute-screen { min-width: 0; overflow-wrap: anywhere; }
+.dispute-screen button { min-height: 44px; overflow-wrap: normal; }
+.dispute-screen .dispute-reveal { display: block; margin-top: .75rem; padding: .5rem .75rem; border: 1px solid #d4a44c; border-radius: 4px; background: #2a2520; color: #d4a44c; font: .875rem 'Cinzel', serif; cursor: pointer; }
+.dispute-screen .dispute-reveal[aria-disabled="true"] { color: #c1b49b; border-color: #6a5a42; cursor: default; }
+.dispute-pending { color: #c1b49b; font: 1rem 'Crimson Text', serif; }
+.dispute-screen .ruling-card:hover, .dispute-screen .ruling-card:focus-visible { border-color: #d4a44c !important; background-color: #2a2520 !important; }
+.dispute-screen .evidence-reveal { animation: audience-reveal 400ms ease both; overflow: visible; }
+@media (prefers-reduced-motion: reduce) { .dispute-screen *, .dispute-screen .evidence-reveal { animation: none !important; transition: none !important; } }

@@ -1,5 +1,5 @@
 /**
- * DisputeScreen.jsx
+ * DisputeScreen.tsx
  *
  * Phase 2 — The Judgment Seat
  * Full dispute resolution flow: herald announcement, petitioner
@@ -7,63 +7,83 @@
  * with consequence previews, decree announcement, and aftermath.
  */
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Scale, BookOpen, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
+import { Scale, BookOpen } from "lucide-react";
+
+import type { Dispute, DisputeId, DisputePetitioner, DisputeRuling } from '../data/disputes.ts';
+import type { HallMeterEffects } from '../data/decrees.ts';
+
+interface DisputeScreenProps {
+  dispute: Dispute & { readonly id: DisputeId };
+  onRule: (disputeId: DisputeId, rulingId: DisputeRuling['id']) => void;
+  onReturn: () => void;
+}
+type JudgmentView = { step: 0 | 1 | 2 | 4 } | { step: 3; ruling: DisputeRuling };
+const meterKeys = ['people', 'treasury', 'church', 'military'] as const;
 
 // ─── Typewriter text reveal ───────────────────────────────────
 
-function TypewriterText({ text, speed = 25, onComplete }) {
+function TypewriterText({ text, speaker, speed = 25, onComplete }: {
+  text: string; speaker: string; speed?: number; onComplete: () => void;
+}) {
   const [len, setLen] = useState(0);
   const completedRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const speechId = useId();
+
+  const finish = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    if (timerRef.current !== null) window.clearInterval(timerRef.current);
+    timerRef.current = null;
+    setLen(text.length);
+    onCompleteRef.current();
+  }, [text]);
 
   useEffect(() => {
     setLen(0);
     completedRef.current = false;
-
-    let i = 0;
-    const timer = setInterval(() => {
-      i++;
-      if (i >= text.length) {
-        setLen(text.length);
-        clearInterval(timer);
-        if (!completedRef.current) {
-          completedRef.current = true;
-          onCompleteRef.current?.();
-        }
-      } else {
-        setLen(i);
-      }
-    }, speed);
-
-    return () => clearInterval(timer);
-  }, [text, speed]);
-
-  const skip = () => {
-    setLen(text.length);
-    if (!completedRef.current) {
-      completedRef.current = true;
-      onCompleteRef.current?.();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || text.length === 0) {
+      finish();
+      return;
     }
-  };
+    let i = 0;
+    timerRef.current = window.setInterval(() => {
+      if (completedRef.current) return;
+      i++;
+      if (i >= text.length) finish();
+      else setLen(i);
+    }, speed);
+    return () => {
+      if (timerRef.current !== null) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+    };
+  }, [text, speed, finish]);
 
   const isDone = len >= text.length;
-
   return (
-    <span
-      onClick={!isDone ? skip : undefined}
-      style={{ cursor: isDone ? "default" : "pointer" }}
-    >
-      {text.slice(0, len)}
-      {!isDone && <span className="dispute-cursor">|</span>}
-    </span>
+    <>
+      <span id={speechId} className="sr-only">{text}</span>
+      <span aria-hidden="true" onClick={!isDone ? finish : undefined}
+        style={{ cursor: isDone ? 'default' : 'pointer' }}>
+        &ldquo;<span data-dispute-speech>{text.slice(0, len)}</span>
+        {!isDone && <span className="dispute-cursor">|</span>}&rdquo;
+      </span>
+      <button type="button" className="dispute-reveal" aria-label={`Reveal full speech from ${speaker}`}
+        aria-controls={speechId} aria-disabled={isDone} onClick={finish}>
+        {isDone ? 'Speech revealed' : 'Reveal full speech'}
+      </button>
+    </>
   );
 }
 
 // ─── NPC Portrait ─────────────────────────────────────────────
 
-function NpcPortrait({ initial, socialClass = "peasant", mood = "neutral", size = 64 }) {
+function NpcPortrait({ initial, socialClass = "peasant", mood = "neutral", size = 64 }: {
+  initial: string; socialClass?: DisputePetitioner["portrait"] | "noble" | "steward"; mood?: DisputePetitioner["mood"]; size?: number;
+}) {
   const bgMap = {
     peasant:  "linear-gradient(135deg, #4a3728, #2d2018)",
     merchant: "linear-gradient(135deg, #2d4a28, #1a2d14)",
@@ -73,7 +93,7 @@ function NpcPortrait({ initial, socialClass = "peasant", mood = "neutral", size 
     steward:  "linear-gradient(135deg, #3a3020, #252018)",
   };
   const borderMap = {
-    angry: "#c44444", sad: "#6688aa", nervous: "#ccaa44",
+    angry: "#efa39b", sad: "#6688aa", nervous: "#ccaa44",
     hopeful: "#44aa88", defensive: "#ca8844", neutral: "#d4a44c",
   };
 
@@ -98,7 +118,7 @@ function NpcPortrait({ initial, socialClass = "peasant", mood = "neutral", size 
 
 // ─── Consequence preview arrows ───────────────────────────────
 
-function ConsequencePreview({ consequences }) {
+function ConsequencePreview({ consequences }: { consequences: Readonly<HallMeterEffects> }) {
   const labels = {
     people: { name: "People", color: "#2d5a2d" },
     treasury: { name: "Treasury", color: "#c4a24a" },
@@ -106,29 +126,27 @@ function ConsequencePreview({ consequences }) {
     military: { name: "Military", color: "#8b2020" },
   };
 
-  const items = Object.entries(consequences).filter(([, v]) => v !== 0);
+  const items = meterKeys.filter(key => consequences[key] !== 0);
   if (items.length === 0) return null;
 
   return (
     <div className="flex flex-wrap gap-2" style={{ marginTop: 6 }}>
-      {items.map(([key, val]) => {
+      {items.map(key => {
+        const val = consequences[key];
         const info = labels[key];
         if (!info) return null;
         const isPositive = val > 0;
-        const magnitude = Math.abs(val) >= 5 ? 2 : 1;
-        const arrow = isPositive ? "▲" : "▼";
-        const arrows = magnitude === 2 ? arrow + arrow : arrow;
         return (
           <span
             key={key}
             style={{
-              fontSize: "0.65rem",
+              fontSize: "0.85rem",
               fontFamily: "Cinzel, serif",
-              color: isPositive ? "#4a8a3a" : "#c44444",
+              color: isPositive ? "#99cc86" : "#efa39b",
               letterSpacing: "1px",
             }}
           >
-            {info.name} {arrows}
+            {info.name} {isPositive ? "+" : ""}{val}
           </span>
         );
       })}
@@ -138,7 +156,7 @@ function ConsequencePreview({ consequences }) {
 
 // ─── Wax Seal SVG ─────────────────────────────────────────────
 
-function WaxSeal({ size = 48 }) {
+function WaxSeal({ size = 48 }: { size?: number }) {
   return (
     <div
       className="seal-stamp"
@@ -158,42 +176,42 @@ function WaxSeal({ size = 48 }) {
 
 // ─── Main DisputeScreen Component ─────────────────────────────
 
-export default function DisputeScreen({ dispute, onRule, onReturn }) {
+export default function DisputeScreen(props: DisputeScreenProps) {
+  return <JudgmentSeat key={props.dispute.id} {...props} />;
+}
+
+function JudgmentSeat({ dispute, onRule, onReturn }: DisputeScreenProps) {
   // Steps: 0=herald, 1=presenting, 2=ruling, 3=aftermath, 4=done
-  const [step, setStep] = useState(0);
+  const [view, setView] = useState<JudgmentView>({ step: 0 });
+  const step = view.step;
+  const selectedRuling = view.step === 3 ? view.ruling : null;
   const [petADone, setPetADone] = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
   const [showSteward, setShowSteward] = useState(false);
-  const [selectedRuling, setSelectedRuling] = useState(null);
+  const [petBDone, setPetBDone] = useState(false);
   const [showHistNote, setShowHistNote] = useState(false);
-  const [hoveredRuling, setHoveredRuling] = useState(null);
 
   const isDecision = !dispute.petitionerA && !dispute.petitionerB;
   const hasSecondPetitioner = !!dispute.petitionerB;
 
-  // When petitioner A finishes, start B (or show evidence if solo)
-  const handlePetAComplete = useCallback(() => {
-    setPetADone(true);
-    if (!hasSecondPetitioner) {
-      setTimeout(() => setShowEvidence(true), 300);
-      setTimeout(() => setShowSteward(true), 800);
-    }
-  }, [hasSecondPetitioner]);
+  const handlePetAComplete = useCallback(() => setPetADone(true), []);
+  const handlePetBComplete = useCallback(() => setPetBDone(true), []);
 
-  const handlePetBComplete = useCallback(() => {
-    setTimeout(() => setShowEvidence(true), 300);
-    setTimeout(() => setShowSteward(true), 800);
-  }, []);
+  useEffect(() => {
+    if (step !== 1 || !petBDone) return;
+    const evidence = window.setTimeout(() => setShowEvidence(true), 300);
+    const advice = window.setTimeout(() => setShowSteward(true), 800);
+    return () => { window.clearTimeout(evidence); window.clearTimeout(advice); };
+  }, [step, petBDone]);
 
-  // Handle ruling selection
-  const handleSelectRuling = (ruling) => {
-    setSelectedRuling(ruling);
+  const handleSelectRuling = (ruling: DisputeRuling) => {
+    if (view.step !== 2) return;
     onRule(dispute.id, ruling.id);
-    setStep(3);
+    setView({ step: 3, ruling });
   };
 
   return (
-    <div>
+    <div className="dispute-screen">
       {/* ═══ STEP 0: Herald Announcement ═══ */}
       {step === 0 && (
         <div className="herald-fade" style={{ textAlign: "center", padding: "20px 0" }}>
@@ -203,7 +221,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             <h3
               style={{
                 fontFamily: "Cinzel Decorative, Cinzel, serif",
-                fontSize: "0.95rem", color: "#d4a44c",
+                fontSize: "1rem", color: "#d4a44c",
                 letterSpacing: "2px", textTransform: "uppercase",
                 margin: 0,
               }}
@@ -225,7 +243,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             <p
               style={{
                 fontFamily: "Crimson Text, serif",
-                fontStyle: "italic", fontSize: "0.9rem",
+                fontStyle: "italic", fontSize: "1rem",
                 color: "#c8b090", lineHeight: 1.5,
                 margin: "0 0 4px",
               }}
@@ -235,7 +253,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             <p
               style={{
                 fontFamily: "Crimson Text, serif",
-                fontSize: "0.9rem", color: "#e8dcc8",
+                fontSize: "1rem", color: "#e8dcc8",
                 lineHeight: 1.5, margin: 0,
               }}
             >
@@ -247,8 +265,8 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
           <div style={{ marginTop: 12 }}>
             <span
               style={{
-                fontFamily: "Cinzel, serif", fontSize: "0.55rem",
-                color: "#6a5a42", letterSpacing: "2px",
+                fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                color: "#b8a78a", letterSpacing: "2px",
                 textTransform: "uppercase",
                 border: "1px solid #3d3630", borderRadius: 3,
                 padding: "2px 8px",
@@ -260,9 +278,9 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
 
           {/* Continue button */}
           <button
-            onClick={() => setStep(isDecision ? 2 : 1)}
+            onClick={() => setView({ step: isDecision ? 2 : 1 })}
             style={{
-              fontFamily: "Cinzel, serif", fontSize: "0.8rem",
+              fontFamily: "Cinzel, serif", fontSize: "1rem",
               color: "#d4a44c", background: "none",
               border: "1px solid #d4a44c",
               padding: "8px 24px", borderRadius: 4,
@@ -289,7 +307,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             <Scale size={14} style={{ color: "#d4a44c" }} />
             <span
               style={{
-                fontFamily: "Cinzel, serif", fontSize: "0.7rem",
+                fontFamily: "Cinzel, serif", fontSize: "0.85rem",
                 color: "#d4a44c", letterSpacing: "2px",
                 textTransform: "uppercase",
               }}
@@ -320,14 +338,14 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   />
                   <div>
                     <h4 style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.75rem",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
                       color: "#d4a44c", margin: "0 0 2px",
                     }}>
                       {dispute.petitionerA.name}
                     </h4>
                     <span style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.5rem",
-                      color: "#6a5a42", textTransform: "uppercase",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                      color: "#b8a78a", textTransform: "uppercase",
                       letterSpacing: "1px",
                     }}>
                       {dispute.petitionerA.mood}
@@ -335,17 +353,16 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   </div>
                 </div>
                 <p style={{
-                  fontFamily: "Crimson Text, serif", fontSize: "0.85rem",
+                  fontFamily: "Crimson Text, serif", fontSize: "1rem",
                   color: "#c8b090", lineHeight: 1.5, margin: 0,
                   fontStyle: "italic",
                 }}>
-                  &ldquo;
                   <TypewriterText
+                    speaker={dispute.petitionerA.name}
                     text={dispute.petitionerA.speech}
                     speed={25}
                     onComplete={handlePetAComplete}
                   />
-                  &rdquo;
                 </p>
                 {/* Evidence */}
                 {showEvidence && dispute.petitionerA.evidence && (
@@ -355,15 +372,15 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                     backgroundColor: "rgba(26,23,20,0.5)",
                   }}>
                     <span style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.55rem",
-                      color: "#6a5a42", textTransform: "uppercase",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                      color: "#b8a78a", textTransform: "uppercase",
                       letterSpacing: "1px",
                     }}>
                       Evidence
                     </span>
                     <p style={{
-                      fontFamily: "Crimson Text, serif", fontSize: "0.8rem",
-                      color: "#a89070", margin: "4px 0 0",
+                      fontFamily: "Crimson Text, serif", fontSize: "1rem",
+                      color: "#c1b49b", margin: "4px 0 0",
                     }}>
                       {dispute.petitionerA.evidence}
                     </p>
@@ -380,7 +397,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
               >
                 <span style={{
                   fontFamily: "Cinzel Decorative, Cinzel, serif",
-                  fontSize: "1.2rem", color: "#6a5a42",
+                  fontSize: "1.2rem", color: "#b8a78a",
                 }}>
                   &#9876;
                 </span>
@@ -395,7 +412,6 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   border: "1px solid #3d3630", borderRadius: 6,
                   backgroundColor: "rgba(42,37,32,0.5)",
                   padding: 12,
-                  opacity: petADone ? 1 : 0.3,
                   transition: "opacity 300ms ease",
                 }}
               >
@@ -408,33 +424,33 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   />
                   <div>
                     <h4 style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.75rem",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
                       color: "#d4a44c", margin: "0 0 2px",
                     }}>
                       {dispute.petitionerB.name}
                     </h4>
                     <span style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.5rem",
-                      color: "#6a5a42", textTransform: "uppercase",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                      color: "#b8a78a", textTransform: "uppercase",
                       letterSpacing: "1px",
                     }}>
                       {dispute.petitionerB.mood}
                     </span>
                   </div>
                 </div>
+                {!petADone && <p className="dispute-pending">Awaiting testimony.</p>}
                 {petADone && (
                   <p style={{
-                    fontFamily: "Crimson Text, serif", fontSize: "0.85rem",
+                    fontFamily: "Crimson Text, serif", fontSize: "1rem",
                     color: "#c8b090", lineHeight: 1.5, margin: 0,
                     fontStyle: "italic",
                   }}>
-                    &ldquo;
                     <TypewriterText
+                      speaker={dispute.petitionerB.name}
                       text={dispute.petitionerB.speech}
                       speed={25}
                       onComplete={handlePetBComplete}
                     />
-                    &rdquo;
                   </p>
                 )}
                 {showEvidence && dispute.petitionerB.evidence && (
@@ -444,15 +460,15 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                     backgroundColor: "rgba(26,23,20,0.5)",
                   }}>
                     <span style={{
-                      fontFamily: "Cinzel, serif", fontSize: "0.55rem",
-                      color: "#6a5a42", textTransform: "uppercase",
+                      fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                      color: "#b8a78a", textTransform: "uppercase",
                       letterSpacing: "1px",
                     }}>
                       Evidence
                     </span>
                     <p style={{
-                      fontFamily: "Crimson Text, serif", fontSize: "0.8rem",
-                      color: "#a89070", margin: "4px 0 0",
+                      fontFamily: "Crimson Text, serif", fontSize: "1rem",
+                      color: "#c1b49b", margin: "4px 0 0",
                     }}>
                       {dispute.petitionerB.evidence}
                     </p>
@@ -476,15 +492,15 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                 <NpcPortrait initial="E" socialClass="steward" mood="neutral" size={40} />
                 <div>
                   <span style={{
-                    fontFamily: "Cinzel, serif", fontSize: "0.6rem",
-                    color: "#a89070", textTransform: "uppercase",
+                    fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                    color: "#c1b49b", textTransform: "uppercase",
                     letterSpacing: "1px",
                   }}>
                     Steward Edmund whispers:
                   </span>
                   <p style={{
                     fontFamily: "Crimson Text, serif", fontStyle: "italic",
-                    fontSize: "0.85rem", color: "#c8b090",
+                    fontSize: "1rem", color: "#c8b090",
                     lineHeight: 1.4, margin: "4px 0 0",
                     opacity: 0.9,
                   }}>
@@ -499,9 +515,9 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
           {showSteward && (
             <div style={{ textAlign: "center", marginTop: 16 }}>
               <button
-                onClick={() => setStep(2)}
+                onClick={() => setView({ step: 2 })}
                 style={{
-                  fontFamily: "Cinzel, serif", fontSize: "0.8rem",
+                  fontFamily: "Cinzel, serif", fontSize: "1rem",
                   color: "#d4a44c", background: "none",
                   border: "1px solid #d4a44c",
                   padding: "8px 24px", borderRadius: 4,
@@ -533,7 +549,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
               backgroundColor: "rgba(42,37,32,0.5)",
             }}>
               <p style={{
-                fontFamily: "Crimson Text, serif", fontSize: "0.9rem",
+                fontFamily: "Crimson Text, serif", fontSize: "1rem",
                 color: "#e8dcc8", lineHeight: 1.5, margin: "0 0 12px",
               }}>
                 {dispute.description}
@@ -544,15 +560,15 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                 backgroundColor: "rgba(58,48,32,0.4)",
               }}>
                 <span style={{
-                  fontFamily: "Cinzel, serif", fontSize: "0.6rem",
-                  color: "#a89070", textTransform: "uppercase",
+                  fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                  color: "#c1b49b", textTransform: "uppercase",
                   letterSpacing: "1px",
                 }}>
                   Steward Edmund advises:
                 </span>
                 <p style={{
                   fontFamily: "Crimson Text, serif", fontStyle: "italic",
-                  fontSize: "0.85rem", color: "#c8b090",
+                  fontSize: "1rem", color: "#c8b090",
                   lineHeight: 1.4, margin: "4px 0 0",
                 }}>
                   &ldquo;{dispute.stewardAdvice}&rdquo;
@@ -563,7 +579,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
 
           <h4 style={{
             fontFamily: "Cinzel Decorative, Cinzel, serif",
-            fontSize: "0.85rem", color: "#d4a44c",
+            fontSize: "1rem", color: "#d4a44c",
             letterSpacing: "2px", textTransform: "uppercase",
             textAlign: "center", margin: "0 0 12px",
           }}>
@@ -576,35 +592,28 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                 key={ruling.id}
                 className="ruling-card"
                 onClick={() => handleSelectRuling(ruling)}
-                onMouseEnter={() => setHoveredRuling(ruling.id)}
-                onMouseLeave={() => setHoveredRuling(null)}
                 style={{
                   textAlign: "left",
                   padding: 12, borderRadius: 6,
                   border: "1px solid #3d3630",
-                  backgroundColor: hoveredRuling === ruling.id
-                    ? "rgba(42,37,32,0.7)"
-                    : "rgba(42,37,32,0.4)",
+                  backgroundColor: "rgba(42,37,32,0.4)",
                   cursor: "pointer",
                   transition: "all 200ms ease",
                 }}
               >
                 <h5 style={{
-                  fontFamily: "Cinzel, serif", fontSize: "0.8rem",
+                  fontFamily: "Cinzel, serif", fontSize: "1rem",
                   color: "#d4a44c", margin: "0 0 4px",
                 }}>
                   {ruling.label}
                 </h5>
                 <p style={{
-                  fontFamily: "Crimson Text, serif", fontSize: "0.8rem",
-                  color: "#a89070", lineHeight: 1.3, margin: 0,
+                  fontFamily: "Crimson Text, serif", fontSize: "1rem",
+                  color: "#c1b49b", lineHeight: 1.3, margin: 0,
                 }}>
                   {ruling.decree}
                 </p>
-                {/* Consequence preview on hover */}
-                {hoveredRuling === ruling.id && (
-                  <ConsequencePreview consequences={ruling.consequences} />
-                )}
+                <ConsequencePreview consequences={ruling.consequences} />
               </button>
             ))}
           </div>
@@ -629,14 +638,14 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
               <div className="flex-1">
                 <h4 style={{
                   fontFamily: "Cinzel Decorative, Cinzel, serif",
-                  fontSize: "0.8rem", color: "#d4a44c",
+                  fontSize: "1rem", color: "#d4a44c",
                   letterSpacing: "2px", textTransform: "uppercase",
                   margin: "0 0 8px",
                 }}>
                   By Decree of the Lord
                 </h4>
                 <p style={{
-                  fontFamily: "Crimson Text, serif", fontSize: "0.9rem",
+                  fontFamily: "Crimson Text, serif", fontSize: "1rem",
                   color: "#e8dcc8", lineHeight: 1.5, margin: 0,
                 }}>
                   {selectedRuling.decree}
@@ -653,14 +662,14 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             marginBottom: 16,
           }}>
             <span style={{
-              fontFamily: "Cinzel, serif", fontSize: "0.6rem",
-              color: "#6a5a42", textTransform: "uppercase",
+              fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+              color: "#b8a78a", textTransform: "uppercase",
               letterSpacing: "1px",
             }}>
               What follows:
             </span>
             <p style={{
-              fontFamily: "Crimson Text, serif", fontSize: "0.9rem",
+              fontFamily: "Crimson Text, serif", fontSize: "1rem",
               color: "#c8b090", lineHeight: 1.5,
               margin: "6px 0 0",
             }}>
@@ -676,16 +685,16 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             marginBottom: 16,
           }}>
             <span style={{
-              fontFamily: "Cinzel, serif", fontSize: "0.6rem",
-              color: "#6a5a42", textTransform: "uppercase",
+              fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+              color: "#b8a78a", textTransform: "uppercase",
               letterSpacing: "1px",
             }}>
               Consequences
             </span>
             <div className="flex flex-wrap gap-3" style={{ marginTop: 6 }}>
-              {Object.entries(selectedRuling.consequences)
-                .filter(([, v]) => v !== 0)
-                .map(([key, val]) => {
+              {meterKeys.filter(key => selectedRuling.consequences[key] !== 0)
+                .map(key => {
+                  const val = selectedRuling.consequences[key];
                   const colors = {
                     people: "#2d5a2d", treasury: "#c4a24a",
                     church: "#6a4a8a", military: "#8b2020",
@@ -695,8 +704,8 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                     <span
                       key={key}
                       style={{
-                        fontFamily: "Cinzel, serif", fontSize: "0.7rem",
-                        color: isPos ? "#4a8a3a" : "#c44444",
+                        fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                        color: isPos ? "#99cc86" : "#efa39b",
                         padding: "2px 8px", borderRadius: 3,
                         border: `1px solid ${colors[key] || "#3d3630"}`,
                         backgroundColor: "rgba(26,23,20,0.5)",
@@ -713,9 +722,9 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
           {/* Continue to done */}
           <div style={{ textAlign: "center" }}>
             <button
-              onClick={() => setStep(4)}
+              onClick={() => setView({ step: 4 })}
               style={{
-                fontFamily: "Cinzel, serif", fontSize: "0.8rem",
+                fontFamily: "Cinzel, serif", fontSize: "1rem",
                 color: "#d4a44c", background: "none",
                 border: "1px solid #d4a44c",
                 padding: "8px 24px", borderRadius: 4,
@@ -738,10 +747,10 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
       {/* ═══ STEP 4: Done — Historical Note + Return ═══ */}
       {step === 4 && (
         <div style={{ textAlign: "center", padding: "16px 0" }}>
-          <Scale size={28} style={{ color: "#6a5a42", marginBottom: 12 }} />
+          <Scale size={28} style={{ color: "#b8a78a", marginBottom: 12 }} />
           <p style={{
-            fontFamily: "Cinzel, serif", fontSize: "0.75rem",
-            color: "#a89070", letterSpacing: "1px",
+            fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+            color: "#c1b49b", letterSpacing: "1px",
             margin: "0 0 16px",
           }}>
             The case of &ldquo;{dispute.title}&rdquo; has been resolved.
@@ -752,11 +761,12 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
             <div style={{ maxWidth: 500, margin: "0 auto 16px" }}>
               <button
                 onClick={() => setShowHistNote(!showHistNote)}
+                aria-expanded={showHistNote}
                 className="flex items-center gap-2"
                 style={{
                   margin: "0 auto",
-                  fontFamily: "Cinzel, serif", fontSize: "0.7rem",
-                  color: "#6a5a42", background: "none",
+                  fontFamily: "Cinzel, serif", fontSize: "0.85rem",
+                  color: "#b8a78a", background: "none",
                   border: "1px solid #3d3630",
                   padding: "6px 14px", borderRadius: 4,
                   cursor: "pointer",
@@ -764,7 +774,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   transition: "all 200ms ease",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "#6a5a42";
+                  e.currentTarget.style.borderColor = "#b8a78a";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = "#3d3630";
@@ -784,7 +794,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
                   }}
                 >
                   <p style={{
-                    fontFamily: "Crimson Text, serif", fontSize: "0.85rem",
+                    fontFamily: "Crimson Text, serif", fontSize: "1rem",
                     color: "#c8b090", lineHeight: 1.5, margin: 0,
                   }}>
                     {dispute.historicalNote}
@@ -798,7 +808,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
           <button
             onClick={onReturn}
             style={{
-              fontFamily: "Cinzel, serif", fontSize: "0.8rem",
+              fontFamily: "Cinzel, serif", fontSize: "1rem",
               color: "#d4a44c", background: "none",
               border: "1px solid #d4a44c",
               padding: "8px 24px", borderRadius: 4,
