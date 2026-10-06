@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useCallback, type CSSProperties } from "react";
+import { useOwnedTimeout } from "../hooks/useOwnedTimeout.ts";
 import {
   GAMBIT_WEAPONS,
   GAMBIT_WAGERS,
@@ -89,24 +90,7 @@ export default function KnightsGambit({
   const [showVignette, setShowVignette] = useState(false);
   const [goldFlash, setGoldFlash] = useState(false);
   const [revealText, setRevealText] = useState("");
-  const ownedTimeouts = useRef(new Set<number>());
-
-  const scheduleTimeout = useCallback((callback: () => void, delay: number) => {
-    const pending = ownedTimeouts.current;
-    const handle = window.setTimeout(() => {
-      pending.delete(handle);
-      callback();
-    }, delay);
-    pending.add(handle);
-  }, []);
-
-  useEffect(() => {
-    const pending = ownedTimeouts.current;
-    return () => {
-      for (const handle of pending) window.clearTimeout(handle);
-      pending.clear();
-    };
-  }, []);
+  const scheduleTimeout = useOwnedTimeout();
 
   const handleDismissScribesNote = useCallback(() => {
     setShowScribesNote(false);

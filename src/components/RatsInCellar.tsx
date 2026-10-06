@@ -7,6 +7,7 @@ import {
 import { createRandomCursor } from "../engine/random.ts";
 import { planRatRun, scoreRatRun, type RatSpawn } from "../engine/ratsInCellar.ts";
 import ScribesNote from "./ScribesNote";
+import { useOwnedTimeout } from "../hooks/useOwnedTimeout.ts";
 
 const TOTAL_CELLS = RATS_GRID_SIZE * RATS_GRID_SIZE;
 
@@ -129,6 +130,7 @@ export default function RatsInCellar({
   const spawnTimerRef = useRef<number | undefined>(undefined);
   const animFrameRef = useRef(0);
   const floatIdRef = useRef(0);
+  const scheduleTimeout = useOwnedTimeout();
 
   // ---- COUNTDOWN LOGIC ----
   // When countdown reaches 0, transition to active on the next tick via timeout
@@ -148,23 +150,23 @@ export default function RatsInCellar({
   const addCellFlash = useCallback((cellIndex: number, type: CellFlash['type']) => {
     const id = Date.now() + Math.random();
     setCellFlashes((prev) => ({ ...prev, [cellIndex]: { type, id } }));
-    window.setTimeout(() => {
+    scheduleTimeout(() => {
       setCellFlashes((prev) => {
         const next = { ...prev };
         if (next[cellIndex]?.id === id) delete next[cellIndex];
         return next;
       });
     }, 400);
-  }, []);
+  }, [scheduleTimeout]);
 
   // ---- Add a float-up text ----
   const addFloatText = useCallback((cellIndex: number, text: string) => {
     const id = ++floatIdRef.current;
     setFloatTexts((prev) => [...prev, { id, cellIndex, text }]);
-    window.setTimeout(() => {
+    scheduleTimeout(() => {
       setFloatTexts((prev) => prev.filter((f) => f.id !== id));
     }, 800);
-  }, []);
+  }, [scheduleTimeout]);
 
   // ---- Settle the current rat before replacing it ----
   const escapeRat = useCallback((rat: ActiveRat) => {
