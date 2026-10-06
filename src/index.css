@@ -1498,3 +1498,93 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .dispute-ruling .ruling-card { width: 100%; padding: .5rem .75rem; border: 1px solid #b8a78a; border-radius: 4px; background: #211d18; text-align: left; cursor: pointer; }
 .dispute-ruling-label { color: #d4a44c; font: 1rem 'Cinzel', serif; }
 .dispute-ruling-decree { color: #c1b49b; font: 1rem/1.5 'Crimson Text', serif; margin: .75rem 0 0; }
+
+/* Council and decree reading surfaces: stone, parchment, torch gold and wax. */
+.civic-view {
+  --civic-ink: #f0e4d2;
+  --civic-muted: #d0bea4;
+  --civic-gold: #efc778;
+  --civic-border: #786347;
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  color: var(--civic-ink);
+  font: 1.1rem/1.5 "Crimson Text", Georgia, serif;
+}
+.civic-view h2, .civic-view h3, .civic-view h4 {
+  font-family: "Cinzel", Georgia, serif;
+  color: var(--civic-gold);
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+.civic-view h2 { font-size: 1.4rem; }
+.civic-view h3 { font-size: 1.1rem; }
+.civic-view h4 { font-size: 1rem; }
+.civic-view p, .civic-view blockquote { margin: 0; }
+.civic-heading { text-align: center; display: grid; justify-items: center; gap: .5rem; }
+.civic-heading > svg { color: var(--civic-gold); }
+.civic-panel {
+  min-width: 0;
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--civic-border);
+  border-radius: .3rem;
+  background: linear-gradient(135deg, #302820, #211c18);
+  box-shadow: inset 0 1px 0 #574534;
+}
+.civic-caption { color: var(--civic-muted); font-size: .9rem; }
+.civic-button {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .6rem .8rem;
+  color: var(--civic-gold);
+  border: 1px solid var(--civic-border);
+  border-radius: .25rem;
+  background: #241e18;
+  font: .9rem/1.45 "Cinzel", Georgia, serif;
+  cursor: pointer;
+  white-space: normal;
+  overflow-wrap: normal;
+}
+.civic-button:hover { background: #423222; border-color: var(--civic-gold); }
+.civic-button:focus-visible { outline: 3px solid #ffdc8b; outline-offset: -3px; }
+.civic-button:disabled { color: var(--civic-muted); background: #302b26; cursor: not-allowed; }
+.civic-button > svg { flex-shrink: 0; }
+.civic-effects { display: flex; flex-wrap: wrap; gap: .4rem .75rem; font-size: .9rem; }
+.civic-effects > span { white-space: nowrap; }
+.civic-positive { color: #b9e8a3; }
+.civic-negative { color: #ffb6a7; }
+.civic-advisors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.civic-advisor-heading { display: flex; gap: .75rem; align-items: center; }
+.civic-advisor-heading > div { min-width: 0; }
+.civic-portrait { display: grid; place-items: center; width: 56px; height: 56px; flex-shrink: 0; border: 3px solid; border-radius: 4px; font: 1.2rem "Cinzel Decorative", serif; }
+.civic-portrait-edmund { background: linear-gradient(135deg, #3a3020, #252018); border-color: #a89070; }
+.civic-portrait-aldous { background: linear-gradient(135deg, #3a2850, #221838); border-color: #6a4a8a; }
+.civic-portrait-wulf { background: linear-gradient(135deg, #3a3a40, #222228); border-color: #8b4444; }
+.civic-portrait-margery { background: linear-gradient(135deg, #4a3728, #2d2018); border-color: #4a8a3a; }
+.civic-position { width: fit-content; padding: .1rem .5rem; border-radius: .2rem; font-size: .9rem; text-transform: capitalize; }
+.civic-position-support { background: #2d5a2d; color: #e5f8d8; }
+.civic-position-oppose { background: #701d1d; color: #ffe1db; }
+.civic-position-neutral { background: #51432f; color: #f6e8cf; }
+.civic-view blockquote { font-style: italic; }
+.civic-choices, .civic-list { display: grid; gap: .75rem; min-width: 0; }
+.civic-choice { display: grid; justify-content: stretch; text-align: left; }
+.civic-aftermath .civic-seal { justify-self: center; }
+.civic-seal { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; color: var(--civic-ink); background: radial-gradient(circle at 40% 40%, #c44a3a, #8b2020, #5a1010); box-shadow: 0 2px 8px #0008, inset 0 -2px 4px #0005; }
+.civic-decision { font-weight: 600; }
+.civic-decree-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem; }
+.civic-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+@media (max-width: 700px) {
+  .civic-advisors { grid-template-columns: minmax(0, 1fr); }
+  .civic-panel { padding: .5rem; }
+  .civic-advisor-heading { align-items: flex-start; }
+  .civic-actions { display: grid; }
+}

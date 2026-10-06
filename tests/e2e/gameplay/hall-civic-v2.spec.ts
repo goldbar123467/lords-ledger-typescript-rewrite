@@ -49,7 +49,10 @@ for (const width of [390, 1366]) {
         await page.getByRole('button', { name: 'Tear It Down', exact: true }).click();
       }
     }
-    await expect(page.getByRole('button', { name: new RegExp(first.name) })).toBeDisabled();
+    await expect(page.getByRole('button', { name: new RegExp(first.name) })).toBeEnabled();
+    await page.getByRole('button', { name: new RegExp(first.name) }).click();
+    await expect(page.getByRole('button', { name: 'Seal This Decree', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Back to Decrees', exact: true }).click();
     await page.screenshot({ path: info.outputPath('decree-limit.png'), fullPage: true, animations: 'disabled' });
     await page.getByRole('button', { name: 'Save game', exact: true }).click();
     const saved = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save')); if (!saved) throw new Error('Missing save');
@@ -60,7 +63,10 @@ for (const width of [390, 1366]) {
     expect(loaded.state.greatHall).toEqual(expected.greatHall); expect(loaded.state.rngState).toBe(state.rngState);
     await page.reload(); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
     await page.getByRole('button', { name: 'Decrees', exact: true }).click();
-    await expect(page.getByRole('button', { name: new RegExp(first.name) })).toBeDisabled();
+    await expect(page.getByRole('button', { name: new RegExp(first.name) })).toBeEnabled();
+    await page.getByRole('button', { name: new RegExp(first.name) }).click();
+    await expect(page.getByRole('button', { name: 'Seal This Decree', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Back to Decrees', exact: true }).click();
   });
 }
 

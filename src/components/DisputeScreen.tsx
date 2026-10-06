@@ -7,7 +7,8 @@
  * with consequence previews, decree announcement, and aftermath.
  */
 
-import { useState, useEffect, useRef, useCallback, useId, type FocusEvent } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
+import { useHallReadingFocus } from '../hooks/useHallReadingFocus.ts';
 import { Scale, BookOpen } from "lucide-react";
 
 import type { Dispute, DisputeId, DisputePetitioner, DisputeRuling } from '../data/disputes.ts';
@@ -182,27 +183,7 @@ export default function DisputeScreen(props: DisputeScreenProps) {
 
 function JudgmentSeat({ dispute, onRule, onReturn }: DisputeScreenProps) {
   // Steps: 0=herald, 1=presenting, 2=ruling, 3=aftermath, 4=done
-  const focusFrame = useRef<number | null>(null);
-  useEffect(() => () => {
-    if (focusFrame.current !== null) window.cancelAnimationFrame(focusFrame.current);
-  }, []);
-  const revealFocusedControl = (event: FocusEvent<HTMLDivElement>) => {
-    const control = event.target;
-    if (!(control instanceof HTMLElement) || !control.matches('button:focus-visible')) return;
-    if (focusFrame.current !== null) window.cancelAnimationFrame(focusFrame.current);
-    // Run after native focus scrolling so pinned chrome cannot cover the action.
-    focusFrame.current = window.requestAnimationFrame(() => {
-      if (document.activeElement === control) {
-        const header = document.querySelector<HTMLElement>('.game-header[data-pinned="true"]');
-        const footer = document.querySelector<HTMLElement>('.sticky.bottom-0');
-        const top = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
-        const bottom = footer ? Math.min(window.innerHeight, footer.getBoundingClientRect().top) : window.innerHeight;
-        const rect = control.getBoundingClientRect();
-        if (bottom > top) window.scrollBy({ top: rect.top + rect.height / 2 - (top + bottom) / 2, behavior: 'instant' });
-      }
-      focusFrame.current = null;
-    });
-  };
+  const revealFocusedControl = useHallReadingFocus();
 
   const [view, setView] = useState<JudgmentView>({ step: 0 });
   const step = view.step;
