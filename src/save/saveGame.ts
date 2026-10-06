@@ -1,4 +1,5 @@
 import {isMarketSupply} from "../engine/marketSupply.ts";
+import {isSavedChronicle,type SavedChronicleEntry} from '../engine/chronicle.ts';
 import {validateForgeState, type ForgeSaveState} from '../engine/forgeState.ts';
 import { validateHallCivicState } from '../engine/hallCivic.ts';
 /** Browser storage boundary. The legacy key is read only during explicit import. */
@@ -73,6 +74,7 @@ export interface GameSnapshot {
   castleLevel: FortificationLevels['walls'];
   gameOverReason: GameOverReason | null;
   activeTab: string;
+  chronicle: SavedChronicleEntry[];
   tavern: {
     pendingStrangerEncounter?: StrangerEncounterType | null;
     strangerAppearedThisSeason?: boolean;
@@ -308,6 +310,7 @@ function validateSnapshot(value: unknown): string | null {
   for (const key of arrayFields) {
     if (!Array.isArray(value[key])) return `Save field ${key} must be a list.`;
   }
+  if (!isSavedChronicle(value.chronicle)) return 'Save Chronicle entries are invalid.';
   for (const key of recordFields) {
     if (!isRecord(value[key])) return `Save section ${key} is missing or invalid.`;
   }

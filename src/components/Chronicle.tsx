@@ -1,27 +1,23 @@
-import { useEffect, useRef } from "react";
-import { Hammer, Sparkles, Info } from "lucide-react";
+import { useEffect, useRef, type CSSProperties } from "react";
+import { Hammer, Sparkles, Info, type LucideIcon } from "lucide-react";
+import {isChronicleKind,type SavedChronicleEntry,type ChronicleKind} from '../engine/chronicle.ts';
+import type {EconomySeason} from '../engine/foodRequirement.ts';
 
 const SEASON_ICONS = {
   spring: "\u2741",
   summer: "\u2600",
   autumn: "\u2767",
   winter: "\u2744",
-};
+} satisfies Record<EconomySeason,string>;
 
-const TYPE_STYLES = {
-  action: { borderLeft: "3px solid #c4a24a" },
-  event: { borderLeft: "3px solid #6a4a8a" },
-  system: { borderLeft: "3px solid #6a5a42", fontStyle: "italic" },
-};
+const TYPE_PRESENTATION = {
+  action: { Icon: Hammer, color: "#c4a24a", style:{borderLeft:"3px solid #c4a24a"} },
+  event: { Icon: Sparkles, color: "#6a4a8a", style:{borderLeft:"3px solid #6a4a8a"} },
+  system: { Icon: Info, color: "#6a5a42", style:{borderLeft:"3px solid #6a5a42",fontStyle:"italic"} },
+} satisfies Record<ChronicleKind,{Icon:LucideIcon;color:string;style:CSSProperties}>;
 
-const TYPE_ICONS = {
-  action: { Icon: Hammer, color: "#c4a24a" },
-  event: { Icon: Sparkles, color: "#6a4a8a" },
-  system: { Icon: Info, color: "#6a5a42" },
-};
-
-export default function Chronicle({ entries }) {
-  const topRef = useRef(null);
+export default function Chronicle({ entries }:{entries:readonly SavedChronicleEntry[]}) {
+  const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (topRef.current) {
@@ -54,9 +50,10 @@ export default function Chronicle({ entries }) {
       >
         <div ref={topRef} />
         {reversed.map((entry, i) => {
-          const icon = SEASON_ICONS[entry.season] || "";
-          const style = TYPE_STYLES[entry.type] || TYPE_STYLES.system;
-          const typeIcon = TYPE_ICONS[entry.type] || TYPE_ICONS.system;
+          const icon = Object.entries(SEASON_ICONS).find(([season])=>season===entry.season)?.[1] ?? "";
+          const typeIcon = TYPE_PRESENTATION[isChronicleKind(entry.type)?entry.type:'system'];
+          const style = typeIcon.style;
+          const season = entry.season ?? '';
           const TypeIcon = typeIcon.Icon;
           return (
             <div
@@ -66,7 +63,7 @@ export default function Chronicle({ entries }) {
             >
               <TypeIcon size={12} aria-hidden="true" className="inline-block mr-1" style={{ color: typeIcon.color }} />
               <span className="text-sm font-semibold mr-1.5" style={{ color: "#c4a24a" }}>
-                {icon} Y{entry.year} {entry.season?.charAt(0).toUpperCase() + entry.season?.slice(1)}
+                {icon} {entry.year == null?'Unknown year':`Y${entry.year}`} {season?season.charAt(0).toUpperCase()+season.slice(1):'Unknown season'}
               </span>
               <span>{entry.text}</span>
             </div>

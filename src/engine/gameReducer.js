@@ -1,4 +1,5 @@
 import {getChandelierPrestigeBonus} from "./forgeTools.ts";
+import {addChronicle} from './chronicle.ts';
 import { planForgeAncillary, planForgeTalk, getForgeSupplyStatus } from './forgeAncillaryActions.ts';
 import { planForgeVisit } from './forgeVisits.ts';
 import { planForgeItemAction } from './forgeItemActions.ts';
@@ -366,13 +367,6 @@ function turnToSeasonYear(turn) {
   const seasonIndex = zeroIndexed % 4;
   const year = Math.floor(zeroIndexed / 4) + 1;
   return { season: SEASONS[seasonIndex], year };
-}
-
-function addChronicle(chronicle, text, season, year, turn, type = "system") {
-  return [
-    ...chronicle,
-    { text, season, year, turn, type },
-  ];
 }
 
 function addCauseChain(causeChain, turn, season, year, summary) {

@@ -19,7 +19,7 @@ import { getRecruitmentCapacity } from "../data/militaryRules.ts";
 import { getMilitaryReadiness, type MilitaryReadinessState } from '../engine/militaryReadiness.ts';
 
 import type { MilitaryDefenseState, FortificationLevels, SoldierType, FortificationTrack as FortificationId } from "../data/military.ts";
-import type { EconomySeason } from "../engine/foodRequirement.ts";
+import type { SavedChronicleEntry } from "../engine/chronicle.ts";
 
 interface MilitaryViewState extends MilitaryReadinessState {
   denarii: number;
@@ -29,7 +29,7 @@ interface MilitaryViewState extends MilitaryReadinessState {
   military?: MilitaryDefenseState | null;
   watchtower?: (NonNullable<MilitaryReadinessState['watchtower']> & { scannedThisSeason?: boolean }) | null;
   tavern?: { aldricDrillActive?: number } | null;
-  chronicle?: readonly { text: string; season: EconomySeason; year: number }[];
+  chronicle?: readonly SavedChronicleEntry[];
 }
 interface MilitaryTabProps {
   state: MilitaryViewState;
