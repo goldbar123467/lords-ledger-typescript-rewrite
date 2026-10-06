@@ -41,7 +41,7 @@ Chronicle now uses checked readonly entry props and a shared saved-history contr
 
 Map uses checked saved-state, building, seasonal and callback contracts while preserving authored artwork. The inherited missing Mill is corrected, with exhaustive slot coverage and eighteen passing browser cases including normal paid construction and exact saves. Crowded labels and wider Map interface checks remain unfinished.
 
-Estate uses checked view, building, resource and command contracts. Its six content/management cases and 337 unit tests pass. Twelve older Forge integration tests retain stale keyboard-dialog expectations and need repair; Estate inventory grouping and upkeep-display omissions remain open.
+Estate uses checked view, building, resource and command contracts. Its six content/management cases and 337 unit tests pass. Forge keyboard tests now follow native heading-to-Confirm navigation; all 42 Estate and tool-consumer browser checks pass. Estate inventory grouping and upkeep-display omissions remain open.
 
 ## Code map
 
@@ -73,7 +73,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Repair stale Forge keyboard tests, then correct Estate inventory grouping and upkeep display; continue the remaining views and app entry points.
+1. Correct Estate inventory grouping and upkeep display; continue the remaining views and app entry points.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
