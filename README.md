@@ -39,7 +39,9 @@ Gambit owns all four reveal and feedback timeouts and cancels them when its view
 
 Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-handle contracts. Real 20-second one-catch and zero-catch runs preserve scoring, saved RNG and once-per-season play. Rats and Gambit share a timeout owner that cancels pending callbacks when their views close.
 
-Three source JavaScript/JSX files remain: Tavern, App and the reducer. Production has 44,312 lines versus the original 45,347, a reduction of 1,035 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Seven saved Tavern flags and counters now have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Extreme counter arithmetic still needs correction.
+
+Three source JavaScript/JSX files remain: Tavern, App and the reducer. Production has 44,347 lines versus the original 45,347, a reduction of 1,000 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 

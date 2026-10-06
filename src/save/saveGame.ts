@@ -76,6 +76,13 @@ export interface GameSnapshot {
   activeTab: string;
   chronicle: SavedChronicleEntry[];
   tavern: {
+    gambitScribesNoteSeen?: boolean;
+    ratsScribesNoteSeen?: boolean;
+    wallStashFound?: boolean;
+    totalVisits?: number;
+    gambitTotalWins?: number;
+    gambitTotalLosses?: number;
+    gambitNetEarnings?: number;
     gambitRoundsThisSeason?: number;
     gambitLastChoice?: GambitWeapon | null;
     martaStoragePurchased?: boolean;
@@ -136,6 +143,32 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isNonnegativeNumber(value: unknown): value is number {
   return isFiniteNumber(value) && value >= 0;
+}
+
+function validateTavernScalars(tavern: Record<string, unknown>): string | null {
+  const prototype = Object.getPrototypeOf(tavern);
+  const serializer = Object.getOwnPropertyDescriptor(tavern, 'toJSON');
+  if ((prototype !== Object.prototype && prototype !== null) ||
+      (serializer && (!Object.hasOwn(serializer, 'value') || typeof serializer.value === 'function'))) {
+    return 'Save Tavern data container is invalid.';
+  }
+  for (const key of ['gambitScribesNoteSeen', 'ratsScribesNoteSeen', 'wallStashFound',
+    'totalVisits', 'gambitTotalWins', 'gambitTotalLosses', 'gambitNetEarnings'] as const) {
+    const field = Object.getOwnPropertyDescriptor(tavern, key);
+    if (!field) {
+      if (key in tavern) return `Save Tavern ${key} must be own data.`;
+      continue;
+    }
+    if (!field.enumerable || !Object.hasOwn(field, 'value')) return `Save Tavern ${key} must be enumerable data.`;
+    const scalar: unknown = field.value;
+    if (scalar === undefined) continue;
+    const isFlag = key === 'gambitScribesNoteSeen' || key === 'ratsScribesNoteSeen' || key === 'wallStashFound';
+    if (isFlag ? typeof scalar !== 'boolean' :
+      typeof scalar !== 'number' || !Number.isSafeInteger(scalar) || (key !== 'gambitNetEarnings' && scalar < 0)) {
+      return `Save Tavern ${key} is invalid.`;
+    }
+  }
+  return null;
 }
 
 function isBuildingId(value: unknown): value is BuildingId {
@@ -444,6 +477,8 @@ function validateSnapshot(value: unknown): string | null {
   }
   const tavern = value.tavern;
   if (!isRecord(tavern)) return 'Save tavern state is invalid.';
+  const tavernScalarIssue = validateTavernScalars(tavern);
+  if (tavernScalarIssue) return tavernScalarIssue;
   if (tavern.gambitRoundsThisSeason !== undefined &&
       (!Number.isSafeInteger(tavern.gambitRoundsThisSeason) ||
        (tavern.gambitRoundsThisSeason as number) < 0 ||
