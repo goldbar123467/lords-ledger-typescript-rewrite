@@ -20,7 +20,7 @@ export function planForgeCompletion(state:CompletionContext,payload:unknown) {
     !record(state.blacksmith) || !record(state.inventory) || !nonnegative(state.denarii)) return null;
  const bs=state.blacksmith, uid=bs.nextItemUid ?? 1;
  const total=bs.totalItemsForged ?? 0, masterworks=bs.masterworksCreated ?? 0, invested=bs.totalGoldInvested ?? 0, respect=bs.godricRespect ?? 50;
- const inventory=bs.inventory===undefined ? [] : bs.inventory, equipped=bs.equipped===undefined ? [] : bs.equipped, log=bs.productionLog===undefined ? [] : bs.productionLog;
+ const inventory=bs.inventory ?? [], equipped=bs.equipped ?? [], log=bs.productionLog ?? [];
  if(!counter(uid) || uid<1 || payload.completionUid!==uid || !counter(total) || !counter(masterworks) ||
     !nonnegative(invested) || !nonnegative(respect) || respect>100 ||
     !array(inventory) || !array(equipped) || !array(log) ||

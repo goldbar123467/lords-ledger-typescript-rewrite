@@ -1,3 +1,4 @@
+import {validateForgeState, type ForgeSaveState} from '../engine/forgeState.ts';
 import { validateHallCivicState } from '../engine/hallCivic.ts';
 /** Browser storage boundary. The legacy key is read only during explicit import. */
 import seasonalEvents from '../data/seasonalEvents.ts';
@@ -94,6 +95,7 @@ export interface GameSnapshot {
   chapel: ChapelSaveState;
   people: CompatiblePeopleState;
   greatHall: HallSaveState;
+  blacksmith: ForgeSaveState;
   synergies: {
     activated: SynergyTierId[];
     tradeTypes: string[];
@@ -360,6 +362,9 @@ function validateSnapshot(value: unknown): string | null {
   }
   if (!Number.isSafeInteger(value.garrison)) return 'Save garrison must be a whole number.';
   if (!isFortificationLevel('walls', value.castleLevel)) return 'Save castleLevel is not an authored level.';
+
+  const forgeIssue = validateForgeState(value.blacksmith, value.turn);
+  if (forgeIssue) return forgeIssue;
 
   const inventory = value.inventory;
   if (!isRecord(inventory)) return 'Save inventory is invalid.';

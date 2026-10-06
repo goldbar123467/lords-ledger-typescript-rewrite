@@ -21,7 +21,7 @@ test('Forge completion rejects replay, wrong phase, unavailable materials and ma
 });
 test('Forge completion uses zero respect and rejects malformed consumed counters atomically',()=>{
  const state=base(),zero={...state,blacksmith:{...state.blacksmith,godricRespect:0}};assert.equal(gameReducer(zero,complete()).blacksmith.godricRespect,1);
- for(const patch of [{nextItemUid:0},{nextItemUid:Number.MAX_SAFE_INTEGER},{godricRespect:NaN},{totalItemsForged:-1},{totalGoldInvested:Infinity},{inventory:null},{productionLog:'bad'},{equipped:[{uid:1}]}]){const s={...state,blacksmith:{...state.blacksmith,...patch}};assert.equal(gameReducer(s,complete()),s);}
+ for(const patch of [{nextItemUid:0},{nextItemUid:Number.MAX_SAFE_INTEGER},{godricRespect:NaN},{totalItemsForged:-1},{totalGoldInvested:Infinity},{inventory:{}},{productionLog:'bad'},{equipped:[{uid:1}]}]){const s={...state,blacksmith:{...state.blacksmith,...patch}};assert.equal(gameReducer(s,complete()),s);}
 });
 import {readV2Save,writeV2Save} from '../../src/save/saveGame.ts';
 test('All 35 Forge recipes and five grades persist exact canonical state and consume one UID',()=>{
