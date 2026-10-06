@@ -188,7 +188,7 @@ export default function DisputeScreen({ dispute, onRule, onReturn }) {
   // Handle ruling selection
   const handleSelectRuling = (ruling) => {
     setSelectedRuling(ruling);
-    onRule(dispute.id, ruling.id, ruling.consequences, ruling.decree, ruling.reputation_shift);
+    onRule(dispute.id, ruling.id);
     setStep(3);
   };
 

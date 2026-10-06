@@ -23,6 +23,9 @@ for(const width of [390,1366])test(`authored dispute ruling and history survive 
   await expect(page.getByText(dispute.historicalNote,{exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('dispute-history.png'),fullPage:true,animations:'disabled'});
   await page.getByRole('button',{name:'Return to Throne',exact:true}).click();
+  await expect(page.getByRole('button',{name:new RegExp(dispute.title)})).toHaveCount(0);
+  const promoted=disputes.filter(d=>d.season==='any'||d.season===state.season)[4];if(!promoted)throw new Error('Missing next queued dispute');
+  await expect(page.getByRole('button',{name:new RegExp(promoted.title)})).toBeEnabled();
   await page.getByRole('button',{name:'Save game',exact:true}).click();
   const saved=await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'));if(!saved)throw new Error('Missing dispute save');
   const loaded=readV2Save(saved);if(!loaded.ok)throw new Error(loaded.error);

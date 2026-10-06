@@ -1,3 +1,4 @@
+import { planDisputeRuling } from './disputeActions.ts';
 /**
  * gameReducer.js
  *
@@ -2823,19 +2824,12 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_RULE_DISPUTE": {
-      const { disputeId, rulingId, consequences, decree } = action.payload;
+      const plan = planDisputeRuling(state, action.payload);
+      if (!plan) return state;
+      const { disputeId, rulingId, consequences, decree, meters: newMeters } = plan;
       const prevHall = state.greatHall;
-      const prevMeters = prevHall.meters;
 
-      const clamp = (v) => Math.max(0, Math.min(100, v));
-      const newMeters = {
-        people: clamp(prevMeters.people + (consequences.people || 0)),
-        treasury: clamp(prevMeters.treasury + (consequences.treasury || 0)),
-        church: clamp(prevMeters.church + (consequences.church || 0)),
-        military: clamp(prevMeters.military + (consequences.military || 0)),
-      };
-
-      const resolved = prevHall.disputesResolved + 1;
+      const resolved = (prevHall.disputesResolved ?? 0) + 1;
 
       const rulingEntry = {
         disputeId,
@@ -2848,7 +2842,7 @@ function reduceGame(state, action, random) {
       };
 
       // Phase 4: Compute reputation from cumulative ruling patterns
-      const newHistory = [...prevHall.rulingHistory, rulingEntry];
+      const newHistory = [...(prevHall.rulingHistory ?? []), rulingEntry];
       const repResult = computeReputation(newHistory);
 
       // Phase 4: Trust shifts — small trust bump for each ruling (engagement reward)

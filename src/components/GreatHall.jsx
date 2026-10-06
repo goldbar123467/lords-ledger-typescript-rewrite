@@ -22,7 +22,7 @@ import {
   REPUTATION_TRACKS,
   COMPOUND_RULES,
 } from "../data/greatHall";
-import DISPUTES from "../data/disputes";
+import { getAvailableDisputes } from "../engine/disputeActions.ts";
 import AUDIENCE_ENCOUNTERS from "../data/audience";
 import { DECREE_OPTIONS, COUNCIL_TOPICS, FEAST_DATA } from "../data/decrees";
 import DisputeScreen from "./DisputeScreen";
@@ -596,7 +596,7 @@ function SeasonSummary({ hall, state, onReturn }) {
 
 // ─── Throne Room (default view) ────────────────────────────────
 
-function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust, mood, reputationTrack }) {
+function ThroneRoom({ edmundLine, disputes, onSelectDispute, trust, mood, reputationTrack }) {
   return (
     <div>
       {/* Central throne icon + description */}
@@ -763,12 +763,10 @@ function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust,
             </p>
           ) : (
             disputes.map((d, i) => {
-              const isResolved = resolvedIds.includes(d.id);
               return (
                 <button
                   key={d.id}
-                  onClick={() => !isResolved && onSelectDispute(d)}
-                  disabled={isResolved}
+                  onClick={() => onSelectDispute(d)}
                   className="w-full flex items-center gap-2 text-left"
                   style={{
                     padding: "10px 6px",
@@ -778,21 +776,19 @@ function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust,
                     borderLeft: "none",
                     borderRight: "none",
                     borderBottom: "none",
-                    cursor: isResolved ? "default" : "pointer",
-                    opacity: isResolved ? 0.4 : 1,
+                    cursor: "pointer",
                     transition: "opacity 200ms ease",
                   }}
                 >
                   <ChevronRight
                     size={14}
-                    style={{ color: isResolved ? C.textDim : C.redBright, flexShrink: 0 }}
+                    style={{ color: C.redBright, flexShrink: 0 }}
                   />
                   <span
                     style={{
                       fontFamily: "Crimson Text, serif",
                       fontSize: "0.9rem",
-                      color: isResolved ? C.textDim : C.text,
-                      textDecoration: isResolved ? "line-through" : "none",
+                      color: C.text,
                     }}
                   >
                     {d.title}
@@ -801,14 +797,14 @@ function ThroneRoom({ edmundLine, disputes, resolvedIds, onSelectDispute, trust,
                     style={{
                       fontFamily: "Cinzel, serif",
                       fontSize: "0.6rem",
-                      color: isResolved ? C.textDim : C.textMid,
+                      color: C.textMid,
                       marginLeft: "auto",
                       textTransform: "uppercase",
                       letterSpacing: "1px",
                       flexShrink: 0,
                     }}
                   >
-                    {isResolved ? "Resolved" : d.difficulty}
+                    {d.difficulty}
                   </span>
                 </button>
               );
@@ -866,7 +862,6 @@ export default function GreatHall({ state, dispatch }) {
   const reputation = hall.reputation || "Unknown Lord";
   const reputationTrack = hall.reputationTrack || null;
   const stewardTrust = hall.stewardTrust ?? 50;
-  const resolvedIds = (hall.rulingHistory || []).map((r) => r.disputeId);
   const audienceResolvedIds = useMemo(() => hall.audienceResolved || [], [hall.audienceResolved]);
   const activeDecreeIds = hall.activeDecrees || [];
   const decreeSlotsUsed = hall.decreeSlotsUsed || 0;
@@ -886,13 +881,10 @@ export default function GreatHall({ state, dispatch }) {
     setEdmundLine(selectEdmundLine(state, view, stewardTrust));
   }, [state, stewardTrust]);
 
-  // Disputes: match season, limit 4
-  const availableDisputes = useMemo(() => {
-    const season = state.season || "spring";
-    return DISPUTES.filter(
-      (d) => d.season === "any" || d.season === season
-    ).slice(0, 4);
-  }, [state.season]);
+  const availableDisputes = useMemo(
+    () => getAvailableDisputes(state.season || "spring", hall.rulingHistory),
+    [state.season, hall.rulingHistory],
+  );
 
   // Audience: pick 5 encounters that haven't been resolved yet
   const availableAudience = useMemo(() => {
@@ -923,10 +915,10 @@ export default function GreatHall({ state, dispatch }) {
     switchView("dispute");
   };
 
-  const handleRuleDispute = (disputeId, rulingId, consequences, decree) => {
+  const handleRuleDispute = (disputeId, rulingId) => {
     dispatch({
       type: "HALL_RULE_DISPUTE",
-      payload: { disputeId, rulingId, consequences, decree },
+      payload: { disputeId, rulingId },
     });
     // Refresh Edmund's line after ruling (post-ruling reaction)
     setTimeout(() => refreshEdmundLine("throne"), 100);
@@ -1079,7 +1071,6 @@ export default function GreatHall({ state, dispatch }) {
             <ThroneRoom
               edmundLine={edmundLine}
               disputes={availableDisputes}
-              resolvedIds={resolvedIds}
               onSelectDispute={handleSelectDispute}
               trust={stewardTrust}
               mood={edmundMood}
