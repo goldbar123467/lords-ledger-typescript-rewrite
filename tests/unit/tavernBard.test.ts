@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
 import { nextBardContent } from '../../src/engine/tavernBard.ts';
-import { BARD_TALES } from '../../src/data/tavern.js';
+import { BARD_TALES } from '../../src/data/tavern.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('an unverified solved-riddle command cannot repeat a coin reward', () => {

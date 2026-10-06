@@ -22,7 +22,7 @@ import { isCompanionContent, isCompanionOfferIds, isCompanionQueue, type Compani
 import { validateHallConsequenceState } from '../engine/hallConsequenceState.ts';
 import { validateHallFeastState } from '../engine/feast.ts';
 import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarketReputation } from '../engine/marketHaggle.ts';
-import { GAMBIT_MAX_ROUNDS } from '../data/tavern.js';
+import { GAMBIT_MAX_ROUNDS } from '../data/tavern.ts';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
 import type { SynergyTierId } from '../data/synergies.ts';
 import { isFortificationLevel, type MilitaryDefenseState, type FortificationLevels } from '../data/military.ts';
@@ -76,6 +76,7 @@ export interface GameSnapshot {
   activeTab: string;
   chronicle: SavedChronicleEntry[];
   tavern: {
+    martaStoragePurchased?: boolean;
     pendingStrangerEncounter?: StrangerEncounterType | null;
     strangerAppearedThisSeason?: boolean;
     bardCurrentContent?: BardContent | null;

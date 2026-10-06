@@ -3,22 +3,10 @@ import {
   ALDRIC_MILITARY_COUNSEL, ALDRIC_SCRIBES_NOTE, ALDRIC_TRAINING_OFFERS,
   ALDRIC_WAR_STORIES, MARTA_MARKET_TIPS, MARTA_OFFERS, MARTA_SCRIBES_NOTE,
   MARTA_TRADE_STORIES,
-} from '../data/tavern.js';
+  type TavernContentLine as ContentLine, type CompanionOffer as Offer,
+} from '../data/tavern.ts';
 import type { CompanionId } from '../engine/tavernCompanion.ts';
 import type { GameSnapshot } from '../save/saveGame.ts';
-
-type ContentLine = string | ((state: GameSnapshot) => string);
-
-interface Offer {
-  id: string;
-  title: string;
-  description: string;
-  warning?: string;
-  costText: string;
-  rewardText: string;
-  canAccept: (state: GameSnapshot) => boolean;
-  cantAcceptText: string;
-}
 
 interface Palette {
   panel: string;

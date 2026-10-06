@@ -2,13 +2,14 @@
 import {
   ALDRIC_MILITARY_COUNSEL, ALDRIC_TRAINING_OFFERS, ALDRIC_WAR_STORIES,
   MARTA_MARKET_TIPS, MARTA_OFFERS, MARTA_TRADE_STORIES,
-} from '../data/tavern.js';
+  type MartaOfferId, type AldricOfferId,
+} from '../data/tavern.ts';
 
 export type CompanionId = 'marta' | 'aldric';
 export type CompanionContent =
   | { type: 'advice'; index: number }
   | { type: 'story'; index: number }
-  | { type: 'offer'; offerId: string; resolution: null | 'accepted' | 'declined' };
+  | { type: 'offer'; offerId: MartaOfferId | AldricOfferId; resolution: null | 'accepted' | 'declined' };
 
 export interface CompanionNext {
   content: CompanionContent;
@@ -51,7 +52,7 @@ function pickFromBag(random: () => number, remaining: number[], length: number):
 }
 
 export function isCompanionOfferIds(kind: CompanionId, value: unknown): value is string[] {
-  const ids = registry(kind).offers.map(offer => offer.id);
+  const ids: readonly string[] = registry(kind).offers.map(offer => offer.id);
   return Array.isArray(value) && value.length <= ids.length &&
     value.every(id => typeof id === 'string' && ids.includes(id)) &&
     new Set(value).size === value.length;

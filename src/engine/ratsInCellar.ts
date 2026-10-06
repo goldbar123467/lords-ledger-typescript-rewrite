@@ -1,5 +1,5 @@
 /** Deterministic rat schedule and authored result scoring shared by UI and reducer. */
-import { RATS_DURATION_MS, RATS_GRID_SIZE, RATS_RATINGS } from '../data/tavern.js';
+import { RATS_DURATION_MS, RATS_GRID_SIZE, RATS_RATINGS } from '../data/tavern.ts';
 
 /** First spawn is at 500 ms; later spawns are at least 1000 ms apart. */
 export const MAX_RAT_SPAWNS = Math.max(0, Math.ceil((RATS_DURATION_MS - 500) / 1000));

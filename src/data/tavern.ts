@@ -1,11 +1,58 @@
 /**
- * tavern.js
+ * tavern.ts
  *
  * Content data for the Boar's Head Tavern:
  * flavor texts, Knight's Gambit config, Bard tales, riddles, stranger encounters.
  */
 
 import { getRecruitmentCapacity } from "./militaryRules.ts";
+import type {BuildingId} from './buildings.ts';
+import type {Garrison} from './military.ts';
+import type {Inventory} from './economy.ts';
+
+export type GambitWeaponId = 'sword' | 'shield' | 'arrow';
+interface GambitWeaponDefinition {
+ readonly name:string; readonly symbol:string; readonly beats:GambitWeaponId; readonly reason:string;
+}
+export interface TavernNarrativeState {
+ readonly denarii:number; readonly food:number; readonly population:number; readonly garrison:number; readonly turn:number;
+ // Authored comments retain two historical names absent from the live building registry.
+ readonly buildings?:readonly (BuildingId | 'school' | 'market' | {readonly type:BuildingId | 'school' | 'market'})[] | null;
+ readonly tavern?:{readonly gambitTotalWins?:number} | null;
+}
+export interface TavernAdviceState {
+ readonly garrison?:number | null; readonly turn?:number | null;
+ readonly inventory?:Readonly<Partial<Inventory>> | null; readonly inventoryCapacity?:number | null;
+ readonly buildings?:readonly (BuildingId | {readonly type:BuildingId})[] | null;
+ readonly military?:{readonly garrison:Readonly<Garrison>} | null;
+}
+export interface CompanionOfferState {
+ readonly denarii:number; readonly population:number; readonly garrison:number;
+ readonly inventory?:Readonly<Partial<Inventory>> | null;
+ readonly military?:{readonly garrison:Readonly<Garrison>} | null;
+ readonly tavern?:{readonly martaStoragePurchased?:boolean} | null;
+}
+export type TavernContentLine = string | ((state:TavernAdviceState)=>string);
+export interface CompanionOffer {
+ readonly id:string; readonly title:string; readonly description:string; readonly warning?:string;
+ readonly costText:string; readonly rewardText:string; readonly cantAcceptText:string;
+ readonly canAccept:(state:CompanionOfferState)=>boolean;
+}
+interface ConditionalText {
+ readonly condition:(state:TavernNarrativeState)=>boolean | undefined; readonly text:string;
+}
+interface BardRiddle {
+ readonly id:string; readonly question:string; readonly answer:string; readonly options:readonly string[];
+ readonly correct:string; readonly wrong:string;
+}
+interface RatRating {readonly min:number;readonly max:number;readonly label:string;readonly reward:number;readonly foodPerEscape:number;}
+type StrangerEncounter =
+ | {readonly type:'tip';readonly text:string}
+ | {readonly type:'trade';readonly text:string;readonly cost:number;readonly reward:{readonly food:number}}
+ | {readonly type:'warning';readonly text:null};
+type VisitMilestone = {readonly visits:number} & ({readonly message:string} | {readonly graffiti:string});
+interface StaticGraffiti {readonly text:string;readonly strikethrough?:boolean;readonly icon?:string;readonly large?:boolean;}
+
 
 // ---------------------------------------------------------------------------
 // Tavern flavor subtitles — one shown randomly per visit
@@ -30,7 +77,7 @@ export const GAMBIT_WEAPONS = {
   sword:  { name: "Sword",  symbol: "\u2694", beats: "arrow",  reason: "The blade cuts the bowstring" },
   shield: { name: "Shield", symbol: "\u26E8", beats: "sword",  reason: "The shield turns the blade" },
   arrow:  { name: "Arrow",  symbol: "\u27B6", beats: "shield", reason: "The arrow finds the gap in the shield" },
-};
+} as const satisfies Record<GambitWeaponId,GambitWeaponDefinition>;
 
 export const GAMBIT_WAGERS = [10, 25, 50, 100];
 export const GAMBIT_MAX_ROUNDS = 5;
@@ -69,7 +116,7 @@ export const RATS_RATINGS = [
   { min: 6,  max: 9,  label: "A fair effort, my lord.",               reward: 0,  foodPerEscape: 1 },
   { min: 10, max: 14, label: "Well done! The cellar is mostly clear.", reward: 15, foodPerEscape: 1 },
   { min: 15, max: 99, label: "A legendary ratter! The cats are jealous.", reward: 25, foodPerEscape: 0 },
-];
+] as const satisfies readonly RatRating[];
 
 export const RATS_SCRIBES_NOTE =
   "Vermin destroyed vast quantities of stored grain in the Middle Ages \u2014 some historians estimate rats consumed up to a third of Europe\u2019s food supply. The Black Death itself was spread by fleas carried on rats. Cats were valued as working animals precisely because they protected grain stores. A good mouser was worth more than many farm tools.";
@@ -111,7 +158,7 @@ export const BARD_STATE_COMMENTS = [
   { condition: (s) => s.buildings?.some(b => (typeof b === "string" ? b : b.type) === "school"), text: "A school! Fatima al-Fihri would be proud. Knowledge is the one treasure that can't be taxed. Yet." },
   { condition: (s) => s.buildings?.some(b => (typeof b === "string" ? b : b.type) === "market"), text: "A market! Soon traders will come from distant lands, selling exotic goods, exotic diseases, and exotic lies." },
   { condition: () => true, text: "Your manor endures, my lord. Not every lord can say that. The last three couldn't, for instance." },
-];
+] as const satisfies readonly ConditionalText[];
 
 export const BARD_RIDDLES = [
   {
@@ -154,7 +201,7 @@ export const BARD_RIDDLES = [
     correct: "A clock! The great water clock of Baghdad. Charlemagne thought it was witchcraft.",
     wrong: "A clock, my lord. Specifically, the legendary water clock that baffled the Franks.",
   },
-];
+] as const satisfies readonly BardRiddle[];
 
 // ---------------------------------------------------------------------------
 // Easter Eggs
@@ -164,7 +211,7 @@ export const WALL_STATIC_GRAFFITI = [
   { text: "Aldric owes me 3d", strikethrough: true },
   { text: "God save the King", icon: "\u266B" },
   { text: "HERE BE RATS", large: true },
-];
+] as const satisfies readonly StaticGraffiti[];
 
 export const WALL_DYNAMIC_CONDITIONS = [
   { condition: (s) => (s.tavern?.gambitTotalWins ?? 0) >= 3, text: "BEWARE THE LORD\u2019S BLADE \u2014 a worthy gambler" },
@@ -172,19 +219,19 @@ export const WALL_DYNAMIC_CONDITIONS = [
   { condition: (s) => s.garrison > 12, text: "SOLDIERS WANTED \u2014 see the garrison captain" },
   { condition: (s) => s.denarii > 800, text: "The lord drinks well tonight" },
   { condition: (s) => s.turn > 10, text: "The seasons turn. How long will this lord last?" },
-];
+] as const satisfies readonly ConditionalText[];
 
 export const STRANGER_ENCOUNTERS = [
   { type: "tip",     text: "I hear trouble is coming with the next season. Prepare wisely." },
   { type: "trade",   text: "I have provisions for sale. 150d for a generous supply.", cost: 150, reward: { food: 10 } },
   { type: "warning", text: null }, // dynamically generated based on lowest resource
-];
+] as const satisfies readonly StrangerEncounter[];
 
 export const VISIT_MILESTONES = [
   { visits: 3, message: "You\u2019re becoming a regular, my lord." },
   { visits: 5, graffiti: "THE LORD\u2019S SEAT" },
   { visits: 10, message: "On the house, my lord. You\u2019ve earned it." },
-];
+] as const satisfies readonly VisitMilestone[];
 
 // ---------------------------------------------------------------------------
 // Marta the Merchant \u2014 Femme Sole
@@ -205,7 +252,7 @@ export const MARTA_MARKET_TIPS = [
   "Iron is expensive to mine but every castle upgrade demands it. Control your own supply or you\u2019ll pay through the nose at market.",
   (state) => {
     const bUpkeep = (state.buildings || []).length * 3;
-    const mil = state.military?.garrison || {};
+    const mil:Readonly<Partial<Garrison>> = state.military?.garrison || {};
     const gUpkeep = (mil.levy || 0) * 1 + (mil.menAtArms || 0) * 3 + (mil.knights || 0) * 8;
     return `I\u2019ve seen lords go bankrupt building everything at once. Your upkeep is roughly ${bUpkeep + gUpkeep}d per season \u2014 can your income cover that?`;
   },
@@ -214,7 +261,7 @@ export const MARTA_MARKET_TIPS = [
   "Timber and clay are builder\u2019s goods \u2014 you won\u2019t sell them for much, but without them you can\u2019t expand. Think of them as investment, not income.",
   "Net income matters more than gross. A lord with 50d income and 45d upkeep is poorer than one with 20d income and 5d upkeep.",
   "Buy low in spring, sell high before winter. Prices shift with the seasons \u2014 though you\u2019d have to watch the market closely to see it.",
-];
+] as const satisfies readonly TavernContentLine[];
 
 /**
  * Trade stories: historical anecdotes. 35% chance per interaction.
@@ -272,7 +319,7 @@ export const MARTA_OFFERS = [
     canAccept: (s) => s.denarii >= 50 && !(s.tavern?.martaStoragePurchased),
     cantAcceptText: "You\u2019ve already expanded your storage through my contact.",
   },
-];
+] as const satisfies readonly CompanionOffer[];
 
 export const MARTA_SCRIBES_NOTE =
   "The legal status of \u2018femme sole\u2019 allowed medieval women to own businesses, sign contracts, and sue in court \u2014 rights that married women (\u2018femme covert\u2019) did not have under the doctrine of coverture. Many of the most successful brewsters, silk workers, and traders in medieval cities were femme sole. Marta represents thousands of real women who built commercial empires within \u2014 and sometimes despite \u2014 the legal systems of their time.";
@@ -299,7 +346,7 @@ export const ALDRIC_MILITARY_COUNSEL = [
     const remaining = 40 - (state.turn ?? 1);
     return `Castle upgrades are expensive but permanent. Soldiers eat every season. Think about which investment pays off over ${remaining} more turns.`;
   },
-];
+] as const satisfies readonly TavernContentLine[];
 
 /**
  * War stories: historical accounts. 35% chance per interaction.
@@ -355,7 +402,11 @@ export const ALDRIC_TRAINING_OFFERS = [
     canAccept: (s) => (s.garrison ?? 0) > 0,
     cantAcceptText: "You have no garrison to inspire.",
   },
-];
+] as const satisfies readonly CompanionOffer[];
 
 export const ALDRIC_SCRIBES_NOTE =
   "Medieval soldiers were not the gleaming knights of legend. Most were ordinary men \u2014 farmers, tradesmen, younger sons \u2014 pressed into service by feudal obligation or drawn by the promise of pay and plunder. A typical soldier\u2019s life was monotony punctuated by terror: months of marching, digging, and waiting, then minutes of chaos. Those who survived carried the experience for the rest of their lives. Veterans like Aldric were repositories of hard-won knowledge in an age before military academies.";
+
+export type BardRiddleId = typeof BARD_RIDDLES[number]["id"];
+export type MartaOfferId = typeof MARTA_OFFERS[number]["id"];
+export type AldricOfferId = typeof ALDRIC_TRAINING_OFFERS[number]["id"];

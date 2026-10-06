@@ -1,7 +1,7 @@
 /** Seeded encounter selection; the authored offer terms stay in the content registry. */
-import { STRANGER_ENCOUNTERS } from '../data/tavern.js';
+import { STRANGER_ENCOUNTERS } from '../data/tavern.ts';
 
-export type StrangerEncounterType = 'tip' | 'trade' | 'warning';
+export type StrangerEncounterType = (typeof STRANGER_ENCOUNTERS)[number]['type'];
 
 export function isStrangerEncounterType(value: unknown): value is StrangerEncounterType {
   return value === 'tip' || value === 'trade' || value === 'warning';

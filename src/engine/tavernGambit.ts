@@ -1,8 +1,8 @@
 /** Knight's Gambit rules shared by the UI preview and reducer command. */
-import { GAMBIT_WEAPONS, GAMBIT_WAGERS } from '../data/tavern.js';
+import { GAMBIT_WEAPONS, GAMBIT_WAGERS } from '../data/tavern.ts';
 
 const WEAPON_KEYS = ['sword', 'shield', 'arrow'] as const;
-export type GambitWeapon = typeof WEAPON_KEYS[number];
+export type GambitWeapon = keyof typeof GAMBIT_WEAPONS;
 export type GambitOutcome = 'win' | 'lose' | 'draw';
 
 export interface GambitRound {

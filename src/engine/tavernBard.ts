@@ -1,10 +1,10 @@
 /** Saved Bard content and reward bookkeeping. Authored prose stays in the Tavern registry. */
-import { BARD_RIDDLES, BARD_STATE_COMMENTS, BARD_TALES } from '../data/tavern.js';
+import { BARD_RIDDLES, BARD_STATE_COMMENTS, BARD_TALES, type BardRiddleId } from '../data/tavern.ts';
 
 export type BardContent =
   | { type: 'tale'; index: number; repeat: boolean }
   | { type: 'comment'; index: number }
-  | { type: 'riddle'; id: string; optionOrder: number[]; answer: string | null; awarded: boolean };
+  | { type: 'riddle'; id: BardRiddleId; optionOrder: number[]; answer: string | null; awarded: boolean };
 
 export interface BardNext {
   content: BardContent;
@@ -57,7 +57,7 @@ export function isBardContent(value: unknown): value is BardContent | null {
         !isUniqueIndexList(value.optionOrder, riddle.options.length) ||
         value.optionOrder.length !== riddle.options.length ||
         (value.answer !== null &&
-          (typeof value.answer !== 'string' || !riddle.options.includes(value.answer))) ||
+          (typeof value.answer !== 'string' || !riddle.options.some(option => option === value.answer))) ||
         typeof value.awarded !== 'boolean') return false;
     return !value.awarded || value.answer === riddle.answer;
   }
