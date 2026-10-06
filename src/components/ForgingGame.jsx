@@ -381,6 +381,14 @@ function StrikeTrack({
     setLastResult(null);
   }, [currentBeat, totalStrikes, perfectCount, goodCount, missCount, bestStreak, streakBonus, strikeResults, onAllStrikesComplete]);
 
+  // Wait on the committed strike counts before advancing. A timer captured in
+  // the strike handler would report the previous beat's counts on completion.
+  useEffect(() => {
+    if (phase !== "pausing") return;
+    const timer = setTimeout(nextBeat, BEAT_PAUSE);
+    return () => clearTimeout(timer);
+  }, [phase, nextBeat]);
+
   // Handle strike result
   const handleStrikeResult = useCallback((accuracy, distance) => {
     if (phase !== "moving") return;
@@ -455,9 +463,9 @@ function StrikeTrack({
     setTimeout(() => setFlashClass(""), 400);
     setTimeout(() => {
       setPhase("pausing");
-      setTimeout(nextBeat, BEAT_PAUSE);
+
     }, 200);
-  }, [phase, currentBeat, perfectCount, goodCount, missCount, currentStreak, bestStreak, streakBonus, nextBeat, onStrikeResult]);
+  }, [phase, currentBeat, perfectCount, goodCount, missCount, currentStreak, bestStreak, streakBonus, onStrikeResult]);
 
   // Keep ref in sync for animation loop
   useEffect(() => { handleStrikeResultRef.current = handleStrikeResult; }, [handleStrikeResult]);
