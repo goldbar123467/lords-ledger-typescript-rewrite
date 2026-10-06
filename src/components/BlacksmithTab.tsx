@@ -887,7 +887,7 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
       </div>
 
       {/* Category tabs */}
-      <div className="flex gap-1" style={{ marginBottom: 12 }}>
+      <div className="forge-categories">
         {ITEM_CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.id;
           return (
@@ -1659,25 +1659,15 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
           <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 8}}>
             Quality Trend (Last {recentQuality.length})
           </div>
-          <div className="flex items-end gap-1" style={{ height: 50, justifyContent: "center" }}>
+          <div className="forge-quality-history" role="list" aria-label="Recent Forge qualities">
             {recentQuality.map((q, i) => {
               const barColor = q >= 90 ? "#ffd700" : q >= 70 ? "#c0c0c0" : q >= 50 ? "#8a8a8a" : q >= 30 ? "#6a5a4a" : "#4a3a2a";
               return (
-                <div
-                  key={i}
-                  style={{
-                    width: 16,
-                    height: `${q}%`,
-                    backgroundColor: barColor,
-                    borderRadius: "2px 2px 0 0",
-                    opacity: 0.8,
-                    position: "relative"
-                  }}
-                  title={`${q}%`}
-                >
-                  <span className="forge-caption"  style={{position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", color: forgeTextColor("#5a5550")}}>
-                    {q}
-                  </span>
+                <div key={i} className="forge-quality-column" role="listitem" aria-label={`Quality ${q}%`}>
+                  <span className="forge-caption">{q}</span>
+                  <div className="forge-quality-well" aria-hidden="true">
+                    <div style={{height:`${q}%`,backgroundColor:barColor}} />
+                  </div>
                 </div>
               );
             })}
