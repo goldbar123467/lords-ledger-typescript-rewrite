@@ -598,7 +598,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
 
       {/* Condition bar */}
       <div className="mb-2">
-        <div className="flex items-center justify-between text-sm mb-0.5">
+        <div className="estate-condition-row text-sm mb-0.5">
           <span style={{ color: "#d8c6a8", fontFamily: '"Cinzel", serif' }}>Condition:</span>
           <span style={{ color: condLevel.color, fontWeight: 600 }}>
             {condLevel.label} ({displayBuildingCondition(condition)}%)

@@ -1866,3 +1866,6 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .estate-chains-toggle h3 { margin: 0; }
 .estate-ui .critical-pulse { animation: none; }
 @media(prefers-reduced-motion:reduce) { .estate-ui *, .estate-ui *::before, .estate-ui *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+.estate-condition-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; }
+.estate-condition-row > span { min-width: 0; max-width: 100%; }

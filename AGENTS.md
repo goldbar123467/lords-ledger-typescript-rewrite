@@ -411,3 +411,6 @@ R-EV02 CLOSED: Overview passes the typed roster to existing getTotalUpkeep; owne
 ## Current: Estate presentation verified within scope, G-EL01 next
 
 Root31 browsers/static/build PASS; tester17/grader14 independently pass including native200% zoom. Shared typography/actions/grids/disclosures preserve all seven click handlers and exact saves. G-EL01 P3 enlarged Condition value crosses its card border; fix and commit separately next. Details/identity/limits in migration-ledger.md and verification.md; artifacts/v2/{tester,grader}-estate-layout. Production44,164 (-1,183 original), eight sourceJS remain; full migration/save/RNG/UI/campaign gates remain IN PROGRESS. Commit/push each section; original protected; README Run locally remains removed.
+## Current: Condition correction verified; save waiver validation next
+
+G-EL01 CLOSED within glyph-card scope after root21/tester7/grader original1 and static/build checks. Condition row wraps at enlarged text without changing values/saves. See migration-ledger/verification and estate-condition artifacts. Next reproduce and guard optional building freeUpkeep at runtime; remaining eight sourceJS and full rewrite gates stay IN PROGRESS. Commit/push each section; original protected.

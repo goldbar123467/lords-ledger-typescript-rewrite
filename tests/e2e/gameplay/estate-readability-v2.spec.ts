@@ -51,3 +51,21 @@ test('Estate native browser zoom 200 percent history reading',async({baseURL},in
   await expect.poll(()=>button.evaluate(element=>{const rect=element.getBoundingClientRect();return element.contains(document.elementFromPoint((rect.left+rect.right)/2,(rect.top+rect.bottom)/2));})).toBe(true);expect((await button.boundingBox())?.height??0).toBeGreaterThanOrEqual(44);await captionFits(button);await captureNativeViewport(page,info.outputPath('native-focus.png'));await page.keyboard.press('Enter');await expect(card.getByRole('button',{name:'Hide',exact:true})).toHaveAttribute('aria-expanded','true');await page.keyboard.press('Enter');await save(page,loaded);
  }finally{await native.context.close();}
 });
+
+for (const width of [390, 1366]) for (const root of [16, 32]) {
+ test('Estate condition glyphs stay within card '+width+' root'+root, async ({page}, info) => {
+  const loaded=await load(page,width,root);
+  const card=page.getByTestId('built-building-estate-layout-farm');
+  const label=card.getByText('Condition:',{exact:true}), value=card.getByText('Fair (50%)',{exact:true});
+  await center(value);
+  await page.screenshot({path:info.outputPath('condition.png'),animations:'disabled'});
+  for (const text of [label,value]) {
+   expect(await text.evaluate(element=>{
+    const card=element.closest('[data-testid]');if(!card)throw new Error('Missing owning card');
+    const frame=card.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(element);
+    return [...range.getClientRects()].every(rect=>rect.left>=frame.left&&rect.right<=frame.right);
+   })).toBe(true);
+  }
+  await expect(value).toHaveText('Fair (50%)');await save(page,loaded);
+ });
+}
