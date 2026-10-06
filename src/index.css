@@ -1667,3 +1667,8 @@ input[type="range"].labor-slider::-moz-range-thumb {
   .hall-queue { order: -1; }
 }
 @media (prefers-reduced-motion: reduce) { .hall-ambient p { transition: none; } }
+
+/* Keep enlarged ruling captions in their hit area, including long single words. */
+.great-hall .dispute-ruling { padding: .25rem; }
+.great-hall .dispute-ruling .ruling-card { padding-inline: .125rem; }
+.great-hall .dispute-ruling-label { overflow-wrap: anywhere; }

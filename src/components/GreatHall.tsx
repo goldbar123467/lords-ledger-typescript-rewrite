@@ -131,7 +131,10 @@ export default function GreatHall({ state, dispatch }: GreatHallProps) {
 
   useLayoutEffect(() => {
     const align = () => {
-      const bar = nav.current, button = activeTab.current;
+      const bar = nav.current, focused = document.activeElement;
+      // Late font/size notifications must keep the keyboard target in view.
+      const button = focused instanceof HTMLButtonElement && bar?.contains(focused) && focused.matches(':focus-visible')
+        ? focused : activeTab.current;
       if (!bar || !button) return;
       const viewport = bar.getBoundingClientRect(), target = button.getBoundingClientRect();
       if (target.left < viewport.left + 6) bar.scrollLeft -= viewport.left + 6 - target.left;
