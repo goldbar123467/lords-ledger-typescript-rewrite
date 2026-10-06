@@ -21,3 +21,7 @@ The authored building-quality5% is interpreted as5% less seasonal condition wear
 ## Church Bell installation
 
 Interpret authored Faith+8 as a first working installation gain in Chapel faith, capped100, rather than a repeating seasonal source. Existing working equipped ownership is the receipt, so duplicates/reload/replay do not farm faith. Historical equipped Bells retain the current saved faith and suppress future installation gains; no retroactive repair reconstructs their history. Broken equipped Bells are not working receipts. Only first-installation Equip needs a valid Chapel record; finite faith0 is preserved, nullish command values default50 like existing Chapel consumers. Normal saved faith remains validated separately. No new saved counter, RNG or load migration is required.
+
+## Lock & Key treasury security
+
+Interpret authored Treasury security+5% as less nominal raid coin loss, after the original roll/difficulty/defense calculation and no-castle penalty. Ceil95% to whole denarii limits protection to at most5%; small losses may round back to their original amount. Apply one known working deployed type during resolution; preserve victories, all other outcomes and RNG draws. Saved pending results are authoritative, including older unprotected results, so Load/Continue never discount them again. Existing low-cash clamp and nominal total-loss ledger retain their semantics. Existing working-tool eligibility and item movement suffice; no saved receipt or normalization is needed.

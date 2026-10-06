@@ -1504,7 +1504,7 @@ function reduceGame(state, action, random) {
       const defenseRating = raidType === "criminal" ? readiness.criminalDefense : readiness.scottishDefense;
       const defenseThreshold = raidType === "criminal" ? CRIMINAL_DEFENSE_THRESHOLD : SCOTTISH_DEFENSE_THRESHOLD;
 
-      const result = resolveRaid(raidType, defenseRating, defenseThreshold, state.garrison, state.castleLevel, state.inventory, state.difficulty, random);
+      const result = resolveRaid(raidType, defenseRating, defenseThreshold, state.garrison, state.castleLevel, state.inventory, state.difficulty, random, state.blacksmith);
       if (!result) return state;
 
       // Log watchtower intelligence if it helped

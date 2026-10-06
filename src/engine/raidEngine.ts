@@ -5,6 +5,7 @@
  * Random draws come from the saved game's stream.
  */
 
+import {getDeployedToolIds} from './forgeTools.ts';
 import { RAID_TYPES, TRADE_GOODS_FOR_RAIDS, type RaidType, type RaidTradeGoodId } from "../data/raids.ts";
 
 export type { RaidType } from '../data/raids.ts';
@@ -144,7 +145,7 @@ export function checkForRaid(raids: Pick<RaidState, 'criminalCooldown' | 'scotti
 }
 
 /** Resolve gains and losses from a defense rating against the threat threshold. */
-export function resolveRaid(raidType: string, defenseRating: number, defenseThreshold: number, garrison: number, castleLevel: number, inventory: Readonly<Record<string, number>>, difficulty: 'easy' | 'normal' | 'hard', random: RandomSource): RaidResult | null {
+export function resolveRaid(raidType: string, defenseRating: number, defenseThreshold: number, garrison: number, castleLevel: number, inventory: Readonly<Record<string, number>>, difficulty: 'easy' | 'normal' | 'hard', random: RandomSource, blacksmith?: unknown): RaidResult | null {
   const difficultyScale = difficulty === "easy" ? 0.5 : difficulty === "hard" ? 1.5 : 1.0;
   if (!isRaidType(raidType)) return null;
   const def = RAID_TYPES[raidType];
@@ -246,7 +247,9 @@ export function resolveRaid(raidType: string, defenseRating: number, defenseThre
     victory: false,
     partial,
     defenseRatio,
-    denariiDelta: -(denariiLoss + extraDenLoss),
+    // Protect the already-rolled nominal coin loss, including the no-castle penalty.
+    // Keep whole denarii and the original RNG sequence; a victory is never discounted.
+    denariiDelta: -(getDeployedToolIds(blacksmith).has('lock_key') ? Math.ceil((denariiLoss + extraDenLoss) * 0.95) : denariiLoss + extraDenLoss),
     foodDelta: -foodLoss,
     populationDelta: -popLoss,
     garrisonDelta: garrisonLoss === 0 ? 0 : -garrisonLoss,
