@@ -1,5 +1,5 @@
 import type { SEASON_INFO } from './economy.ts';
-import type { EquippedItem } from '../engine/forgeReadiness.ts';
+import { calculateForgeReadiness, type EquippedItem } from '../engine/forgeReadiness.ts';
 import type { HallRuling } from './greatHall.ts';
 export type ForgeSeason = keyof typeof SEASON_INFO;
 export type ForgeResourceId = 'iron' | 'steel' | 'coal' | 'leather' | 'wood';
@@ -39,9 +39,9 @@ export type ForgeSupplyDefinition = SupplyFields & (
 /** Only existing commentary inputs; this is not the full Forge/save contract. */
 export interface ForgeCommentaryState {
   readonly garrison?:number|null; readonly denarii?:number|null;
+  readonly inventory?:Readonly<Partial<Record<ForgeResourceId,number>>>|null;
   readonly blacksmith?: {
     readonly inventory?:readonly unknown[]|null; readonly equipped?:readonly Readonly<EquippedItem>[]|null;
-    readonly resources?:Readonly<Partial<Record<ForgeResourceId,number>>>|null;
     readonly totalItemsForged?:number|null; readonly godricRespect?:number|null; readonly masterworksCreated?:number|null;
   }|null;
 }
@@ -690,7 +690,7 @@ export function deriveGodricMood(state: ForgeCommentaryState) {
   const respect = bs.godricRespect ?? 50;
   const garrison = state.garrison || 0;
   const equipped = bs.equipped || [];
-  const resources = bs.resources || {};
+  const resources = state.inventory ?? {};
 
   // Proud: high respect + recent masterwork
   if (respect >= 70 && (bs.masterworksCreated || 0) > 0) return "proud";
@@ -736,7 +736,7 @@ export const GODRIC_MILITARY = {
 
 export function getReadinessTier(equipped: readonly Readonly<EquippedItem>[], garrison: number) {
   if (garrison === 0) return "adequate";
-  const ratio = equipped.length / Math.max(garrison, 1);
+  const ratio = calculateForgeReadiness(equipped, garrison).readiness / 100;
   if (ratio >= 0.8) return "peak";
   if (ratio >= 0.6) return "strong";
   if (ratio >= 0.4) return "adequate";

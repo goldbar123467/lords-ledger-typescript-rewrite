@@ -12,7 +12,7 @@ export function calculateForgeReadiness(equipped: readonly EquippedItem[], garri
   const armored = Math.min(equipped.filter(item => item.category === 'armor').length, garrison);
   const militaryItems = equipped.filter(item => (item.militaryBonus ?? 0) > 0);
   const averageQuality = militaryItems.length > 0
-    ? militaryItems.reduce((sum, item) => sum + (item.qualityScore || 50), 0) / militaryItems.length : 0;
+    ? militaryItems.reduce((sum, item) => sum + (item.qualityScore ?? 50), 0) / militaryItems.length : 0;
   const readiness = Math.round((armed / garrison * 0.4 + armored / garrison * 0.3 + averageQuality / 100 * 0.3) * 100);
   const totalBonus = equipped.reduce((sum, item) => sum + (item.militaryBonus || 0), 0);
   return { readiness: Math.min(readiness, 100), armed, armored,

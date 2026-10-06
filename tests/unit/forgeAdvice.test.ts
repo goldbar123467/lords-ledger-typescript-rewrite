@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import test from 'node:test';import {deriveGodricMood,getReadinessTier} from '../../src/data/blacksmith.ts';import {calculateForgeReadiness} from '../../src/engine/forgeReadiness.ts';
+test('Godric mood reads main inventory and retains authored priority and thresholds',()=>{
+ const state={garrison:0,inventory:{iron:5,coal:10},blacksmith:{godricRespect:60,resources:{iron:0,coal:0}}};assert.equal(deriveGodricMood(state),'pleased');assert.equal(deriveGodricMood({...state,inventory:{iron:4,coal:10}}),'frustrated');assert.equal(deriveGodricMood({...state,inventory:{iron:5,coal:9}}),'frustrated');assert.equal(deriveGodricMood({...state,blacksmith:{...state.blacksmith,godricRespect:0}}),'working');assert.equal(deriveGodricMood({...state,garrison:5}),'worried');assert.equal(deriveGodricMood({...state,garrison:5,blacksmith:{godricRespect:70,masterworksCreated:1}}),'proud');const obsolete={blacksmith:{godricRespect:50,resources:{iron:99,coal:99}}};assert.equal(deriveGodricMood(obsolete),'frustrated');
+});
+test('Forge commentary follows weighted arms armor and quality rather than tool count',()=>{
+ assert.equal(getReadinessTier(Array.from({length:20},()=>({category:'tool',qualityScore:100,militaryBonus:0})),5),'critical');assert.equal(getReadinessTier(Array.from({length:5},()=>({category:'weapon',qualityScore:0,militaryBonus:1})),5),'adequate');assert.equal(getReadinessTier([...Array.from({length:5},()=>({category:'weapon',qualityScore:100,militaryBonus:1})),...Array.from({length:5},()=>({category:'armor',qualityScore:100,militaryBonus:1}))],5),'peak');assert.equal(getReadinessTier([],0),'adequate');
+});
+test('Readiness preserves zero quality and nullish legacy quality without changing flat defense',()=>{
+ const zero=calculateForgeReadiness([{category:'weapon',militaryBonus:2,qualityScore:0}],1);assert.deepEqual(zero,{readiness:40,armed:1,armored:0,quality:0,defenseBonus:1});const legacy=calculateForgeReadiness([{category:'weapon',militaryBonus:2}],1);assert.deepEqual(legacy,{...zero,readiness:55,quality:50});
+});

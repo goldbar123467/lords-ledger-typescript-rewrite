@@ -1815,7 +1815,7 @@ function ForgeLedger({ blacksmith, garrison }) {
   }
 
   // Quality trend (last 10 items)
-  const recentQuality = log.slice(-10).map(e => e.qualityScore || 50);
+  const recentQuality = log.slice(-10).map(e => e.qualityScore ?? 50);
 
   // Readiness
   const readiness = calculateForgeReadiness(equipped, garrison);
