@@ -31,6 +31,7 @@ import {
 import {
   canBuildBuilding,
   getTotalBuildingUpkeep,
+  getTotalUpkeep,
   getGarrisonUpkeep,
   getPassiveIncome,
   getUsedPlots,
@@ -194,9 +195,7 @@ function EconomyOverview({ state }:StateProps) {
   } = state;
 
   const consumption = getSeasonFoodRequirement(population, garrison, season, state.difficulty || "normal").totalNeed;
-  const buildingUpkeep = getTotalBuildingUpkeep(buildings);
-  const garrisonUpkeep = getGarrisonUpkeep(garrison);
-  const totalUpkeep = buildingUpkeep + garrisonUpkeep;
+  const totalUpkeep = getTotalUpkeep(buildings,garrison,state.military);
   const passiveIncome = getPassiveIncome(castleLevel, buildings);
   const netIncome = passiveIncome - totalUpkeep;
   const seasonInfo = SEASON_INFO[season] || SEASON_INFO.spring;
@@ -539,6 +538,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
   const canUpgrade = upgradeEligibility.allowed;
 
   const output = getBuildingOutput(building, state.buildings, state.season, getAgricultureBonuses(state.blacksmith));
+  const upkeep = getTotalBuildingUpkeep([building]);
 
   // Season modifier display
   const seasonMult = def.isFarm ? SEASON_FARM_MULTIPLIERS[state.season] : 1.0;
@@ -648,7 +648,8 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
         </div>
         <div>
           <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Upkeep:</span>{" "}
-          <span style={{ color: "#c4a24a" }}>{def.upkeep}d/season</span>
+          <span style={{ color: "#c4a24a" }}>{upkeep}d/season</span>
+          {upkeep!==def.upkeep&&<span className="text-sm ml-1" style={{color:"#c8b090"}}>(waived; base {def.upkeep}d/season)</span>}
         </div>
         {activeSyns.length > 0 && activeSyns.map((syn, i) => (
           <div key={i} className="text-[11px]">
