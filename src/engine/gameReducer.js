@@ -37,7 +37,7 @@ import { isBardContent, isBardSolvedIds, nextBardContent } from "./tavernBard.ts
 import { isCompanionContent, nextCompanionContent } from "./tavernCompanion.ts";
 import { getRecruitmentCapacity } from "../data/militaryRules.ts";
 import { resolveFeast } from "./feast.ts";
-import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputation, marketQuickSalePrice, marketTradePrice, openingHaggleOffer } from "./marketHaggle.ts";
+import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputation, marketSaleProceeds, marketQuickSalePrice, marketTradePrice, openingHaggleOffer } from "./marketHaggle.ts";
 
 import { simulateEconomy, canBuildBuilding, getTotalFood, getBuildingType, getRepairCost } from "./economyEngine.ts";
 import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "./buildingActions.ts";
@@ -730,7 +730,7 @@ function reduceGame(state, action, random) {
       const price = marketQuickSalePrice(state.marketPrices, state.season, merchantId, resource, activated) || 0;
       if (!isPositivePrice(price)) return state;
       const isWoolish = resource === "wool" || resource === "cloth";
-      const income = sellQty * price;
+      const income = marketSaleProceeds(price, sellQty, resource, state.blacksmith);
       const newInventory = { ...state.inventory, [resource]: available - sellQty };
 
       const prevSynergies = state.synergies ?? {};
@@ -919,7 +919,7 @@ function reduceGame(state, action, random) {
         const available = state.inventory[resource] || 0;
         if (available < quantity) return state;
         const sellQty = quantity;
-        const income = sellQty * price;
+        const income = marketSaleProceeds(price, sellQty, resource, state.blacksmith);
         const newInventory = { ...state.inventory, [resource]: available - sellQty };
         const isWoolish = resource === "wool" || resource === "cloth";
         const newWoolTrades = prevSynergies.woolTrades + (isWoolish ? sellQty : 0);
@@ -982,7 +982,7 @@ function reduceGame(state, action, random) {
           totalTradesLifetime: (prevMarket.totalTradesLifetime || 0) + 1,
           totalHagglesWon: (prevMarket.totalHagglesWon || 0) + (wonHaggle ? 1 : 0),
           totalHagglesLost: (prevMarket.totalHagglesLost || 0) + (wonHaggle ? 0 : 1),
-          denariiEarnedFromTrade: (prevMarket.denariiEarnedFromTrade || 0) + (mode === "sell" ? currentOffer * quantity : 0),
+          denariiEarnedFromTrade: (prevMarket.denariiEarnedFromTrade || 0) + (mode === "sell" ? marketSaleProceeds(currentOffer, quantity, resource, state.blacksmith) : 0),
           denariiSpentOnTrade: (prevMarket.denariiSpentOnTrade || 0) + (mode === "buy" ? currentOffer * quantity : 0),
           haggleTradesUsed: (prevMarket.haggleTradesUsed || 0) + 1,
           lastTradedSeason: { ...prevMarket.lastTradedSeason, [merchantId]: state.turn },

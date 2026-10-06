@@ -29,3 +29,7 @@ Interpret authored Treasury security+5% as less nominal raid coin loss, after th
 ## Cauldron feast quality
 
 Interpret the unspecified authored quality bonus as3 Great Hall People approval per feast. One working deployed type applies once, after selected guest/entertainment/course/event effects, under existing meter caps. Running Total includes the same bonus before the event. Record optional cauldronBonus:3 only on new detailed boosted history, so validation can verify exact authored totals plus3. Older records omit this field and retain their prior totals; no inference or retroactive bonus from current equipped state. Reject malformed/inconsistent bonus markers and non-enumerable consumed fields. Preview reads the saved cursor without spending it; settlement keeps its one existing draw and seasonal receipt.
+
+## Horseshoes proceeds and open market-cycle defect
+
+The quarterly simulation has no travel timer. Interpret route speed as5% additional trade-good proceeds, shared across posted and negotiated totals, while preserving reference offers and reputation rules. Round only the bonus to hundredths. Existing working-tool eligibility avoids additional saved receipts. The interaction with MarketRegular creates a newly profitable repeatable buy/sell loop (R-FH01); this section is an incomplete checkpoint pending a separate market-cycle correction. Finite market rules must cover posted and negotiated paths, Save/reload and seasonal boundaries without relying on presentation-only restrictions.

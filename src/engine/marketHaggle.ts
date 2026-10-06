@@ -1,5 +1,6 @@
 /** A pending market bargain is executable only for an offered good at a bounded price. */
-import { BASE_BUY_PRICES, BASE_SELL_PRICES } from '../data/economy.ts';
+import {getDeployedToolIds} from './forgeTools.ts';
+import { TRADE_GOODS, BASE_BUY_PRICES, BASE_SELL_PRICES } from '../data/economy.ts';
 import { FOREIGN_TRADERS, HAGGLE_CONFIG, LOCAL_MERCHANTS, getReputationTier } from '../data/market.ts';
 import { SYNERGY_PATH_LIST, SYNERGY_TIER_MAP } from '../data/synergies.ts';
 import { getSynergyTradePriceBonus, getSynergyWoolSellBonus } from './synergyEngine.ts';
@@ -106,7 +107,7 @@ export function marketTradePrice(
   return basePrice;
 }
 
-/** Posted quick-sale proceeds include earned bonuses; a haggle starts at the seasonal quote. */
+/** Base posted unit quotes include synergy bonuses; route utility is applied to the sale total. */
 export function marketQuickSalePrice(
   marketPrices: unknown, season: unknown, merchantId: unknown,
   resource: unknown, activated: unknown,
@@ -115,6 +116,16 @@ export function marketQuickSalePrice(
   if (quote === null || typeof resource !== 'string' || !isActivatedSynergies(activated)) return null;
   return quote + getSynergyTradePriceBonus(activated) +
     (resource === 'wool' || resource === 'cloth' ? getSynergyWoolSellBonus(activated) : 0);
+}
+
+/** Express faster quarterly trade routes as 5% more trade-good sale proceeds. */
+export function hasHorseshoeTradeBonus(resource: unknown, blacksmith: unknown): boolean {
+  return TRADE_GOODS.some(good => good === resource) && getDeployedToolIds(blacksmith).has('horseshoes');
+}
+/** Both posted and negotiated sales settle the same total; preserve old arithmetic without the tool. */
+export function marketSaleProceeds(unitPrice: number, quantity: number, resource: unknown, blacksmith?: unknown): number {
+  const income = unitPrice * quantity;
+  return hasHorseshoeTradeBonus(resource, blacksmith) ? income + Math.round(income * 5) / 100 : income;
 }
 
 export function hagglePriceRange(fairPrice: number, mode: HaggleMode): { min: number; max: number } {

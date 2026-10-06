@@ -6,6 +6,7 @@
  * reputation tracking, seasonal forecasts, and Quick Trade fallback.
  */
 
+import type {ForgeSaveState} from "../engine/forgeState.ts";
 import { useState, useMemo, useLayoutEffect } from "react";
 import { RESOURCE_CONFIG, BASE_SELL_PRICES, BASE_BUY_PRICES } from "../data/economy.ts";
 import {
@@ -15,7 +16,7 @@ import {
   getForecasts,
 } from "../data/market.ts";
 import type { HaggleDifficulty, MarketEvent, MarketMerchantId, MarketResource, MarketSeason } from "../data/market.ts";
-import { marketQuickSalePrice, marketTradePrice } from "../engine/marketHaggle.ts";
+import { marketQuickSalePrice, marketTradePrice, marketSaleProceeds, hasHorseshoeTradeBonus } from "../engine/marketHaggle.ts";
 import type { HaggleMode } from "../engine/marketHaggle.ts";
 
 interface MarketPrices {
@@ -36,6 +37,7 @@ interface ActiveHaggle {
 }
 
 interface MarketViewState {
+  readonly blacksmith?: Readonly<ForgeSaveState>;
   season: MarketSeason;
   inventory: Partial<Record<MarketResource, number>>;
   inventoryCapacity: number;
@@ -441,7 +443,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
 
   function getEffectivePrice(resource: MarketResource, tradeMode: HaggleMode): number {
     return (tradeMode === "sell"
-      ? marketQuickSalePrice(marketPrices, state.season, merchant.id, resource, state.synergies?.activated || [])
+      ? marketSaleProceeds(marketQuickSalePrice(marketPrices, state.season, merchant.id, resource, state.synergies?.activated || []) || 0, 1, resource, state.blacksmith)
       : marketTradePrice(marketPrices, state.season, merchant.id, resource, tradeMode)) || 0;
   }
 
@@ -530,6 +532,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
         <HaggleInterface
           haggle={haggle}
           merchant={merchant}
+          blacksmith={state.blacksmith}
           onCounter={handleCounter}
           onAccept={handleAccept}
           onWalkAway={handleWalkAway}
@@ -577,6 +580,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
               {sellableToMerchant.map(resource => {
                 const qty = inventory[resource] || 0;
                 const cfg = resourceConfig[resource];
+                const basePrice = marketQuickSalePrice(marketPrices, state.season, merchant.id, resource, state.synergies?.activated || []) || 0;
                 const price = getEffectivePrice(resource, "sell");
                 if (!cfg) return null;
                 const isPremium = isForeign && merchant.buysAtPremium?.includes(resource);
@@ -619,7 +623,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                             key={amt}
                             disabled={qty < amt}
                             onClick={() => handleQuickTrade(resource, amt, "sell")}
-                            aria-label={`Sell ${amt} ${cfg.label} for ${price * amt}d`}
+                            aria-label={`Sell ${amt} ${cfg.label} for ${marketSaleProceeds(basePrice, amt, resource, state.blacksmith)}d`}
                             className="market-quick-action min-w-[44px] min-h-[44px] px-2 py-1 rounded text-xs font-semibold"
                             style={{
                               fontFamily: "Cinzel, serif",
@@ -824,13 +828,14 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
 // Haggle Interface
 // ---------------------------------------------------------------------------
 
-function HaggleInterface({ haggle, merchant, onCounter, onAccept, onWalkAway, canFulfill }: {
+function HaggleInterface({ haggle, merchant, onCounter, onAccept, onWalkAway, canFulfill, blacksmith }: {
   haggle: ActiveHaggle;
   merchant: MerchantView;
   onCounter: (price: number) => void;
   onAccept: () => void;
   onWalkAway: () => void;
   canFulfill: boolean;
+  blacksmith?: unknown;
 }) {
   const { resource, quantity, fairPrice, currentOffer, round, maxRounds, mode, status } = haggle;
   const cfg = resourceConfig[resource];
@@ -847,8 +852,8 @@ function HaggleInterface({ haggle, merchant, onCounter, onAccept, onWalkAway, ca
     mode === "sell" ? Math.min(fairPrice, maxPrice) : Math.max(fairPrice, minPrice)
   );
 
-  const totalAtOffer = currentOffer * quantity;
-  const totalAtSlider = sliderValue * quantity;
+  const totalAtOffer = mode === "sell" ? marketSaleProceeds(currentOffer, quantity, resource, blacksmith) : currentOffer * quantity;
+  const totalAtSlider = mode === "sell" ? marketSaleProceeds(sliderValue, quantity, resource, blacksmith) : sliderValue * quantity;
   const isAccepted = status === "accepted";
   const isFinal = status === "final";
 
@@ -884,6 +889,7 @@ function HaggleInterface({ haggle, merchant, onCounter, onAccept, onWalkAway, ca
         </div>
       </div>
 
+      {mode === "sell" && hasHorseshoeTradeBonus(resource, blacksmith) && <p className="text-sm mb-3" style={{color: "#e8d5b7"}}>Deployed Horseshoes add 5% to these sale proceeds; totals include the bonus.</p>}
       {isAccepted ? (
         <div className="text-center">
           <p className="text-sm mb-3" style={{ color: "#4a8a3a" }}>
@@ -1084,7 +1090,8 @@ function QuickTradeView({ state, onSell, onBuy, onBack }: {
         <div className="space-y-2 mb-4">
           {sellableResources.map(([resource, qty]) => {
             const cfg = resourceConfig[resource];
-            const price = marketQuickSalePrice(marketPrices, state.season, undefined, resource, state.synergies?.activated || []) || 0;
+            const basePrice = marketQuickSalePrice(marketPrices, state.season, undefined, resource, state.synergies?.activated || []) || 0;
+            const price = marketSaleProceeds(basePrice, 1, resource, state.blacksmith);
             return (
               <div key={resource} data-testid={`quick-sell-${resource}`} className="flex items-center justify-between gap-2 p-2.5 rounded-md" style={{ border: "1px solid #6a5a42", backgroundColor: "#1a1610" }}>
                 <div className="flex items-center gap-1 min-w-0">
@@ -1098,13 +1105,13 @@ function QuickTradeView({ state, onSell, onBuy, onBack }: {
                   <span className="text-xs font-bold" title="Quick sale price including earned bonuses" style={{ color: "#64ad50" }}>{price}d</span>
                   {[1, 5].map(amt => (
                     <button key={amt} disabled={qty < amt} onClick={() => onSell(resource, amt)}
-                      aria-label={`Sell ${amt} ${cfg?.label || resource} for ${price * amt}d`}
+                      aria-label={`Sell ${amt} ${cfg?.label || resource} for ${marketSaleProceeds(basePrice, amt, resource, state.blacksmith)}d`}
                       className="market-quick-action min-w-[44px] min-h-[44px] px-2 py-1 rounded text-xs font-semibold"
                       style={{ fontFamily: "Cinzel, serif", backgroundColor: qty >= amt ? "#4a8a3a" : "#2a2318", border: qty >= amt ? "1px solid #2a5a2a" : "1px solid #3a3228", color: qty >= amt ? "#e8c44a" : "#6a5a42", cursor: qty >= amt ? "pointer" : "not-allowed" }}
                     >{amt}</button>
                   ))}
                   <button disabled={qty <= 0} onClick={() => onSell(resource, qty)}
-                    aria-label={`Sell all ${qty} ${cfg?.label || resource} for ${price * qty}d`}
+                    aria-label={`Sell all ${qty} ${cfg?.label || resource} for ${marketSaleProceeds(basePrice, qty, resource, state.blacksmith)}d`}
                     className="market-quick-action min-w-[44px] min-h-[44px] px-2 py-1 rounded text-xs font-semibold"
                     style={{ fontFamily: "Cinzel, serif", backgroundColor: qty > 0 ? "#4a8a3a" : "#2a2318", border: qty > 0 ? "1px solid #2a5a2a" : "1px solid #3a3228", color: qty > 0 ? "#e8c44a" : "#6a5a42", cursor: qty > 0 ? "pointer" : "not-allowed" }}
                   >All</button>
@@ -1223,6 +1230,7 @@ export default function MarketSquare({ state, dispatch, onSell, onBuy }: MarketS
   return (
     <div className="w-full max-w-3xl mx-auto">
       <MarketHeader subtitle={subtitle} marketEvent={marketEvent} />
+      {hasHorseshoeTradeBonus("wool", state.blacksmith) && <p className="text-sm mb-4" style={{color: "#e8d5b7"}}>Deployed Horseshoes: trade-good sale proceeds +5%. The price board shows seasonal reference quotes.</p>}
       {pendingMerchant && (
         <div role="status" className="rounded-md p-3 mb-4 text-center" style={{ backgroundColor: "#231e16", border: "1px solid #c4a24a", color: "#e8c44a" }}>
           Finish your bargain with {pendingMerchant.name} before visiting another stall.
