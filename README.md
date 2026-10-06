@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People, Audience, Dispute, Council, decree, Feast and Great Hall views, guarded domain commands and consumed save validation. The Hall shell preserves authored content and saved state with typed actions, readable meter labels and responsive navigation. Independent desktop and phone review verifies complete focused controls, enlarged ruling labels, sampled contrast, and exact Save/Load. The correction passes 235 unit tests, strict checks, lint, build and 10 affected browser cases; the migration's earlier broader matrix passed 35 cases. Forge authored data and helper contracts are now checked, preserving all 35 items, 20 facts, five buyers and seven supply events. Thirteen source JavaScript/JSX files remain. Production has 44,564 lines versus the original 45,347, a reduction of 783 lines; tests and documentation increase the repository total. Next are authoritative Forge commands and the remaining migrations. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for evidence and limits.
+The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People, Audience, Dispute, Council, decree, Feast and Great Hall views, guarded domain commands and consumed save validation. The Hall shell preserves authored content and saved state with typed actions, readable meter labels and responsive navigation. Independent desktop and phone review verifies complete focused controls, enlarged ruling labels, sampled contrast, and exact Save/Load. The correction passes 235 unit tests, strict checks, lint, build and 10 affected browser cases; the migration's earlier broader matrix passed 35 cases. Forge authored data and helper contracts are now checked, preserving all 35 items, 20 facts, five buyers and seven supply events. Thirteen source JavaScript/JSX files remain. Production has 44,540 lines versus the original 45,347, a reduction of 807 lines; tests and documentation increase the repository total. Forge completion now derives authored costs and results, rejects duplicate settlement, preserves zero quality and resets after Load. The latest section passes 243 unit tests, typecheck, lint, build and 14 focused browser cases with independent completion review. Next are the remaining Forge commands and migrations. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate CouncilChamber and DecreeDesk to TypeScript and improve their readability, keyboard controls and enlarged-text layouts.
+1. Complete authoritative Forge sale, equipment, scrap and visit commands, then nested saves and the remaining Forge view/minigame migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

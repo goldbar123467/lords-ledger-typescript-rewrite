@@ -48,6 +48,7 @@ import {
   calculateForgeReadiness,
 } from "../data/blacksmith";
 import ForgingGame from "./ForgingGame";
+import { planForgeCompletion } from "../engine/forgeCompletion.ts";
 
 // ─── View icon mapping ──────────────────────────────────────────
 const VIEW_ICONS = {
@@ -1550,8 +1551,8 @@ function ForgeResultView({ result, dispatch, onDone }) {
 
   const { item, grade, qualityScore } = result;
   const gradeData = QUALITY_GRADES[grade.grade] || QUALITY_GRADES.Standard;
-  const militaryBonus = Math.round((item.baseMilitary || 0) * (gradeData.statMultiplier || 1));
-  const tradeValue = Math.round((item.baseTradeValue || 0) * (gradeData.tradeMultiplier || 1));
+  const militaryBonus = Math.round((item.baseMilitary || 0) * (gradeData.statMultiplier ?? 1));
+  const tradeValue = Math.round((item.baseTradeValue || 0) * (gradeData.tradeMultiplier ?? 1));
   const isWeaponOrArmor = item.category === "weapon" || item.category === "armor";
 
   // The item has already been added to inventory by BLACKSMITH_FORGE_COMPLETE.
@@ -2380,39 +2381,28 @@ export default function BlacksmithTab({ state, dispatch }) {
 
   // Post-forge result for destination routing
   const [forgeResult, setForgeResult] = useState(null);
+  const [forgeError, setForgeError] = useState(null);
 
   // Commission handler — start forging a specific item
   const handleCommission = useCallback((item) => {
+    setForgeError(null);
     setCommissionItem(item);
     setCurrentView("forging");
   }, []);
 
   // Forging completion handler — dispatch + show destination screen
   const handleForgingComplete = useCallback((result) => {
-    const gradeData = QUALITY_GRADES[result.grade.grade] || QUALITY_GRADES.Standard;
-
-    // Dispatch to reducer to persist resource changes, log, and add to inventory
-    dispatch({
-      type: "BLACKSMITH_FORGE_COMPLETE",
-      payload: {
-        itemId: result.item.id,
-        itemName: result.item.name,
-        itemCost: result.item.cost,
-        category: result.item.category,
-        grade: result.grade.grade,
-        qualityScore: result.qualityScore,
-        goldCost: result.item.cost.gold || 0,
-        statMultiplier: gradeData.statMultiplier,
-        tradeMultiplier: gradeData.tradeMultiplier,
-        baseMilitary: result.item.baseMilitary,
-        baseTradeValue: result.item.baseTradeValue,
-        durability: gradeData.durability,
-      },
-    });
-
-    // Store result for the destination screen
-    // The uid will be the current nextItemUid (before increment)
-    const nextUid = (state.blacksmith?.nextItemUid) || 1;
+    const payload = {itemId: result.item.id, qualityScore: result.qualityScore, completionUid: result.completionUid};
+    if (!planForgeCompletion(state, payload)) {
+      setCommissionItem(null);
+      setForgeResult(null);
+      setForgeError("This commission could not be completed. Check your materials and gold, then start again.");
+      setCurrentView("workshop");
+      return;
+    }
+    setForgeError(null);
+    dispatch({type: "BLACKSMITH_FORGE_COMPLETE", payload});
+    const nextUid = result.completionUid;
     setForgeResult({
       item: result.item,
       grade: result.grade,
@@ -2421,7 +2411,7 @@ export default function BlacksmithTab({ state, dispatch }) {
     });
     setCommissionItem(null);
     setCurrentView("forge_result");
-  }, [dispatch, state.blacksmith?.nextItemUid]);
+  }, [dispatch, state]);
 
   const handleForgingCancel = useCallback(() => {
     setCommissionItem(null);
@@ -2601,7 +2591,8 @@ export default function BlacksmithTab({ state, dispatch }) {
           />
         )}
 
-        {currentView === "workshop" && (
+        {forgeError && <p role="alert" style={{color: FORGE_COLORS.parchment}}>{forgeError}</p>}
+      {currentView === "workshop" && (
           <Workshop
             forgeState={forgeState}
             resources={forgeResources}
@@ -2638,6 +2629,8 @@ export default function BlacksmithTab({ state, dispatch }) {
               onComplete={handleForgingComplete}
               onCancel={handleForgingCancel}
               commissionItem={commissionItem}
+              completionUid={bs.nextItemUid ?? 1}
+              denarii={state.denarii}
             />
           )
         )}

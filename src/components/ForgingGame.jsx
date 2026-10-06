@@ -1135,13 +1135,13 @@ function StatBox({ label, value, color }) {
 
 // ─── Item Selector (simple, expanded in Phase 3) ────────────────
 
-function ItemSelector({ resources, onSelect, onCancel }) {
+function ItemSelector({ resources, denarii, onSelect, onCancel }) {
   const items = Object.values(FORGEABLE_ITEMS);
 
   function canAfford(item) {
     const cost = item.cost;
     return Object.entries(cost).every(([res, amount]) => {
-      if (res === "gold") return true; // gold checked separately from denarii
+      if (res === "gold") return Number.isFinite(denarii) && denarii >= amount;
       return (resources[res] || 0) >= amount;
     });
   }
@@ -1304,9 +1304,10 @@ function ItemSelector({ resources, onSelect, onCancel }) {
 // Main ForgingGame Component
 // ═══════════════════════════════════════════════════════════════
 
-export default function ForgingGame({ resources, onComplete, onCancel, commissionItem }) {
+export default function ForgingGame({ resources, onComplete, onCancel, commissionItem, completionUid, denarii }) {
   // Game phases: 'select' | 'heating' | 'striking' | 'quenching' | 'result'
   const [gamePhase, setGamePhase] = useState(commissionItem ? "heating" : "select");
+  const [attemptUid] = useState(completionUid);
   const [selectedItem, setSelectedItem] = useState(commissionItem || null);
   const [strikeData, setStrikeData] = useState(null);
   const [finalQuality, setFinalQuality] = useState(0);
@@ -1348,18 +1349,20 @@ export default function ForgingGame({ resources, onComplete, onCancel, commissio
 
   const handleFinish = useCallback(() => {
     onComplete({
+      completionUid: attemptUid,
       item: selectedItem,
       grade: finalGrade,
       qualityScore: finalQuality,
       stats: strikeData,
     });
-  }, [selectedItem, finalGrade, finalQuality, strikeData, onComplete]);
+  }, [selectedItem, finalGrade, finalQuality, strikeData, attemptUid, onComplete]);
 
   return (
     <div>
       {gamePhase === "select" && (
         <ItemSelector
           resources={resources}
+          denarii={denarii}
           onSelect={handleSelectItem}
           onCancel={onCancel}
         />

@@ -1,3 +1,4 @@
+import { planForgeCompletion } from './forgeCompletion.ts';
 import { planHallEventDismissal } from './hallConsequences.ts';
 import { planCouncilVote, planDecreeIssue, planDecreeRevocation } from './hallCivic.ts';
 import { planDisputeRuling } from './disputeActions.ts';
@@ -3249,81 +3250,15 @@ function reduceGame(state, action, random) {
     // BLACKSMITH_FORGE_COMPLETE — Record a forged item, deduct resources
     // -----------------------------------------------------------------------
     case "BLACKSMITH_FORGE_COMPLETE": {
-      const {
-        itemId, itemName, itemCost, category, grade, qualityScore,
-        goldCost, statMultiplier, tradeMultiplier, baseMilitary,
-        baseTradeValue, durability,
-      } = action.payload ?? {};
-      if (!itemName) return state;
-
-      const bs = state.blacksmith ?? {};
-      const newDenarii = Math.max(0, state.denarii - (goldCost || 0));
-      const isMasterwork = grade === "Masterwork";
-
-      // Deduct forge material costs from main inventory
-      const forgeInv = { ...state.inventory };
-      if (itemCost) {
-        for (const [key, amt] of Object.entries(itemCost)) {
-          if (key !== "gold" && forgeInv[key] != null) {
-            forgeInv[key] = Math.max(0, forgeInv[key] - amt);
-          }
-        }
-      }
-
-      // Create inventory item
-      const uid = bs.nextItemUid || 1;
-      const forgedItem = {
-        uid,
-        itemId: itemId || "unknown",
-        name: itemName,
-        category: category || "weapon",
-        grade: grade || "Standard",
-        qualityScore: qualityScore || 50,
-        militaryBonus: Math.round((baseMilitary || 0) * (statMultiplier || 1)),
-        tradeValue: Math.round((baseTradeValue || 0) * (tradeMultiplier || 1)),
-        durability: durability || "Good",
-        cost: itemCost || {},
-        forgedTurn: state.turn,
-      };
-
+      const plan = planForgeCompletion(state, action.payload);
+      if (!plan) return state;
+      const { item, ...patch } = plan;
       return {
-        ...state,
-        denarii: newDenarii,
-        inventory: forgeInv,
-        blacksmith: {
-          ...bs,
-          inventory: [...(bs.inventory || []), forgedItem],
-          nextItemUid: uid + 1,
-          totalItemsForged: (bs.totalItemsForged || 0) + 1,
-          masterworksCreated: (bs.masterworksCreated || 0) + (isMasterwork ? 1 : 0),
-          godricRespect: Math.max(0, Math.min(100,
-            (bs.godricRespect || 50)
-            + (grade === "Masterwork" ? 3 : 0)
-            + (grade === "Fine" ? 1 : 0)
-            + (grade === "Rough" ? -2 : 0)
-            + (grade === "Scrap" ? -5 : 0)
-          )),
-          totalGoldInvested: (bs.totalGoldInvested || 0) + (goldCost || 0),
-          productionLog: [...(bs.productionLog || []), {
-            itemId: itemId || "unknown",
-            name: itemName,
-            category: category || "weapon",
-            grade: grade || "Standard",
-            qualityScore: qualityScore || 50,
-            tradeValue: forgedItem.tradeValue,
-            militaryBonus: forgedItem.militaryBonus,
-            turn: state.turn,
-            season: state.season,
-            goldCost: goldCost || 0,
-          }],
-        },
+        ...state, ...patch,
         chronicle: addChronicle(
           state.chronicle,
-          `The forge produced a ${grade} ${itemName}${isMasterwork ? " — a masterwork!" : grade === "Scrap" ? " — ruined." : "."}${qualityScore ? ` (Quality: ${qualityScore}%)` : ""}`,
-          state.season,
-          state.year,
-          state.turn,
-          "action"
+          `The forge produced a ${item.grade} ${item.name}${item.grade === "Masterwork" ? " — a masterwork!" : item.grade === "Scrap" ? " — ruined." : "."} (Quality: ${item.qualityScore}%)`,
+          state.season, state.year, state.turn, "action"
         ),
       };
     }

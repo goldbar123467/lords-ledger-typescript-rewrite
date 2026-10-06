@@ -53,7 +53,7 @@ const randomEvents = randomEventsData;
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
-  const [hallSession, setHallSession] = useState(0);
+  const [viewSession, setViewSession] = useState(0);
   const { muted, toggleMute, ensurePlaying } = useMusic();
 
   // Start music on first click anywhere
@@ -268,7 +268,7 @@ export default function App() {
       setTavernOpen(false);
       setWatchtowerOpen(false);
       dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
-      setHallSession(session => session + 1);
+      setViewSession(session => session + 1);
       setHasSavedGame(true);
       reportSaveSuccess("loaded");
     } catch (error) {
@@ -287,7 +287,7 @@ export default function App() {
       setTavernOpen(false);
       setWatchtowerOpen(false);
       dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
-      setHallSession(session => session + 1);
+      setViewSession(session => session + 1);
       if (currentSaveExists) {
         setSaveError("Old save opened. Your 2.0 save is unchanged; choose Save game to replace it.");
         setSaveFlash("imported");
@@ -310,7 +310,7 @@ export default function App() {
     setTavernOpen(false);
     setWatchtowerOpen(false);
     dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
-    setHallSession(session => session + 1);
+    setViewSession(session => session + 1);
     setSaveError("Manuscript restarted. Estate resources and progress are kept. Stored saves are unchanged; choose Save game to save this recovery.");
     setSaveFlash("recovered");
   }
@@ -674,7 +674,7 @@ export default function App() {
         {/* --- GREAT HALL TAB --- */}
         {!isFlipPhase && displayTab === "hall" && isManagement && (
           <Suspense fallback={<TabLoadingFallback />}>
-            <GreatHall key={hallSession} state={state} dispatch={dispatch} />
+            <GreatHall key={viewSession} state={state} dispatch={dispatch} />
           </Suspense>
         )}
 
@@ -686,7 +686,7 @@ export default function App() {
         {/* --- BLACKSMITH FORGE TAB --- */}
         {!isFlipPhase && displayTab === "forge" && isManagement && (
           <Suspense fallback={<TabLoadingFallback />}>
-            <BlacksmithTab state={state} dispatch={dispatch} />
+            <BlacksmithTab key={viewSession} state={state} dispatch={dispatch} />
           </Suspense>
         )}
 
