@@ -1,3 +1,4 @@
+import {hitRhythm} from '../forgeRhythm.ts';
 import {test,expect} from '@playwright/test';
 import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
 import {FORGEABLE_ITEMS,FORGING_DIFFICULTY} from '../../../src/data/blacksmith.ts';
@@ -19,7 +20,7 @@ test(`direct selector cancel and ${itemId} full rhythm`,async({page},info)=>{
  await selectView();await page.getByRole('button').filter({has:page.getByText(recipe.name,{exact:true})}).click();await expect(page.getByRole('heading',{name:'Heating the Metal',exact:true})).toBeVisible();
  await page.clock.runFor(3200);
  await expect(page.getByText(`Strike 1 of ${config.strikes}`,{exact:true})).toBeVisible();
- async function target(center:number,speed:number){const pos=await page.locator('[style*="rotate(45deg)"]').evaluate(el=>parseFloat((el as HTMLElement).style.left)+8);await page.clock.runFor(Math.max(0,Math.round((center-pos)/speed)));await page.keyboard.press('Space');}
+ async function target(center:number,speed:number){await hitRhythm(page,center,speed);}
  for(let i=0;i<config.strikes;i++){await target(325,500/config.tempo);await page.clock.runFor(250);await page.clock.runFor(450);}
  await expect(page.getByRole('heading',{name:'Quench the Steel',exact:true})).toBeVisible();await target(250,.45);await page.clock.runFor(2100);
  await expect(page.getByText('Perfect Strikes',{exact:true}).locator('..')).toHaveText('Perfect Strikes'+config.strikes);await expect(page.getByText('Missed',{exact:true}).locator('..')).toHaveText('Missed0');await expect(page.getByText('Quality',{exact:true}).locator('..')).toHaveText('Quality100%');

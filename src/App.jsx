@@ -746,7 +746,7 @@ export default function App() {
       {/* Simulate Season button */}
       {isManagement && !isFlipPhase && !tavernOpen && !watchtowerOpen && (
         <div
-          className="sticky bottom-0 w-full px-4 py-3 text-center z-30"
+          className="season-actions sticky bottom-0 w-full px-4 py-3 text-center z-30"
           style={{ backgroundColor: "#0f0d0a", borderTop: "1px solid #8a7a3a" }}
         >
           <button

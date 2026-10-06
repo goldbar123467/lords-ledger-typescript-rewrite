@@ -1672,3 +1672,104 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .great-hall .dispute-ruling { padding: .25rem; }
 .great-hall .dispute-ruling .ruling-card { padding-inline: .125rem; }
 .great-hall .dispute-ruling-label { overflow-wrap: anywhere; }
+
+/* The Forge minigame: timing remains logical; its controls scale to the visible track. */
+.forge-minigame {
+  --forge-ink: #f1dfc5;
+  --forge-muted: #d0b997;
+  --forge-accent: #ffb869;
+  --forge-water: #95c7e9;
+  --forge-panel: #18120d;
+  --forge-border: #8d6944;
+  color: var(--forge-ink);
+  font: 1rem/1.5 'Crimson Text', serif;
+}
+.forge-minigame h3 { margin: 0; font: 1.05rem/1.4 'Cinzel', serif; color: var(--forge-accent); overflow-wrap: anywhere; }
+.forge-minigame p { margin: .5rem 0; }
+.forge-phase { padding: 1rem 0; }
+.forge-phase-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem; }
+.forge-phase-heading p { margin: 0; color: var(--forge-muted); }
+.forge-heating, .forge-quenching { text-align: center; }
+.forge-warm-icon { margin: 0 auto .5rem; color: var(--forge-accent); }
+.forge-water-icon { margin: 0 auto .5rem; color: var(--forge-water); }
+.forge-minigame .forge-controls { color: var(--forge-muted); font-size: 1rem; text-align: center; }
+.forge-coaching { margin: 1rem 0; padding: .75rem 1rem; border: 1px solid var(--forge-border); border-radius: .375rem; background: var(--forge-panel); font-style: italic; color: var(--forge-ink); text-align: center; }
+.forge-coaching > span { color: var(--forge-accent); font: .875rem 'Cinzel', serif; }
+.forge-quality-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.forge-quality { flex: 1 1 12rem; }
+.forge-quality-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem .75rem; font-size: .95rem; margin-bottom: .375rem; }
+.forge-quality-heading > span:first-child { color: var(--forge-muted); }
+.forge-quality-track, .forge-heat-track { height: .75rem; border: 1px solid var(--forge-border); border-radius: .5rem; background: #0d0a08; overflow: hidden; }
+.forge-quality-fill { height: 100%; transition: width 300ms ease; }
+.forge-heat-track { max-width: 300px; margin: 1rem auto; }
+.forge-heat-track > div { height: 100%; transition: background-color 300ms ease; }
+.forge-streak { color: var(--forge-accent); white-space: nowrap; }
+.forge-item-preview { display: grid; justify-items: center; gap: .5rem; min-height: 80px; margin: 1rem 0; }
+.forge-item-preview > div { transition: all 400ms ease; }
+.forge-item-preview figcaption { color: var(--forge-muted); font-size: .95rem; }
+.forge-rhythm-track { display: block; position: relative; width: 100%; max-width: 500px; height: 52px; padding: 0; margin: 1rem auto; border: 1px solid var(--forge-border); border-radius: .375rem; background: #0d0a08; overflow: hidden; cursor: pointer; touch-action: manipulation; user-select: none; }
+.forge-rhythm-track:focus { outline: 3px solid var(--forge-accent); outline-offset: 4px; }
+.forge-rhythm-track[aria-disabled="true"] { cursor: default; }
+.forge-hit-zone { position: absolute; top: 0; bottom: 0; }
+.forge-hit-zone--good { background: #302b26; border-inline: 1px solid #8d806c; }
+.forge-hit-zone--perfect { background: #69411f; border-inline: 2px solid var(--forge-accent); }
+.forge-target-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--forge-accent); }
+.forge-rhythm-indicator { position: absolute; top: 50%; width: 16px; height: 16px; transform: translateY(-50%) rotate(45deg); border: 2px solid #f7e9d1; background: #f1dfc5; z-index: 5; }
+.forge-rhythm-indicator[data-accuracy="perfect"] { background: #ffd700; border-color: #ffd700; box-shadow: 0 0 10px #ffd70080; }
+.forge-rhythm-indicator[data-accuracy="good"] { background: #c0c0c0; border-color: #f7e9d1; }
+.forge-rhythm-indicator[data-accuracy="miss"] { background: #eb8f84; border-color: #eb8f84; }
+.forge-rhythm-track--quench { border-color: var(--forge-water); }
+.forge-rhythm-track--quench:focus { outline-color: var(--forge-water); }
+.forge-rhythm-track--quench .forge-hit-zone--good { background: #192d3b; border-color: #7ea5bf; }
+.forge-rhythm-track--quench .forge-hit-zone--perfect { background: #34566e; border-color: var(--forge-water); }
+.forge-rhythm-track--quench .forge-target-line { background: var(--forge-water); }
+.forge-rhythm-indicator--quench { width: 14px; height: 14px; }
+.forge-strike-feedback { min-height: 1.5em; text-align: center; color: var(--forge-ink); }
+.forge-strike-history { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; list-style: none; padding: .5rem 0; margin: 0; }
+.forge-strike-history li { color: #e0d0b8; }
+.forge-strike-history [data-accuracy="perfect"] { color: #ffd700; }
+.forge-strike-history [data-accuracy="perfect"] svg { fill: currentColor; }
+.forge-strike-history [data-accuracy="miss"] { color: #eb8f84; }
+.forge-strike-history [data-accuracy="pending"] { opacity: .65; }
+.forge-steam { display: flex; justify-content: center; gap: 3px; height: 40px; overflow: hidden; }
+.forge-steam-particle { display: block; border-radius: 50%; background: var(--forge-water); opacity: .6; }
+.forge-result { text-align: center; }
+.forge-result-grade { padding: 1rem; border: 2px solid var(--forge-border); border-radius: .5rem; background: #0d0a08; margin-bottom: 1rem; }
+.forge-result-grade h3 { font-size: clamp(1.1rem, 2.5vw, 1.5rem); color: var(--forge-ink); }
+.forge-result-grade[data-grade="Masterwork"] { border-color: #ffd700; }
+.forge-result-grade[data-grade="Masterwork"] h3 { color: #ffd700; }
+.forge-result-grade[data-grade="Fine"] { border-color: #d4d1c9; }
+.forge-result-name { font-family: 'Cinzel', serif; color: var(--forge-accent); }
+.forge-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); gap: .5rem; margin: 0; }
+.forge-stat { padding: .5rem; border: 1px solid var(--forge-border); border-top-width: 3px; border-radius: .25rem; background: var(--forge-panel); }
+.forge-stat dt { color: var(--forge-muted); font-size: .95rem; }
+.forge-stat dd { margin: .25rem 0 0; color: var(--forge-ink); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.forge-action { min-height: 44px; padding: .5rem 1rem; border: 1px solid var(--forge-accent); border-radius: .25rem; background: #382113; color: var(--forge-ink); font: 1rem 'Cinzel', serif; cursor: pointer; }
+.forge-action:hover { background: #4a2d19; }
+.forge-action:focus-visible, .forge-recipe:focus-visible { outline: 3px solid var(--forge-accent); outline-offset: 3px; }
+.forge-recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); gap: .75rem; }
+.forge-recipe { display: grid; gap: .5rem; align-content: start; padding: .75rem; border: 1px solid var(--forge-border); border-radius: .375rem; background: var(--forge-panel); color: var(--forge-ink); text-align: left; cursor: pointer; font: inherit; overflow-wrap: anywhere; }
+.forge-recipe:hover:not(:disabled) { border-color: var(--forge-accent); background: #251a12; }
+.forge-recipe:disabled { cursor: not-allowed; background: #100d0a; }
+.forge-recipe-heading { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.forge-recipe-heading strong { font: 1rem/1.4 'Cinzel', serif; color: var(--forge-accent); }
+.forge-recipe-heading > span { color: var(--forge-muted); font-size: .875rem; }
+.forge-recipe-description { font-size: 1rem; }
+.forge-recipe-difficulty { color: var(--forge-muted); font-size: .95rem; }
+.forge-recipe-costs { display: flex; flex-wrap: wrap; gap: .25rem .75rem; font-size: .95rem; color: var(--forge-muted); }
+.forge-recipe-costs [data-affordable="false"], .forge-recipe-unavailable { color: #f4b7a1; }
+.forge-recipe-unavailable { font-size: .95rem; }
+@media (prefers-reduced-motion: reduce) {
+  .forge-minigame .forge-item-preview > div, .forge-minigame .forge-quality-fill, .forge-minigame .forge-heat-track > div { transition: none; }
+  .forge-minigame .forge-result-reveal, .forge-minigame .forge-quality-overshoot, .forge-minigame .forge-steam-particle,
+  .forge-minigame .forge-strike-perfect, .forge-minigame .forge-strike-good, .forge-minigame .forge-strike-miss { animation: none; }
+}
+
+/* On short live-crafting windows, give the timing controls the available playfield. */
+@media (max-height: 600px) {
+  .forge-minigame .forge-item-preview { display: none; }
+  body:has(.forge-rhythm-track) .season-actions { position: static; }
+}
+
+/* Timing geometry must reflect the current logical position, including reduced motion. */
+.forge-hit-zone, .forge-target-line, .forge-rhythm-indicator { transition: none !important; }

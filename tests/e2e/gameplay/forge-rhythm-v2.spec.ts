@@ -1,3 +1,4 @@
+import {hitRhythm} from '../forgeRhythm.ts';
 import {test,expect} from '@playwright/test';
 import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
@@ -16,10 +17,7 @@ test(`native six-strike ${mode} result and destination ${width}`,async({page},in
  await page.getByRole('button',{name:'Commission',exact:true}).first().click();
  await expect(page.getByRole('heading',{name:'Heating the Metal'})).toBeVisible();
  await page.clock.runFor(3200);await expect(page.getByText('Strike 1 of 6',{exact:true})).toBeVisible();
- async function target(center:number,speed:number){
-  const pos=await page.locator('[style*="rotate(45deg)"]').evaluate(el=>parseFloat((el as HTMLElement).style.left)+8);
-  await page.clock.runFor(Math.max(0,Math.round((center-pos)/speed)));await page.keyboard.press('Space');
- }
+ async function target(center:number,speed:number){await hitRhythm(page,center,speed);}
  for(let i=0;i<6;i++){
   if(mode==='perfect'||(mode==='last-perfect'&&i===5)){await target(325,500/900);await page.clock.runFor(250);await page.clock.runFor(450);}
   else await page.clock.runFor(1550);
