@@ -1,4 +1,4 @@
-import {getAgriculturalTool, isWorkingAgriculturalTool, getAgricultureDescription} from '../engine/forgeAgriculture.ts';
+import {getDeployableTool, isWorkingTool, getToolDeploymentDescription, getBrokenToolDescription} from '../engine/forgeTools.ts';
 import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadiness.ts';
 /**
  * BlacksmithTab.jsx
@@ -1276,8 +1276,8 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
         {/* Action buttons when selected */}
         {isSelected && !isEquipped && (
           <div className="flex gap-2" style={{ marginTop: 8 }}>
-            {getAgriculturalTool(item.itemId) && (
-              <ForgeButton onClick={(e) => {e.stopPropagation(); handleAction("equip", item);}} variant="green" disabled={!isWorkingAgriculturalTool(item)} style={{flex: 1, fontSize: "0.75rem", padding: "6px"}}>Deploy</ForgeButton>
+            {getDeployableTool(item.itemId) && (
+              <ForgeButton onClick={(e) => {e.stopPropagation(); handleAction("equip", item);}} variant="green" disabled={!isWorkingTool(item)} style={{flex: 1, fontSize: "0.75rem", padding: "6px"}}>Deploy</ForgeButton>
             )}
             {(item.category === "weapon" || item.category === "armor") && (
               <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("equip", item); }} variant="green" disabled={!hasDefenseBonus(item.militaryBonus)}
@@ -1295,7 +1295,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
             </ForgeButton>
           </div>
         )}
-        {isSelected && getAgriculturalTool(item.itemId) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem", marginTop: 8}}>{isWorkingAgriculturalTool(item) ? `${isEquipped ? 'Deployed. ' : ''}${getAgricultureDescription(item.itemId)} One of each tool applies; outputs round to whole units.` : 'Broken tool. Provides no production bonus.'}</p>}
+        {isSelected && getDeployableTool(item.itemId) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem", marginTop: 8}}>{isWorkingTool(item) ? `${isEquipped ? 'Deployed. ' : ''}${getToolDeploymentDescription(item.itemId)}` : getBrokenToolDescription(item.itemId)}</p>}
         {isSelected && (item.category === "weapon" || item.category === "armor") && !hasDefenseBonus(item.militaryBonus) && (
           <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", marginTop: 8}}>Provides no defense bonus.</p>
         )}
@@ -1331,7 +1331,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
             }}
           >
             <h3 id="forge-item-confirmation-title" style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: FORGE_COLORS.parchment, margin: "0 0 8px" }}>
-              {confirmAction.action === "equip" ? (getAgriculturalTool(confirmAction.item.itemId) ? "Deploy on the Estate?" : "Equip to Garrison?") :
+              {confirmAction.action === "equip" ? (getDeployableTool(confirmAction.item.itemId) ? "Deploy on the Estate?" : "Equip to Garrison?") :
                confirmAction.action === "sell" ? "Sell Item?" : "Scrap Item?"}
             </h3>
             <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.8rem", color: "#a89070", margin: "0 0 4px" }}>
@@ -1339,7 +1339,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
             </p>
             {confirmAction.action === "equip" && (
               <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#6a8a5a", margin: "0 0 12px" }}>
-                {getAgriculturalTool(confirmAction.item.itemId) ? `${getAgricultureDescription(confirmAction.item.itemId)} One of each tool applies; outputs round to whole units.` : `+${confirmAction.item.militaryBonus} military bonus to garrison.`}
+                {getDeployableTool(confirmAction.item.itemId) ? `${getToolDeploymentDescription(confirmAction.item.itemId)}` : `+${confirmAction.item.militaryBonus} military bonus to garrison.`}
               </p>
             )}
             {confirmAction.action === "sell" && (
@@ -1585,7 +1585,7 @@ function ForgeResultView({ result, dispatch, onDone }) {
   function handleDestination(action) {
     if (actionTaken) return;
     setActionTaken(true);
-    if (action === "equip" && (isWeaponOrArmor || getAgriculturalTool(item.id))) {
+    if (action === "equip" && (isWeaponOrArmor || getDeployableTool(item.id))) {
       dispatch({ type: "BLACKSMITH_EQUIP_ITEM", payload: { itemUid: latestUid } });
     } else if (action === "sell") {
       dispatch({ type: "BLACKSMITH_SELL_ITEM", payload: { itemUid: latestUid } });
@@ -1639,8 +1639,8 @@ function ForgeResultView({ result, dispatch, onDone }) {
       <SectionLabel>What shall we do with it?</SectionLabel>
       {isWeaponOrArmor && !hasDefenseBonus(militaryBonus) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", textAlign: "center", marginBottom: 8}}>Provides no defense bonus.</p>}
       <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(2, 1fr)", maxWidth: 400, margin: "0 auto" }}>
-        {getAgriculturalTool(item.id) && <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !isWorkingAgriculturalTool({uid: latestUid, itemId: item.id, category: item.category, grade: grade.grade, qualityScore})}>Deploy on Estate</ForgeButton>}
-        {getAgriculturalTool(item.id) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem"}}>{grade.grade === 'Scrap' ? 'Broken tool. Provides no production bonus.' : `${getAgricultureDescription(item.id)} One of each tool applies; outputs round to whole units.`}</p>}
+        {getDeployableTool(item.id) && <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !isWorkingTool({uid: latestUid, itemId: item.id, category: item.category, grade: grade.grade, qualityScore})}>Deploy on Estate</ForgeButton>}
+        {getDeployableTool(item.id) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem"}}>{grade.grade === 'Scrap' ? getBrokenToolDescription(item.id) : `${getToolDeploymentDescription(item.id)}`}</p>}
         {isWeaponOrArmor && (
           <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !hasDefenseBonus(militaryBonus)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 8px" }}>

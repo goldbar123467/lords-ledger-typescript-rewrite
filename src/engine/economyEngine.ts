@@ -1,3 +1,4 @@
+import {getConstructionCost} from './forgeTools.ts';
 import {getAgricultureBonuses, getAgricultureMultiplier, type AgricultureBonuses} from './forgeAgriculture.ts';
 import type {ForgeSaveState} from './forgeState.ts';
 /**
@@ -714,7 +715,7 @@ export function simulateEconomy(state: EconomyState, random: () => number): Econ
  * Check if a building can be built given current state.
  * Returns { canBuild: boolean, reason: string | null }.
  */
-export function canBuildBuilding(buildingId: string, state: Pick<EconomyState, 'denarii' | 'buildings' | 'totalPlots'>) {
+export function canBuildBuilding(buildingId: string, state: Pick<EconomyState, 'denarii' | 'buildings' | 'totalPlots' | 'blacksmith'>) {
   const def = buildingDefinition(buildingId);
   if (!def) return { canBuild: false, reason: "Unknown building" };
 
@@ -722,8 +723,9 @@ export function canBuildBuilding(buildingId: string, state: Pick<EconomyState, '
   const totalPlots = state.totalPlots ?? STARTING_TOTAL_PLOTS;
 
   // Check cost
-  if (denarii < def.cost) {
-    return { canBuild: false, reason: `Need ${def.cost}d (have ${denarii}d)` };
+  const cost = getConstructionCost(def.cost, state.blacksmith);
+  if (denarii < cost) {
+    return { canBuild: false, reason: `Need ${cost}d (have ${denarii}d)` };
   }
 
   // Check build limit

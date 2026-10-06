@@ -48,6 +48,7 @@ import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
 import { planAudienceResponse } from "./audienceActions.ts";
 import { advancePeopleSeason } from "./advancePeopleSeason.ts";
+import {getConstructionCost} from './forgeTools.ts';
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
@@ -608,6 +609,7 @@ function reduceGame(state, action, random) {
       const check = canBuildBuilding(buildingId, state);
       if (!check.canBuild) return state;
 
+      const constructionCost = getConstructionCost(def.cost, state.blacksmith);
       const buildingInstance = {
         instanceId: nextBuildingInstanceId(buildingId, state.turn, state.chronicle.length, state.buildings),
         type: buildingId,
@@ -617,9 +619,9 @@ function reduceGame(state, action, random) {
 
       return {
         ...state,
-        denarii: state.denarii - def.cost,
+        denarii: state.denarii - constructionCost,
         buildings: [...state.buildings, buildingInstance],
-        chronicle: addChronicle(state.chronicle, `Built a ${def.name} for ${def.cost}d.`, state.season, state.year, state.turn, "action"),
+        chronicle: addChronicle(state.chronicle, `Built a ${def.name} for ${constructionCost}d.`, state.season, state.year, state.turn, "action"),
       };
     }
 

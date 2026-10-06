@@ -1,3 +1,4 @@
+import {getConstructionCost} from '../engine/forgeTools.ts';
 import {getBuildingOutput} from '../engine/economyEngine.ts';
 import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
 /**
@@ -660,7 +661,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
             }}
             title={!canUpgrade ? upgradeEligibility.reason : `Upgrade to ${upgradeDef.name}`}
           >
-            {"\u25B2"} {upgradeDef.name} ({def.upgradeCost ?? upgradeDef.cost}d)
+            {"\u25B2"} {upgradeDef.name} ({upgradeEligibility.cost}d)
           </button>
         )}
         <button
@@ -719,6 +720,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
   const [showInfo, setShowInfo] = useState(false);
   const builtCount = state.buildings.filter((b) => getBuildingType(b) === building.id).length;
   const check = canBuildBuilding(building.id, state);
+  const constructionCost = getConstructionCost(building.cost, state.blacksmith);
   const rarity = RARITY_COLORS[building.rarity] || RARITY_COLORS.common;
   const locked = !check.canBuild;
 
@@ -802,7 +804,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
       <div className="text-sm space-y-0.5 mb-2">
         <div>
           <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Cost:</span>{" "}
-          <span style={{ color: "#c4a24a" }}>{building.cost}d</span>
+          <span style={{ color: "#c4a24a" }}>{constructionCost}d</span>
         </div>
         <div>
           <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Plots:</span>{" "}
@@ -905,9 +907,9 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
               e.currentTarget.style.boxShadow = "0 2px 8px rgba(198, 40, 40, 0.2)";
             }
           }}
-          title={locked ? (check.reason || "Cannot build") : `Build ${building.name} for ${building.cost}d`}
+          title={locked ? (check.reason || "Cannot build") : `Build ${building.name} for ${constructionCost}d`}
         >
-          {!locked ? `Build (${building.cost}d)` : (check.reason || "Cannot Build")}
+          {!locked ? `Build (${constructionCost}d)` : (check.reason || "Cannot Build")}
         </button>
       </div>
 

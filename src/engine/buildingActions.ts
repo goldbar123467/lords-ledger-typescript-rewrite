@@ -1,3 +1,4 @@
+import {getConstructionCost} from './forgeTools.ts';
 import BUILDINGS from '../data/buildings.ts';
 import type { BuildingDefinition } from '../data/buildings.ts';
 import { STARTING_TOTAL_PLOTS } from '../data/economy.ts';
@@ -23,6 +24,7 @@ export function getUsedPlots(buildings: BuildingEntry[]): number {
 }
 
 interface UpgradeState {
+  blacksmith?: unknown;
   denarii: number;
   totalPlots?: number;
   buildings: BuildingEntry[];
@@ -57,7 +59,7 @@ export function getUpgradeEligibility(state: UpgradeState, index: unknown): { al
   if (!source?.upgradeTo) return { allowed: false, reason: 'No upgrade available', cost: 0, target: null };
   const target = buildingRegistry[source.upgradeTo];
   if (!target) return { allowed: false, reason: 'Unknown upgrade', cost: 0, target: null };
-  const cost = source.upgradeCost ?? target.cost;
+  const cost = getConstructionCost(source.upgradeCost ?? target.cost, state.blacksmith);
   if (state.denarii < cost) return { allowed: false, reason: `Need ${cost}d (have ${state.denarii}d)`, cost, target: target.id };
   const targetCount = state.buildings.filter(entry => getBuildingType(entry) === target.id).length;
   if (targetCount >= target.maxCount) return { allowed: false, reason: `Maximum ${target.maxCount} built`, cost, target: target.id };

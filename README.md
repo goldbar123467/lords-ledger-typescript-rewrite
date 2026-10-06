@@ -31,9 +31,9 @@ The rewrite includes checked Outcome, Military, Watchtower, Chapel, People and G
 
 Forge data preserves all 35 items, 20 facts, five buyers and seven supply events. Completion, owned-item actions, visits, Talk and known saved fields have checked contracts. Functional equipment counts exclude zero-bonus military items while preserving historical records and flat defense.
 
-Plowshare and Scythe now affect seasonal production through deployed ownership. Estate output shares the simulation calculation. Item selection and deployment confirmation support keyboard use. The scoped section passes 278 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload, seasonal transitions and broken-tool crafting results. Eight tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
+Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. The scoped section passes 284 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload, seasonal transitions and broken-tool crafting results. Seven tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
 
-Thirteen source JavaScript/JSX files remain. Production has 44,738 lines versus the original 45,347, a reduction of 609 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Thirteen source JavaScript/JSX files remain. Production has 44,767 lines versus the original 45,347, a reduction of 580 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 ## Code map
 
@@ -65,7 +65,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the remaining eight Forge tool effects, starting with shared construction quotes, then the view/minigame migration.
+1. Complete the remaining seven Forge tool effects, starting with building quality, then the view/minigame migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
