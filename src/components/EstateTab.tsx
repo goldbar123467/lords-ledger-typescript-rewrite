@@ -92,7 +92,8 @@ const CATEGORY_STYLES = {
   forge:   { color: "#b8a0d4", bg: "rgba(184, 160, 212, 0.08)", border: "rgba(184, 160, 212, 0.25)", label: "Forge", icon: "\u2694" },
   trade:   { color: "#c9a84c", bg: "rgba(201, 168, 76, 0.08)",  border: "rgba(201, 168, 76, 0.25)",  label: "Trade Goods", icon: "\u2696" },
   buyOnly: { color: "#a89070", bg: "rgba(168, 144, 112, 0.06)", border: "rgba(168, 144, 112, 0.2)",  label: "Special", icon: "\u2726" },
-};
+} satisfies Readonly<Record<ResourceCategory,{color:string;bg:string;border:string;label:string;icon:string}>>;
+function isResourceCategory(value:string):value is ResourceCategory{return Object.hasOwn(CATEGORY_STYLES,value);}
 
 const PLOT_COLORS:Readonly<Partial<Record<BuildingDefinition['category'],string>>> = {
   food: "#8dba6e",
@@ -349,7 +350,7 @@ function LandAndInventory({ state }:StateProps) {
   }
 
   // Group inventory by category
-  const categoryOrder = ["food", "raw", "forge", "trade"] as const;
+  const categoryOrder = Object.keys(CATEGORY_STYLES).filter(isResourceCategory);
   const grouped:Partial<Record<ResourceCategory,InventoryItem[]>> = {};
   for (const cat of categoryOrder) grouped[cat] = [];
   for (const [resource, qty] of resourceEntries(inventory)) {
@@ -361,7 +362,7 @@ function LandAndInventory({ state }:StateProps) {
   }
 
   // Map categories to their glow class
-  const CATEGORY_GLOW = {
+  const CATEGORY_GLOW:Readonly<Partial<Record<ResourceCategory,string>>> = {
     food: "estate-glow-green",
     raw: "estate-glow-blue",
     forge: "estate-glow-purple",
