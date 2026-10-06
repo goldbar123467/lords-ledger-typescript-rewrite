@@ -42,6 +42,8 @@ const SEASON_PALETTE = {
 // Logical zones: farms NE, pasture E, nature W, mining SE, processing S
 // ---------------------------------------------------------------------------
 
+// These four have dedicated permanent artwork below; every other authored type needs a slot.
+type PermanentForgeBuildingId='coal_pit'|'tannery'|'sawmill'|'smelter';
 const BUILDING_SPOTS = {
   strip_farm:    [{ x: 60, y: 10 }, { x: 74, y: 10 }],
   demesne_field: [{ x: 60, y: 24 }, { x: 74, y: 24 }],
@@ -53,9 +55,10 @@ const BUILDING_SPOTS = {
   quarry:        [{ x: 85, y: 46 }, { x: 85, y: 56 }],
   herb_garden:   [{ x: 10, y: 58 }, { x: 22, y: 58 }],
   apiary:        [{ x: 10, y: 74 }, { x: 22, y: 74 }],
+  mill:          [{ x: 22, y: 88 }],
   fulling_mill:  [{ x: 36, y: 80 }],
   brewery:       [{ x: 48, y: 72 }],
-} as const satisfies Readonly<Partial<Record<BuildingId,readonly [MapPoint,...MapPoint[]]>>>;
+} as const satisfies Readonly<Record<Exclude<BuildingId,PermanentForgeBuildingId>,readonly [MapPoint,...MapPoint[]]>>;
 type MapBuildingId=keyof typeof BUILDING_SPOTS;
 function isMapBuildingId(value:string):value is MapBuildingId {return Object.hasOwn(BUILDING_SPOTS,value);}
 
