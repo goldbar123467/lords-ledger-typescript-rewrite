@@ -1,3 +1,4 @@
+import {isMarketSupply} from "../engine/marketSupply.ts";
 import {validateForgeState, type ForgeSaveState} from '../engine/forgeState.ts';
 import { validateHallCivicState } from '../engine/hallCivic.ts';
 /** Browser storage boundary. The legacy key is read only during explicit import. */
@@ -413,6 +414,7 @@ function validateSnapshot(value: unknown): string | null {
   const market = value.market;
   if (!isRecord(market)) return 'Save market state is invalid.';
   if (!isMarketReputation(market.reputation)) return 'Save market reputation is invalid.';
+  if(Object.hasOwn(market,'supply')&&(!Object.prototype.propertyIsEnumerable.call(market,'supply')||!isMarketSupply(market.supply,value.turn as number)))return 'Save market supply is invalid.';
   if (market.activeHaggle !== undefined && market.activeHaggle !== null &&
       !isActiveHaggle(market.activeHaggle, value.season, marketPrices, market.reputation)) {
     return 'Save pending market haggle is invalid.';

@@ -6,6 +6,7 @@
  * reputation tracking, seasonal forecasts, and Quick Trade fallback.
  */
 
+import {remainingMarketSupply,type MarketSupply} from "../engine/marketSupply.ts";
 import type {ForgeSaveState} from "../engine/forgeState.ts";
 import { useState, useMemo, useLayoutEffect } from "react";
 import { RESOURCE_CONFIG, BASE_SELL_PRICES, BASE_BUY_PRICES } from "../data/economy.ts";
@@ -38,12 +39,14 @@ interface ActiveHaggle {
 
 interface MarketViewState {
   readonly blacksmith?: Readonly<ForgeSaveState>;
+  turn:number;
   season: MarketSeason;
   inventory: Partial<Record<MarketResource, number>>;
   inventoryCapacity: number;
   denarii: number;
   marketPrices: MarketPrices;
   market?: {
+    supply?:MarketSupply;
     reputation?: Partial<Record<MarketMerchantId, number>>;
     activeHaggle?: ActiveHaggle | null;
     activeMarketEvent?: MarketEvent | null;
@@ -438,6 +441,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
   }, [haggle]);
 
   // Resources this merchant deals in
+  // Purchases share supply across all merchants and the Forge.
   const buyableFromMerchant = [...(merchant.sells || []), ...(merchant.sellsExclusive || [])];
   const sellableToMerchant = [...(merchant.buys || []), ...(merchant.buysAtPremium || [])];
 
@@ -520,6 +524,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
       </div>
 
       {/* Merchant dialogue */}
+      <p className="text-sm mb-3" style={{color:"#c8b090"}}>Purchases share a 100-unit supply per good each season, including the Forge. Selling does not replenish it.</p>
       <MerchantDialogue
         isHaggling={isHaggling}
         haggle={haggle}
@@ -538,7 +543,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
           onWalkAway={handleWalkAway}
           canFulfill={haggle.mode === "sell"
             ? (inventory[haggle.resource] || 0) >= haggle.quantity
-            : denarii >= haggle.currentOffer * haggle.quantity}
+            : denarii >= haggle.currentOffer * haggle.quantity && haggle.quantity<=remainingMarketSupply(state.market,state.turn,haggle.resource)}
         />
       )}
 
@@ -655,8 +660,9 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                 const cfg = resourceConfig[resource];
                 const price = getEffectivePrice(resource, "buy");
                 if (!cfg || !price) return null;
-                const canAfford1 = denarii >= price;
-                const canAfford5 = denarii >= price * 5;
+                const remaining=remainingMarketSupply(state.market,state.turn,resource);
+          const canAfford1 = denarii >= price && remaining>=1;
+                const canAfford5 = denarii >= price * 5 && remaining>=5;
                 return (
                   <div
                     key={resource}
@@ -666,7 +672,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                   >
                     <div className="flex items-center gap-2">
                       <span style={{ color: "#a89070" }}>{cfg.icon}</span>
-                      <span className="text-sm font-semibold" style={{ color: "#c8b090" }}>{cfg.label}</span>
+                      <div><span className="text-sm font-semibold" style={{ color: "#c8b090" }}>{cfg.label}</span><p className="text-sm" style={{color:"#c8b090"}}>Supply: {remaining} this season</p></div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold" style={{ fontFamily: "Cinzel, serif", color: "#e06058" }}>{price}d</span>
@@ -748,7 +754,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                     onClick={() => {
                       const max = mode === "sell"
                         ? (state.inventory[selectedResource] || 0)
-                        : Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1));
+                        : Math.min(remainingMarketSupply(state.market,state.turn,selectedResource),Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1)));
                       setQuantity(Math.min(max, quantity + 1));
                     }}
                     className="w-8 h-8 rounded text-sm font-bold"
@@ -763,7 +769,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                     onClick={() => {
                       const max = mode === "sell"
                         ? (state.inventory[selectedResource] || 0)
-                        : Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1));
+                        : Math.min(remainingMarketSupply(state.market,state.turn,selectedResource),Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1)));
                       setQuantity(Math.min(max, amt));
                     }}
                     className="px-2 py-1 rounded text-xs"
@@ -782,6 +788,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
               <div className="flex gap-2">
                 <button
                   onClick={startHaggle}
+                  disabled={quantity<=0||(mode==="buy"&&quantity>remainingMarketSupply(state.market,state.turn,selectedResource))}
                   className="flex-1 py-2 rounded text-sm font-bold uppercase tracking-wider"
                   style={{
                     fontFamily: "Cinzel, serif",
@@ -982,7 +989,7 @@ function HaggleInterface({ haggle, merchant, onCounter, onAccept, onWalkAway, ca
       )}
       {!canFulfill && (
         <p role="status" className="text-sm text-center mt-3" style={{ color: "#e8c44a" }}>
-          {mode === "sell" ? "Not enough stock to complete this bargain." : "Not enough denarii to complete this bargain."}
+          {mode === "sell" ? "Not enough stock to complete this bargain." : "Not enough denarii or seasonal supply to complete this bargain."}
         </p>
       )}
     </div>
@@ -1122,6 +1129,7 @@ function QuickTradeView({ state, onSell, onBuy, onBack }: {
         </div>
       )}
 
+      <p className="text-sm mb-3" style={{color:"#c8b090"}}>Purchases share a 100-unit supply per good each season, including the Forge. Selling does not replenish it.</p>
       {/* Buy */}
       <h4 className="text-base font-bold uppercase tracking-wider mb-2" style={{ fontFamily: "Cinzel, serif", color: "#e06058" }}>
         Buy Goods
@@ -1129,14 +1137,16 @@ function QuickTradeView({ state, onSell, onBuy, onBack }: {
       <div className="space-y-2 mb-4">
         {buyableResources.map(([resource, price]) => {
           const cfg = resourceConfig[resource];
-          const canAfford1 = denarii >= price;
-          const canAfford5 = denarii >= price * 5;
+          const remaining=remainingMarketSupply(state.market,state.turn,resource);
+          const canAfford1 = denarii >= price && remaining>=1;
+          const canAfford5 = denarii >= price * 5 && remaining>=5;
           return (
             <div key={resource} data-testid={`quick-buy-${resource}`} className="flex items-center justify-between p-2.5 rounded-md gap-2" style={{ border: "1px solid #6a5a42", backgroundColor: "#1a1610" }}>
               <div className="flex items-center gap-2 min-w-0">
                 <span style={{ color: "#a89070" }}>{cfg?.icon}</span>
                 <div className="min-w-0">
                   <span className="text-sm font-semibold" style={{ color: "#c8b090" }}>{cfg?.label}</span>
+                  <p className="text-sm" style={{color:"#c8b090"}}>Supply: {remaining} this season</p>
                   {BUYABLE_HINTS[resource] && (
                     <p className="text-xs leading-snug" style={{ color: "#a89070" }}>{BUYABLE_HINTS[resource]}</p>
                   )}

@@ -1,3 +1,4 @@
+import {remainingMarketSupply} from "../engine/marketSupply.ts";
 import {getDeployableTool, isWorkingTool, getToolDeploymentDescription, getBrokenToolDescription} from '../engine/forgeTools.ts';
 import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadiness.ts';
 /**
@@ -1438,14 +1439,14 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
 
 // ─── Storefront View ─────────────────────────────────────────
 
-function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season }) {
+function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season, market, turn }) {
   const [buyQty, setBuyQty] = useState({});
 
   function handleBuy(resource, qty) {
     const price = getForgeResourceQuote(resource, season, blacksmith);
     if (price === null) return;
     const totalCost = price * qty;
-    if (denarii < totalCost) return;
+    if (denarii < totalCost||qty>remainingMarketSupply(market,turn,resource)) return;
     dispatch({
       type: "BLACKSMITH_BUY_RESOURCE",
       payload: { resource, quantity: qty },
@@ -1461,10 +1462,10 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season 
         <span style={{
           fontFamily: "Almendra, Crimson Text, serif",
           fontStyle: "italic",
-          fontSize: "0.8rem",
-          color: "#8a7a5a",
+          fontSize: "0.875rem",
+          color: "#c8b090",
         }}>
-          Prices shift with the seasons. Buy wisely.
+          Purchases share a 100-unit supply per material each season with the Market. Selling does not replenish it.
         </span>
       </div>
 
@@ -1478,7 +1479,8 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season 
           const current = forgeResources[res.key] || 0;
           const qty = buyQty[res.key] || 1;
           const totalCost = price === null ? 0 : price * qty;
-          const canBuy = price !== null && denarii >= totalCost;
+          const remaining=remainingMarketSupply(market,turn,res.key);
+          const canBuy = price !== null && denarii >= totalCost && qty<=remaining;
 
           // Price trend indicator
           const trend = seasonMod > 1.1 ? "high" : seasonMod < 0.9 ? "low" : "normal";
@@ -1517,6 +1519,7 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season 
                 <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550" }}>
                   In stock: {current} | Price: {price === null ? "Unavailable" : `${price}d`} per {marketInfo.unit}
                 </div>
+                <span style={{color:"#c8b090",fontSize:"0.875rem"}}>Supply: {remaining}</span>
               </div>
 
               {/* Quantity selector */}
@@ -1549,7 +1552,7 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season 
                 variant="gold"
                 style={{ fontSize: "0.55rem", padding: "4px 10px", whiteSpace: "nowrap" }}
               >
-                {price === null ? "Unavailable" : `Buy ${qty} (${totalCost}d)`}
+                {remaining===0?"Out of stock":price === null ? "Unavailable" : `Buy ${qty} (${totalCost}d)`}
               </ForgeButton>
             </div>
           );
@@ -2707,6 +2710,8 @@ export default function BlacksmithTab({ state, dispatch }) {
 
         {currentView === "storefront" && (
           <StorefrontView
+            market={state.market}
+            turn={state.turn}
             forgeResources={forgeResources}
             denarii={state.denarii || 0}
             blacksmith={bs}

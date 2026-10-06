@@ -72,6 +72,7 @@ import {
   removeFromGarrison,
   getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
 } from "../data/military.ts";
+import {remainingMarketSupply,consumeMarketSupply} from "./marketSupply.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS, pickMarketEvent } from "../data/market.ts";
 import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.js";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.ts";
@@ -765,9 +766,11 @@ function reduceGame(state, action, random) {
       if (!isPositivePrice(price)) return state;
 
       const maxAfford = Math.floor(state.denarii / price);
-      const buyQty = Math.min(quantity, maxAfford);
+      const buyQty = Math.min(quantity, maxAfford, remainingMarketSupply(state.market,state.turn,resource));
       if (buyQty <= 0) return state;
 
+      const supply=consumeMarketSupply(state.market,state.turn,resource,buyQty);
+      if(!supply)return state;
       const totalCost = price * buyQty;
       const currentQty = state.inventory[resource] || 0;
       const newInventory = { ...state.inventory, [resource]: currentQty + buyQty };
@@ -796,6 +799,7 @@ function reduceGame(state, action, random) {
       return {
         ...state,
         denarii: state.denarii - totalCost,
+        market:{...state.market,supply},
         inventory: newInventory,
         food: getTotalFood(newInventory),
         tradeCount: (state.tradeCount || 0) + 1,
@@ -822,7 +826,7 @@ function reduceGame(state, action, random) {
 
       const fairPrice = marketTradePrice(state.marketPrices, state.season, merchantId, resource, mode);
       if (!Number.isSafeInteger(fairPrice) || !isPositivePrice(fairPrice)) return state;
-      if (mode === "buy" && quantity > Math.floor(state.denarii / fairPrice)) return state;
+      if (mode === "buy" && (quantity > Math.floor(state.denarii / fairPrice)||quantity>remainingMarketSupply(state.market,state.turn,resource))) return state;
 
       const difficulty = merchant.difficulty;
 
@@ -934,7 +938,8 @@ function reduceGame(state, action, random) {
         };
       } else {
         const totalCost = price * quantity;
-        if (state.denarii < totalCost) return state;
+        const supply=consumeMarketSupply(prevMarket,state.turn,resource,quantity);
+        if (!supply||state.denarii < totalCost) return state;
         const currentQty = state.inventory[resource] || 0;
         const newInventory = { ...state.inventory, [resource]: currentQty + quantity };
         const newSpicePurchases = prevSynergies.spicePurchases + (resource === "spices" ? quantity : 0);
@@ -958,6 +963,7 @@ function reduceGame(state, action, random) {
 
         newState = {
           ...state, denarii: state.denarii - totalCost, inventory: newInventory,
+          market:{...prevMarket,supply},
           food: getTotalFood(newInventory), tradeCount: (state.tradeCount || 0) + 1,
           synergies: { ...prevSynergies, spicePurchases: newSpicePurchases, tradeTypes: newTradeTypes },
           chapel: nextChapelHag,
@@ -976,7 +982,7 @@ function reduceGame(state, action, random) {
       return {
         ...newState,
         market: {
-          ...prevMarket, activeHaggle: null,
+          ...prevMarket, ...newState.market, activeHaggle: null,
           reputation: { ...prevMarket.reputation, [merchantId]: newRep },
           tradesThisSeason: (prevMarket.tradesThisSeason || 0) + 1,
           totalTradesLifetime: (prevMarket.totalTradesLifetime || 0) + 1,
@@ -1834,6 +1840,7 @@ function reduceGame(state, action, random) {
       const advanceMarket = {
         ...advMkt,
         currentForeignTrader: nextSeason,
+        ...(Object.hasOwn(advMkt,"supply")?{supply:{turn:nextTurn,purchased:{}}}:{}),
         activeHaggle: null,
         activeMarketEvent: null,
         tradesThisSeason: 0,

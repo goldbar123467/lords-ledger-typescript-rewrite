@@ -31,9 +31,9 @@ The rewrite includes checked Outcome, Military, Watchtower, Chapel, People and G
 
 Forge data preserves all 35 items, 20 facts, five buyers and seven supply events. Completion, owned-item actions, visits, Talk and known saved fields have checked contracts. Functional equipment counts exclude zero-bonus military items while preserving historical records and flat defense.
 
-Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The first working Church Bell deployment adds 8 Chapel faith, capped at 100; additional bells and reloads grant no extra faith. Deployed Lock & Key reduces raid coin losses by 5%, rounded up to whole denarii. A deployed Cauldron adds 3 Great Hall People approval per feast; shared previews and validated saved history record the bonus. Horseshoes adds 5% trade-good proceeds, but a repeatable resale defect remains open and its section is incomplete. The scoped sections pass 308 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. Two tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
+Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The first working Church Bell deployment adds 8 Chapel faith, capped at 100; additional bells and reloads grant no extra faith. Deployed Lock & Key reduces raid coin losses by 5%, rounded up to whole denarii. A deployed Cauldron adds 3 Great Hall People approval per feast; shared previews and validated saved history record the bonus. Horseshoes adds 5% trade-good proceeds. A new balance rule limits Market and Forge purchases to a shared 100 units per good each season, persisted through Save/reload, to bound repeatable resale loops. The scoped sections pass 316 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. Two tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
 
-Thirteen source JavaScript/JSX files remain. Production has 44,833 lines versus the original 45,347, a reduction of 514 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Thirteen source JavaScript/JSX files remain. Production has 44,886 lines versus the original 45,347, a reduction of 461 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 ## Code map
 
@@ -65,7 +65,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the Horseshoes resale correction and remaining two Forge tool effects, then the view/minigame migration.
+1. Complete the remaining two Forge tool effects, then the view/minigame migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

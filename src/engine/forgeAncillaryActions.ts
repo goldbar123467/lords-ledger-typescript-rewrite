@@ -1,9 +1,10 @@
 import {FORGE_RESOURCES, FORGE_SUPPLY_EVENTS, generateForgeMarketPrices, type ForgeResourceId, type ForgeSeason, type ForgeSupplyDefinition} from '../data/blacksmith.ts';
+import {consumeMarketSupply} from "./marketSupply.ts";
 import {isPositivePrice,isPositiveQuantity} from './transactionValidation.ts';
 export type ForgeAncillaryCommand =
  | {type:'BLACKSMITH_BUY_RESOURCE';payload:{resource:ForgeResourceId;quantity:number}}
  | {type:'BLACKSMITH_ADVANCE_WAT'|'BLACKSMITH_ADVANCE_BANTER'|'BLACKSMITH_DISMISS_SUPPLY_EVENT'|'BLACKSMITH_INVEST_IRON_VEIN'};
-interface AncillaryContext {readonly phase:string;readonly turn:number;readonly year:number;readonly season:string;readonly denarii:number;readonly inventory:Readonly<Record<string,number>>;readonly blacksmith?:unknown}
+interface AncillaryContext {readonly phase:string;readonly turn:number;readonly year:number;readonly season:string;readonly denarii:number;readonly inventory:Readonly<Record<string,number>>;readonly blacksmith?:unknown;readonly market?:unknown}
 function record(value:unknown):value is Record<string,unknown> {return typeof value==='object'&&value!==null&&!Array.isArray(value);}
 function array(value:unknown):value is readonly unknown[] {return Array.isArray(value);}
 function amount(value:unknown):value is number {return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=Number.MAX_SAFE_INTEGER;}
@@ -52,13 +53,14 @@ export function planForgeAncillary(state:AncillaryContext,type:ForgeAncillaryCom
  if(type==='BLACKSMITH_BUY_RESOURCE') {
   if(!record(payload)||!resource(payload.resource)||!isPositiveQuantity(payload.quantity)||!record(state.inventory)||!amount(state.denarii)) return null;
   const price=getForgeResourceQuote(payload.resource,state.season,bs);if(price===null) return null;
+  const supply=consumeMarketSupply(state.market,state.turn,payload.resource,payload.quantity);if(!supply)return null;
   const cost=price*payload.quantity,stock=state.inventory[payload.resource] ?? 0,invested=bs.totalGoldInvested ?? 0;
   if(!amount(cost)||cost<=0||state.denarii<cost||!amount(stock)||!amount(stock+payload.quantity)||!amount(invested)||!amount(invested+cost)) return null;
   const denarii=state.denarii-cost,totalGoldInvested=invested+cost;
   // Bound currency rounding by the transaction, not by a potentially corrupted balance.
   const tolerance=Math.max(1e-8,8*Number.EPSILON*cost);
   if(Math.abs((state.denarii-denarii)-cost)>tolerance||Math.abs((totalGoldInvested-invested)-cost)>tolerance) return null;
-  return {patch:{denarii,inventory:{...state.inventory,[payload.resource]:stock+payload.quantity},blacksmith:{...bs,totalGoldInvested}},
+  return {patch:{denarii,market:{...(record(state.market)?state.market:{}),supply},inventory:{...state.inventory,[payload.resource]:stock+payload.quantity},blacksmith:{...bs,totalGoldInvested}},
    message:`Purchased ${payload.quantity} ${payload.resource} for ${cost} denarii.`,chronicleKind:'action' as const};
  }
  const supply=getForgeSupplyStatus(bs),used=bs.usedSupplyEventIds ?? [];
