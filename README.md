@@ -31,9 +31,9 @@ The rewrite includes checked Outcome, Military, Watchtower, Chapel, People and G
 
 Forge data preserves all 35 items, 20 facts, five buyers and seven supply events. Completion, owned-item actions, visits, Talk and known saved fields have checked contracts. Functional equipment counts exclude zero-bonus military items while preserving historical records and flat defense.
 
-Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The scoped sections pass 289 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. Six tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
+Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The first working Church Bell deployment adds 8 Chapel faith, capped at 100; additional bells and reloads grant no extra faith. The scoped sections pass 293 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. Five tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
 
-Thirteen source JavaScript/JSX files remain. Production has 44,782 lines versus the original 45,347, a reduction of 565 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Thirteen source JavaScript/JSX files remain. Production has 44,794 lines versus the original 45,347, a reduction of 553 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 ## Code map
 
@@ -65,7 +65,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the remaining six Forge tool effects, then the view/minigame migration.
+1. Complete the remaining five Forge tool effects, then the view/minigame migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

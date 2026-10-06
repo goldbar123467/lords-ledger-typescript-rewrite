@@ -1,4 +1,4 @@
-import {getDeployableTool, isWorkingTool} from './forgeTools.ts';
+import {getDeployableTool, isWorkingTool, getDeployedToolIds} from './forgeTools.ts';
 import {hasDefenseBonus} from './forgeReadiness.ts';
 import {FORGE_RESOURCES, SCRAP_RECOVERY_RATE, getAvailableBuyers, getBuyerPrice, type ForgeBuyerDefinition, type ForgeBuyerId, type ForgeSeason, type ForgeResourceId} from '../data/blacksmith.ts';
 export type ForgeItemCommand =
@@ -8,7 +8,7 @@ export type ForgeItemCommand =
 interface ItemContext {
  readonly phase:string; readonly turn:number; readonly year:number; readonly season:string;
  readonly denarii:number; readonly inventory:Readonly<Record<string,number>>;
- readonly blacksmith:unknown; readonly greatHall?:unknown;
+ readonly blacksmith:unknown; readonly greatHall?:unknown; readonly chapel?:unknown;
 }
 function record(value:unknown):value is Record<string,unknown> {return typeof value==='object' && value!==null && !Array.isArray(value);}
 function array(value:unknown):value is readonly unknown[] {return Array.isArray(value);}
@@ -40,8 +40,19 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
   const militaryBonus=item.militaryBonus ?? 0;
   if(getDeployableTool(item.itemId)&&!isWorkingTool(item)) return null;
   if(!amount(militaryBonus) || ((item.category==='weapon'||item.category==='armor')&&!hasDefenseBonus(militaryBonus))) return null;
-  return {patch:{blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
-   message:getDeployableTool(item.itemId)?`Deployed a ${item.grade} ${item.name} on the estate.`:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
+  // Existing equipped ownership is the durable first-installation receipt, including old saves.
+  const firstBell=item.itemId==='church_bell' && !getDeployedToolIds(bs).has('church_bell');
+  let chapelPatch: {chapel: Record<string,unknown>} | Record<string,never> = {};
+  let faithGain=0;
+  if(firstBell) {
+   if(!record(state.chapel)) return null;
+   const faith=state.chapel.faith ?? 50;
+   if(!amount(faith)||faith>100) return null;
+   const nextFaith=Math.min(100,faith+8);faithGain=nextFaith-faith;
+   chapelPatch={chapel:{...state.chapel,faith:nextFaith}};
+  }
+  return {patch:{...chapelPatch,blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
+   message:getDeployableTool(item.itemId)?`Deployed a ${item.grade} ${item.name} on the estate.${firstBell?` Chapel Faith +${faithGain}.`:""}`:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
  }
  if(type==='BLACKSMITH_SCRAP_ITEM') {
   const cost=item.cost ?? {}, materials={...state.inventory}, recovered:Partial<Record<ForgeResourceId,number>>={};

@@ -17,3 +17,7 @@ A working known Nails item in equipped reduces Estate BUILD_BUILDING and UPGRADE
 ## Hinges & Fittings
 
 The authored building-quality5% is interpreted as5% less seasonal condition wear because buildings already start at100% condition. Apply this to the previously rounded wear and settle protected condition to hundredths; preserve old arithmetic without a working deployed tool. One type applies once, with existing shared quality/UID eligibility and no new save fields or RNG. Economy still uses starting condition before wear. Estate's after-wear forecast shares the helper and excludes future event damage. Fractional poor/ruined warnings now use the same50/25 thresholds as production; display avoids rounding into a healthier tier. This is an explicit new mechanic, not an archived interpretation.
+
+## Church Bell installation
+
+Interpret authored Faith+8 as a first working installation gain in Chapel faith, capped100, rather than a repeating seasonal source. Existing working equipped ownership is the receipt, so duplicates/reload/replay do not farm faith. Historical equipped Bells retain the current saved faith and suppress future installation gains; no retroactive repair reconstructs their history. Broken equipped Bells are not working receipts. Only first-installation Equip needs a valid Chapel record; finite faith0 is preserved, nullish command values default50 like existing Chapel consumers. Normal saved faith remains validated separately. No new saved counter, RNG or load migration is required.
