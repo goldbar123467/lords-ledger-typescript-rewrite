@@ -1,5 +1,5 @@
 /**
- * MapTab.jsx
+ * MapTab.tsx
  *
  * Bird's-eye CSS-rendered map of the player's estate.
  * Buildings appear as they're constructed, peasants walk paths,
@@ -7,7 +7,24 @@
  */
 
 import { useMemo } from "react";
-import BUILDINGS from "../data/buildings.ts";
+import BUILDINGS, {type BuildingId,type BuildingDefinition} from "../data/buildings.ts";
+import type {BuildingInstance,GameSnapshot,Season} from '../save/saveGame.ts';
+
+interface MapPoint {readonly x:number;readonly y:number}
+type WalkPath=readonly [MapPoint,MapPoint,...MapPoint[]];
+interface MapPalette {
+  readonly ground:string;readonly grass:string;readonly tree:string;
+  readonly water:string;readonly waterLight:string;readonly road:string;readonly fieldCrop:string;
+}
+interface MapViewState extends Readonly<Pick<GameSnapshot,'castleLevel'|'population'|'season'>> {
+  readonly buildings:readonly (Readonly<BuildingInstance>|BuildingId)[];
+}
+interface MapViewProps {
+  readonly state:MapViewState;
+  readonly onOpenTavern:()=>void;
+  readonly onOpenMarket:()=>void;
+  readonly onOpenWatchtower?:()=>void;
+}
 
 // ---------------------------------------------------------------------------
 // Season palette — terrain colors shift each season
@@ -18,7 +35,7 @@ const SEASON_PALETTE = {
   summer: { ground: "#6d9d40", grass: "#88c040", tree: "#2d7a1a", water: "#4080b0", waterLight: "#60a0c8", road: "#a88050", fieldCrop: "#d4b030" },
   autumn: { ground: "#c4a44e", grass: "#d0b458", tree: "#c46a1a", water: "#5090c0", waterLight: "#6aa0c8", road: "#a08050", fieldCrop: "#c49030" },
   winter: { ground: "#c8c8c0", grass: "#d4d4cc", tree: "#7a8a7a", water: "#7aaab8", waterLight: "#8abac8", road: "#b0a090", fieldCrop: "#c0c0b8" },
-};
+} satisfies Readonly<Record<Season,MapPalette>>;
 
 // ---------------------------------------------------------------------------
 // Building positions on the map (x%, y%)
@@ -38,7 +55,9 @@ const BUILDING_SPOTS = {
   apiary:        [{ x: 10, y: 74 }, { x: 22, y: 74 }],
   fulling_mill:  [{ x: 36, y: 80 }],
   brewery:       [{ x: 48, y: 72 }],
-};
+} as const satisfies Readonly<Partial<Record<BuildingId,readonly [MapPoint,...MapPoint[]]>>>;
+type MapBuildingId=keyof typeof BUILDING_SPOTS;
+function isMapBuildingId(value:string):value is MapBuildingId {return Object.hasOwn(BUILDING_SPOTS,value);}
 
 // ---------------------------------------------------------------------------
 // Peasant walking paths — waypoints as [x%, y%]
@@ -77,7 +96,7 @@ const WALK_PATHS = [
   [{ x: 8, y: 8 }, { x: 16, y: 12 }, { x: 24, y: 8 }, { x: 30, y: 14 }, { x: 24, y: 8 }, { x: 16, y: 12 }, { x: 8, y: 8 }],
   // Long east road
   [{ x: 78, y: 30 }, { x: 82, y: 40 }, { x: 86, y: 52 }, { x: 82, y: 62 }, { x: 86, y: 52 }, { x: 82, y: 40 }, { x: 78, y: 30 }],
-];
+] as const satisfies readonly WalkPath[];
 
 // ---------------------------------------------------------------------------
 // Decorative tree positions
@@ -96,13 +115,13 @@ const TREE_SPOTS = [
   { x: 70, y: 93, s: 6 }, { x: 92, y: 89, s: 7 },
   // Scattered accents
   { x: 30, y: 56, s: 6 }, { x: 72, y: 40, s: 6 }, { x: 28, y: 30, s: 5 },
-];
+] satisfies readonly (MapPoint & {readonly s:number})[];
 
 // ---------------------------------------------------------------------------
 // CSS keyframe generation for peasant paths
 // ---------------------------------------------------------------------------
 
-function buildKeyframes(name, waypoints) {
+function buildKeyframes(name:string, waypoints:WalkPath) {
   const steps = waypoints.length - 1;
   const frames = waypoints.map((pt, i) => {
     const pct = Math.round((i / steps) * 100);
@@ -141,7 +160,7 @@ const STYLE_SHEET = [
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function CSSTree({ x, y, size, color }) {
+function CSSTree({ x, y, size, color }:MapPoint & {size:number;color:string}) {
   const trunk = Math.max(2, Math.round(size * 0.25));
   const trunkH = Math.round(size * 0.5);
   return (
@@ -202,7 +221,7 @@ const SHORE_CURVE =
 
 const WATER_FILL = SHORE_CURVE + " Z";
 
-function WaterBody({ pal }) {
+function WaterBody({ pal }:{pal:MapPalette}) {
   return (
     <svg
       viewBox="0 0 1000 600"
@@ -298,7 +317,7 @@ function WaterBody({ pal }) {
   );
 }
 
-function CastleView({ level }) {
+function CastleView({ level }:{level:GameSnapshot['castleLevel']}) {
   const w = 44 + level * 10;
   const h = 34 + level * 8;
   const stoneColor = level >= 2 ? "#8a8078" : "#a08060";
@@ -479,7 +498,7 @@ function CastleView({ level }) {
 }
 
 /** Shared label for all building sprites */
-function BuildingLabel({ name }) {
+function BuildingLabel({ name }:{name:string}) {
   return (
     <span style={{
       fontSize: "9px",
@@ -499,7 +518,7 @@ function BuildingLabel({ name }) {
 }
 
 /** Coal Pit — dark mound with glowing embers and smoke hole */
-function CoalPitSprite({ x, y }) {
+function CoalPitSprite({ x, y }:MapPoint) {
   return (
     <div style={{
       position: "absolute", left: `${x}%`, top: `${y}%`,
@@ -548,7 +567,7 @@ function CoalPitSprite({ x, y }) {
 }
 
 /** Tannery — low workshop with drying hides on a rack */
-function TannerySprite({ x, y }) {
+function TannerySprite({ x, y }:MapPoint) {
   return (
     <div style={{
       position: "absolute", left: `${x}%`, top: `${y}%`,
@@ -612,7 +631,7 @@ function TannerySprite({ x, y }) {
 }
 
 /** Sawmill — building with spinning saw blade wheel */
-function SawmillSprite({ x, y }) {
+function SawmillSprite({ x, y }:MapPoint) {
   return (
     <div style={{
       position: "absolute", left: `${x}%`, top: `${y}%`,
@@ -683,7 +702,7 @@ function SawmillSprite({ x, y }) {
 }
 
 /** Smelter — stone furnace with chimney, orange glow, and heavy smoke */
-function SmelterSprite({ x, y }) {
+function SmelterSprite({ x, y }:MapPoint) {
   return (
     <div style={{
       position: "absolute", left: `${x}%`, top: `${y}%`,
@@ -752,32 +771,20 @@ function SmelterSprite({ x, y }) {
   );
 }
 
-/** Custom forge sprites keyed by building ID */
-const FORGE_SPRITES = {
-  coal_pit: CoalPitSprite,
-  tannery: TannerySprite,
-  sawmill: SawmillSprite,
-  smelter: SmelterSprite,
-};
-
-function BuildingSprite({ buildingId, x, y }) {
-  const def = BUILDINGS[buildingId];
-  if (!def) return null;
-
-  // Use custom sprite for forge buildings
-  const CustomSprite = FORGE_SPRITES[buildingId];
-  if (CustomSprite) return <CustomSprite x={x} y={y} />;
-
-  const ROOF = {
+const ROOF = {
     common: "#a08060",
     uncommon: "#6b8f5b",
     rare: "#7b5ea7",
-  };
-  const WALL = {
+} satisfies Readonly<Record<BuildingDefinition['rarity'],string>>;
+const WALL = {
     common: "#e8d5a3",
     uncommon: "#d8e8d0",
     rare: "#d8d0e8",
-  };
+} satisfies Readonly<Record<BuildingDefinition['rarity'],string>>;
+
+/** Slot-backed buildings use generic artwork; the four Forge fixtures render separately below. */
+function BuildingSprite({ buildingId, x, y }:MapPoint & {buildingId:MapBuildingId}) {
+  const def = BUILDINGS[buildingId];
 
   return (
     <div
@@ -837,7 +844,7 @@ function BuildingSprite({ buildingId, x, y }) {
   );
 }
 
-function WalkingPeasant({ pathIndex, duration, delay }) {
+function WalkingPeasant({ pathIndex, duration, delay }:{pathIndex:number;duration:number;delay:number}) {
   return (
     <div
       style={{
@@ -857,7 +864,7 @@ function WalkingPeasant({ pathIndex, duration, delay }) {
   );
 }
 
-function SmokePuff({ x, y, delay }) {
+function SmokePuff({ x, y, delay }:MapPoint & {delay:number}) {
   return (
     <div
       style={{
@@ -881,13 +888,13 @@ function SmokePuff({ x, y, delay }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMarket }) {
+export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMarket }:MapViewProps) {
   const { buildings, castleLevel, population, season } = state;
   const pal = SEASON_PALETTE[season] || SEASON_PALETTE.spring;
 
   // Count built instances of each building type
   const counts = useMemo(() => {
-    const c = {};
+    const c:Partial<Record<BuildingId,number>> = {};
     buildings.forEach((b) => {
       const id = typeof b === "string" ? b : b.type;
       c[id] = (c[id] || 0) + 1;
@@ -905,7 +912,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
       { x: 74, y: 58 },   // coal pit (permanent)
       { x: 74, y: 44 },   // smelter (permanent)
     ];
-    const smokers = ["brewery", "fulling_mill", "iron_mine"];
+    const smokers = ["brewery", "fulling_mill", "iron_mine"] as const;
     smokers.forEach((id) => {
       if (counts[id]) {
         const spot = BUILDING_SPOTS[id]?.[0];
@@ -1112,8 +1119,9 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
         ))}
 
         {/* ---- BUILDINGS ---- */}
-        {Object.entries(BUILDING_SPOTS).map(([id, positions]) =>
-          positions.map((pos, i) => {
+        {Object.entries(BUILDING_SPOTS).map(([id, positions]) => {
+          if (!isMapBuildingId(id)) return null;
+          return positions.map((pos, i) => {
             const built = (counts[id] || 0) > i;
             if (!built) return null;
             return (
@@ -1124,8 +1132,8 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
                 y={pos.y}
               />
             );
-          })
-        )}
+          });
+        })}
 
         {/* ---- CASTLE ---- */}
         <CastleView level={castleLevel} />
@@ -1467,7 +1475,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
 // Legend helpers
 // ---------------------------------------------------------------------------
 
-function LegendSwatch({ color, label }) {
+function LegendSwatch({ color, label }:{color:string;label:string}) {
   return (
     <span className="flex items-center gap-1" style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
       <span style={{
@@ -1483,7 +1491,7 @@ function LegendSwatch({ color, label }) {
   );
 }
 
-function LegendDot({ color, label }) {
+function LegendDot({ color, label }:{color:string;label:string}) {
   return (
     <span className="flex items-center gap-1" style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
       <span style={{
@@ -1502,7 +1510,7 @@ function LegendDivider() {
   return <span style={{ fontSize: "11px", color: "#6a5a42" }}>|</span>;
 }
 
-function LegendText({ label }) {
+function LegendText({ label }:{label:string}) {
   return (
     <span style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
       {label}
