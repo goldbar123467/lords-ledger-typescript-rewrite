@@ -13,3 +13,7 @@ Plowshare's authored food production +5% multiplies new food building/converter 
 ## Construction Nails
 
 A working known Nails item in equipped reduces Estate BUILD_BUILDING and UPGRADE_BUILDING quotes to ceil(authored cost×0.95) whole denarii. One type applies once; stored/broken/anonymous tools do not discount. Grade influences sale value but does not scale the fixed construction rate. Both eligibility and payment use the quote; card prices, action text and shortfalls agree. Existing repair/refund and building prerequisites/plots/limits retain their rules. Shared forgeTools.ts now owns working-tool eligibility and descriptions for the three implemented tool types, with agriculture domain helpers delegating to it. No new saved flag, normalized historical record or random draw is required.
+
+## Hinges & Fittings
+
+The authored building-quality5% is interpreted as5% less seasonal condition wear because buildings already start at100% condition. Apply this to the previously rounded wear and settle protected condition to hundredths; preserve old arithmetic without a working deployed tool. One type applies once, with existing shared quality/UID eligibility and no new save fields or RNG. Economy still uses starting condition before wear. Estate's after-wear forecast shares the helper and excludes future event damage. Fractional poor/ruined warnings now use the same50/25 thresholds as production; display avoids rounding into a healthier tier. This is an explicit new mechanic, not an archived interpretation.

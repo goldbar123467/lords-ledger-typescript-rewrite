@@ -1,9 +1,9 @@
 import {FORGEABLE_ITEMS} from '../data/blacksmith.ts';
-export type DeployableToolId = 'plowshare' | 'scythe' | 'nails';
+export type DeployableToolId = 'plowshare' | 'scythe' | 'nails' | 'hinges_fittings';
 interface WorkingTool {readonly uid: number; readonly itemId: DeployableToolId; readonly category: 'tool'; readonly grade: string; readonly qualityScore?: number | null}
 function record(value: unknown): value is Record<string, unknown> {return typeof value === 'object' && value !== null && !Array.isArray(value);}
 export function getDeployableTool(id: unknown) {
- return id === 'plowshare' || id === 'scythe' || id === 'nails' ? FORGEABLE_ITEMS[id] : null;
+ return id === 'plowshare' || id === 'scythe' || id === 'nails' || id === 'hinges_fittings' ? FORGEABLE_ITEMS[id] : null;
 }
 /** Only known working tools grant their fixed authored utility. Preserve original owned records. */
 export function isWorkingTool(value: unknown): value is WorkingTool {
@@ -19,7 +19,7 @@ export function getDeployedToolIds(blacksmith: unknown): ReadonlySet<DeployableT
  return ids;
 }
 export function getToolDescription(id: unknown): string {
- return id === 'plowshare' ? 'Food production +5%, including garden grain.' : id === 'scythe' ? 'Farm grain output +5% per season.' : id === 'nails' ? 'Estate building and upgrade costs -5%, rounded up to whole denarii.' : '';
+ return id === 'plowshare' ? 'Food production +5%, including garden grain.' : id === 'scythe' ? 'Farm grain output +5% per season.' : id === 'nails' ? 'Estate building and upgrade costs -5%, rounded up to whole denarii.' : id === 'hinges_fittings' ? 'Seasonal building wear -5%.' : '';
 }
 /** Construction prices remain whole denarii; round up so the discount never exceeds 5%. */
 export function getConstructionCost(baseCost: number, blacksmith: unknown): number {
@@ -28,9 +28,9 @@ export function getConstructionCost(baseCost: number, blacksmith: unknown): numb
 
 export function getToolDeploymentDescription(id: unknown): string {
  const description = getToolDescription(id);
- return description ? description + (id === 'nails' ? ' One of each tool applies.' : ' One of each tool applies; outputs round to whole units.') : '';
+ return description ? description + (id === 'nails' || id === 'hinges_fittings' ? ' One of each tool applies.' : ' One of each tool applies; outputs round to whole units.') : '';
 }
 
 export function getBrokenToolDescription(id: unknown): string {
- return id === 'nails' ? 'Broken tool. Provides no construction discount.' : 'Broken tool. Provides no production bonus.';
+ return id === 'nails' ? 'Broken tool. Provides no construction discount.' : id === 'hinges_fittings' ? 'Broken tool. Provides no wear protection.' : 'Broken tool. Provides no production bonus.';
 }

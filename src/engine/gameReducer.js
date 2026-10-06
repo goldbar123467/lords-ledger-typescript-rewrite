@@ -48,6 +48,7 @@ import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
 import { planAudienceResponse } from "./audienceActions.ts";
 import { advancePeopleSeason } from "./advancePeopleSeason.ts";
+import {getConditionAfterSeason} from './buildingWear.ts';
 import {getConstructionCost} from './forgeTools.ts';
 import BUILDINGS from "../data/buildings.ts";
 import {
@@ -57,7 +58,6 @@ import {
   DEFENSE_UPGRADES, DEFENSE_UPGRADES_EASY,
   RECRUIT_COST, MAX_GARRISON,
   STARTING_TOTAL_PLOTS,
-  SEASON_DEGRADE_MULTIPLIERS,
 } from "../data/economy.ts";
 import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.ts";
 import { ALL_FLIPS, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.ts";
@@ -1220,15 +1220,8 @@ function reduceGame(state, action, random) {
       }
 
       // 3.5. BUILDING DEGRADATION — condition decays each season
-      const degradeMult = SEASON_DEGRADE_MULTIPLIERS[season] ?? 1.0;
-      const degradedBuildings = state.buildings.map((b) => {
-        if (typeof b === "string") return b; // Legacy string format — skip
-        const def = BUILDINGS[getBuildingType(b)];
-        const rate = def?.degradeRate ?? 5;
-        const loss = Math.round(rate * 0.5 * degradeMult);
-        const newCondition = Math.max(0, (b.condition ?? 100) - loss);
-        return { ...b, condition: newCondition };
-      });
+      const degradedBuildings = state.buildings.map((b) => typeof b === "string" ? b :
+        { ...b, condition: getConditionAfterSeason(b, season, state.blacksmith) });
 
       // Report condition warnings
       for (const b of degradedBuildings) {
@@ -1236,9 +1229,9 @@ function reduceGame(state, action, random) {
         const def = BUILDINGS[getBuildingType(b)];
         if (!def) continue;
         const orig = state.buildings.find((sb) => typeof sb !== "string" && sb.instanceId === b.instanceId);
-        if (b.condition <= 24 && orig && orig.condition > 24) {
+        if (b.condition < 25 && orig && orig.condition >= 25) {
           nextChronicle = addChronicle(nextChronicle, `Your ${def.name} has fallen into ruin and produces nothing until repaired.`, season, year, turn, "system");
-        } else if (b.condition <= 49 && b.condition > 24 && orig && orig.condition > 49) {
+        } else if (b.condition < 50 && b.condition >= 25 && orig && orig.condition >= 50) {
           nextChronicle = addChronicle(nextChronicle, `Your ${def.name} is in poor condition \u2014 output reduced by half.`, season, year, turn, "system");
         }
       }

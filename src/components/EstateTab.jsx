@@ -1,3 +1,4 @@
+import {getConditionAfterSeason, displayBuildingCondition} from '../engine/buildingWear.ts';
 import {getConstructionCost} from '../engine/forgeTools.ts';
 import {getBuildingOutput} from '../engine/economyEngine.ts';
 import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
@@ -566,7 +567,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
         <div className="flex items-center justify-between text-[11px] mb-0.5">
           <span style={{ color: "#a89070", fontFamily: '"Cinzel", serif' }}>Condition:</span>
           <span style={{ color: condLevel.color, fontWeight: 600 }}>
-            {condLevel.label} ({condition}%)
+            {condLevel.label} ({displayBuildingCondition(condition)}%)
           </span>
         </div>
         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#1a1612" }}>
@@ -580,6 +581,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
         </div>
       </div>
 
+      <p className="text-sm mb-2" style={{color: "#c8b090"}}>After seasonal wear: {displayBuildingCondition(getConditionAfterSeason(building, state.season, state.blacksmith))}%</p>
       {/* Stats */}
       <div className="text-sm space-y-0.5 mb-2">
         <div>
