@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Flame, Droplets, Star, Circle, X } from "lucide-react";
+import { useHallReadingFocus } from "../hooks/useHallReadingFocus.ts";
 
 import {
   FORGE_COLORS,
@@ -674,6 +675,7 @@ function ItemSelector({ resources, denarii, onSelect, onCancel }: {resources: Fo
 // ═══════════════════════════════════════════════════════════════
 
 export default function ForgingGame({ resources, onComplete, onCancel, commissionItem, completionUid, denarii }: ForgingGameProps) {
+  const revealFocusedControl = useHallReadingFocus();
   // Capture the completion UID at mount. Each phase owns exactly the data it needs.
   const [view, setView] = useState<ForgePhase>(() => commissionItem
     ? {phase: 'heating', item: commissionItem, attemptUid: completionUid}
@@ -706,7 +708,7 @@ export default function ForgingGame({ resources, onComplete, onCancel, commissio
   }, [view, onComplete]);
 
   return (
-    <div className="forge-minigame">
+    <div className="forge-minigame" onFocusCapture={revealFocusedControl}>
       {view.phase === 'select' && <ItemSelector resources={resources} denarii={denarii}
         onSelect={handleSelectItem} onCancel={onCancel} />}
       {view.phase === 'heating' && <HeatingPhase item={view.item} onComplete={handleHeatingComplete} />}
