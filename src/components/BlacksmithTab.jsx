@@ -1654,16 +1654,10 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }) {
 
   function executeSale() {
     if (!confirmSale) return;
-    const { buyer, item, price } = confirmSale;
+    const { buyer, item } = confirmSale;
     dispatch({
       type: "BLACKSMITH_SELL_ITEM",
-      payload: {
-        itemUid: item.uid,
-        price,
-        buyerName: buyer.name,
-        buyerId: buyer.id,
-        respectCost: buyer.respectCost || 0,
-      },
+      payload: {itemUid: item.uid, buyerId: buyer.id},
     });
     setConfirmSale(null);
   }

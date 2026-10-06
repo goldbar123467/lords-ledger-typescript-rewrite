@@ -46,7 +46,7 @@ export interface ForgeCommentaryState {
   }|null;
 }
 export interface ForgeBuyerState {
-  readonly greatHall?:{readonly rulingHistory?:readonly HallRuling[]|Readonly<{welcomedHenrik?:boolean}>|null}|null;
+  readonly greatHall?:{readonly compoundFlags?:Readonly<{welcomedHenrik?:boolean}>|null; readonly rulingHistory?:readonly HallRuling[]|Readonly<{welcomedHenrik?:boolean}>|null}|null;
 }
 export interface ForgePricingItem {readonly category:string;readonly grade?:string|null;readonly tradeValue?:number|null}
 
@@ -963,10 +963,10 @@ export const SEASONAL_BUYERS = [
  * Get buyers available this season, filtered by game state conditions.
  */
 export function getAvailableBuyers(season: ForgeSeason, state: ForgeBuyerState) {
-  const rulingHistory = state.greatHall?.rulingHistory || {};
+  const flags = state.greatHall?.compoundFlags;
   return SEASONAL_BUYERS.filter((buyer: ForgeBuyerDefinition) => {
     if (!buyer.seasons.includes(season)) return false;
-    if (buyer.requiresFlag && !('welcomedHenrik' in rulingHistory && rulingHistory.welcomedHenrik)) return false;
+    if (buyer.requiresFlag && flags?.welcomedHenrik !== true) return false;
     return true;
   });
 }

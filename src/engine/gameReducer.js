@@ -1,3 +1,4 @@
+import { planForgeItemAction } from './forgeItemActions.ts';
 import { planForgeCompletion } from './forgeCompletion.ts';
 import { planHallEventDismissal } from './hallConsequences.ts';
 import { planCouncilVote, planDecreeIssue, planDecreeRevocation } from './hallCivic.ts';
@@ -3263,103 +3264,14 @@ function reduceGame(state, action, random) {
       };
     }
 
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_EQUIP_ITEM — Move item from inventory to equipped
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_EQUIP_ITEM": {
-      const { itemUid } = action.payload ?? {};
-      const bs = state.blacksmith ?? {};
-      const inv = bs.inventory || [];
-      const item = inv.find(i => i.uid === itemUid);
-      if (!item) return state;
-
-      return {
-        ...state,
-        blacksmith: {
-          ...bs,
-          inventory: inv.filter(i => i.uid !== itemUid),
-          equipped: [...(bs.equipped || []), item],
-        },
-        chronicle: addChronicle(
-          state.chronicle,
-          `Equipped a ${item.grade} ${item.name} to the garrison (+${item.militaryBonus} military).`,
-          state.season, state.year, state.turn, "action"
-        ),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_SELL_ITEM — Sell item from inventory for gold
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_SELL_ITEM": {
-      const { itemUid } = action.payload ?? {};
-      const bs = state.blacksmith ?? {};
-      const inv = bs.inventory || [];
-      const item = inv.find(i => i.uid === itemUid);
-      if (!item) return state;
-
-      const sellPrice = action.payload?.price ?? item.tradeValue ?? 0;
-      return {
-        ...state,
-        denarii: state.denarii + sellPrice,
-        blacksmith: {
-          ...bs,
-          inventory: inv.filter(i => i.uid !== itemUid),
-          totalGoldEarned: (bs.totalGoldEarned || 0) + sellPrice,
-          salesThisSeason: (bs.salesThisSeason || 0) + 1,
-          soldToMortimer: bs.soldToMortimer || (action.payload?.buyerId === "mortimer_agent"),
-          godricRespect: action.payload?.respectCost
-            ? Math.max(0, Math.min(100, (bs.godricRespect || 50) + action.payload.respectCost))
-            : bs.godricRespect,
-        },
-        chronicle: addChronicle(
-          state.chronicle,
-          action.payload?.buyerName
-            ? `Sold a ${item.grade} ${item.name} to ${action.payload.buyerName} for ${sellPrice} denarii.`
-            : `Sold a ${item.grade} ${item.name} for ${sellPrice} denarii.`,
-          state.season, state.year, state.turn, "action"
-        ),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_SCRAP_ITEM — Destroy item, recover partial materials
-    // -----------------------------------------------------------------------
+    // Owned-item commands share validated identity, movement and chronicle integration.
+    case "BLACKSMITH_EQUIP_ITEM":
+    case "BLACKSMITH_SELL_ITEM":
     case "BLACKSMITH_SCRAP_ITEM": {
-      const { itemUid } = action.payload ?? {};
-      const bs = state.blacksmith ?? {};
-      const inv = bs.inventory || [];
-      const item = inv.find(i => i.uid === itemUid);
-      if (!item) return state;
-
-      const scrapInv = { ...state.inventory };
-      const recovered = {};
-      if (item.cost) {
-        for (const [key, amt] of Object.entries(item.cost)) {
-          if (key !== "gold" && amt > 0) {
-            const rec = Math.floor(amt * 0.4);
-            if (rec > 0) {
-              scrapInv[key] = (scrapInv[key] || 0) + rec;
-              recovered[key] = rec;
-            }
-          }
-        }
-      }
-      const recText = Object.entries(recovered).map(([k, v]) => `${v} ${k}`).join(", ");
-
-      return {
-        ...state,
-        inventory: scrapInv,
-        blacksmith: {
-          ...bs,
-          inventory: inv.filter(i => i.uid !== itemUid),
-        },
-        chronicle: addChronicle(
-          state.chronicle,
-          `Scrapped a ${item.grade} ${item.name}.${recText ? ` Recovered: ${recText}.` : ""}`,
-          state.season, state.year, state.turn, "action"
-        ),
-      };
+      const plan = planForgeItemAction(state, action.type, action.payload);
+      if (!plan) return state;
+      return {...state, ...plan.patch,
+        chronicle: addChronicle(state.chronicle, plan.message, state.season, state.year, state.turn, "action")};
     }
 
     // -----------------------------------------------------------------------
