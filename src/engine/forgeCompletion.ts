@@ -1,3 +1,4 @@
+import {getForgeSupplyStatus} from './forgeAncillaryActions.ts';
 import {FORGEABLE_ITEMS, FORGE_RESOURCES, calculateGrade, type ForgeItemId} from '../data/blacksmith.ts';
 export interface ForgeCompletionCommand {itemId:ForgeItemId; qualityScore:number; completionUid:number}
 interface CompletionContext {
@@ -24,9 +25,8 @@ export function planForgeCompletion(state:CompletionContext,payload:unknown) {
     !nonnegative(invested) || !nonnegative(respect) || respect>100 ||
     !array(inventory) || !array(equipped) || !array(log) ||
     [...inventory,...equipped].some(item=>!record(item) || !counter(item.uid) || item.uid<1 || item.uid>=uid)) return null;
- const supply=bs.activeSupplyEvent, duration=bs.supplyEventTurnsLeft ?? 0;
- if(!nonnegative(duration) || (supply!=null && (!record(supply) || typeof supply.effect!=='string')) ||
-    (record(supply) && supply.effect==='forging_disabled' && duration>0)) return null;
+ const supply=getForgeSupplyStatus(bs);
+ if(!supply || (supply.event?.effect==='forging_disabled' && supply.remaining>0)) return null;
  const recipe=FORGEABLE_ITEMS[payload.itemId], grade=calculateGrade(payload.qualityScore);
  if(state.denarii<recipe.cost.gold || FORGE_RESOURCES.some(({key: id})=>!nonnegative(state.inventory[id]) || state.inventory[id]<recipe.cost[id])) return null;
  const newInvested=invested+recipe.cost.gold;if(!Number.isFinite(newInvested) || newInvested>Number.MAX_SAFE_INTEGER) return null;

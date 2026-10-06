@@ -1,3 +1,4 @@
+import { planForgeAncillary, getForgeSupplyStatus } from './forgeAncillaryActions.ts';
 import { planForgeVisit } from './forgeVisits.ts';
 import { planForgeItemAction } from './forgeItemActions.ts';
 import { planForgeCompletion } from './forgeCompletion.ts';
@@ -75,7 +76,7 @@ import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_R
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.ts";
 import { getInitialPeopleState } from "../data/people.ts";
 import {
-  generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
+  generateForgeMarketPrices, rollForgeSupplyEvent,
 } from "../data/blacksmith.ts";
 
 // ---------------------------------------------------------------------------
@@ -1380,8 +1381,9 @@ function reduceGame(state, action, random) {
       forgeSeasonReset.marketPrices = currentForgePrices;
 
       // Supply event countdown
-      if (prevBs.supplyEventTurnsLeft > 0) {
-        forgeSeasonReset.supplyEventTurnsLeft = prevBs.supplyEventTurnsLeft - 1;
+      const currentSupply = getForgeSupplyStatus(prevBs);
+      if (currentSupply?.event && currentSupply.event.duration > 0) {
+        forgeSeasonReset.supplyEventTurnsLeft = Math.max(0, currentSupply.remaining - 1);
         if (forgeSeasonReset.supplyEventTurnsLeft <= 0) {
           forgeSeasonReset.activeSupplyEvent = null;
           nextChronicle = addChronicle(nextChronicle, "The forge supply disruption has ended.", season, year, turn, "system");
@@ -3278,35 +3280,15 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
     // BLACKSMITH_BUY_RESOURCE — Purchase forge materials from market
     // -----------------------------------------------------------------------
-    case "BLACKSMITH_BUY_RESOURCE": {
-      const { resource, quantity } = action.payload ?? {};
-      if (state.phase !== "management" || typeof resource !== "string" ||
-          !Object.hasOwn(RESOURCE_MARKET, resource) || !isPositiveQuantity(quantity)) return state;
-      const fallbackPrices = generateForgeMarketPrices(state.season, () => 0.5);
-      const unitPrice = state.blacksmith?.marketPrices?.[resource] ?? fallbackPrices[resource];
-      if (!isPositivePrice(unitPrice)) return state;
-      const totalCost = unitPrice * quantity;
-      if (!Number.isSafeInteger(totalCost)) return state;
-      if (state.denarii < totalCost) return state;
-
-      const buyInv = { ...state.inventory };
-      buyInv[resource] = (buyInv[resource] || 0) + quantity;
-
-      const bsBuy = state.blacksmith ?? {};
-      return {
-        ...state,
-        denarii: state.denarii - totalCost,
-        inventory: buyInv,
-        blacksmith: {
-          ...bsBuy,
-          totalGoldInvested: (bsBuy.totalGoldInvested || 0) + totalCost,
-        },
-        chronicle: addChronicle(
-          state.chronicle,
-          `Purchased ${quantity} ${resource} for ${totalCost} denarii.`,
-          state.season, state.year, state.turn, "action"
-        ),
-      };
+    case "BLACKSMITH_BUY_RESOURCE":
+    case "BLACKSMITH_ADVANCE_WAT":
+    case "BLACKSMITH_ADVANCE_BANTER":
+    case "BLACKSMITH_DISMISS_SUPPLY_EVENT":
+    case "BLACKSMITH_INVEST_IRON_VEIN": {
+      const plan = planForgeAncillary(state, action.type, action.payload);
+      if (!plan) return state;
+      return {...state, ...plan.patch,
+        ...(plan.message === null ? {} : {chronicle: addChronicle(state.chronicle, plan.message, state.season, state.year, state.turn, plan.chronicleKind)})};
     }
 
     // -----------------------------------------------------------------------
@@ -3315,101 +3297,6 @@ function reduceGame(state, action, random) {
     case "BLACKSMITH_VISIT": {
       const blacksmith = planForgeVisit(state);
       return blacksmith ? {...state, blacksmith} : state;
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_ADVANCE_WAT — Cycle Wat's fact index
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_ADVANCE_WAT": {
-      const bs = state.blacksmith ?? {};
-      return {
-        ...state,
-        blacksmith: {
-          ...bs,
-          watFactIndex: (bs.watFactIndex || 0) + 1,
-        },
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_ADVANCE_BANTER — Cycle banter index
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_ADVANCE_BANTER": {
-      const bs = state.blacksmith ?? {};
-      return {
-        ...state,
-        blacksmith: {
-          ...bs,
-          banterIndex: (bs.banterIndex || 0) + 1,
-        },
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_DISMISS_SUPPLY_EVENT — Clear after player reads
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_DISMISS_SUPPLY_EVENT": {
-      const bsEvt = state.blacksmith ?? {};
-      const supplyEvt = bsEvt.activeSupplyEvent;
-      if (!supplyEvt) return state;
-
-      let seInv = { ...state.inventory };
-      let seDenarii = state.denarii;
-      let seText = `Forge event: ${supplyEvt.name}.`;
-
-      if (supplyEvt.effect === "steel_bonus_5") {
-        seInv.steel = (seInv.steel || 0) + 5;
-        seText += " Acquired 5 superior steel bars.";
-      } else if (supplyEvt.effect === "iron_loss_30") {
-        const lost = Math.floor((seInv.iron || 0) * 0.3);
-        seInv.iron = Math.max(0, (seInv.iron || 0) - lost);
-        seText += ` Lost ${lost} iron to rust.`;
-      } else if (supplyEvt.effect === "royal_reward_50") {
-        seDenarii += 50;
-        seText += " Received 50 denarii from the Crown.";
-      }
-
-      return {
-        ...state,
-        denarii: seDenarii,
-        inventory: seInv,
-        blacksmith: {
-          ...bsEvt,
-          activeSupplyEvent: supplyEvt.duration > 0 ? supplyEvt : null,
-          supplyEventTurnsLeft: supplyEvt.duration > 0 ? supplyEvt.duration : 0,
-          usedSupplyEventIds: [...(bsEvt.usedSupplyEventIds || []), supplyEvt.id],
-        },
-        chronicle: addChronicle(state.chronicle, seText, state.season, state.year, state.turn, "event"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BLACKSMITH_INVEST_IRON_VEIN — Spend denarii for +iron/season
-    // -----------------------------------------------------------------------
-    case "BLACKSMITH_INVEST_IRON_VEIN": {
-      const bsVein = state.blacksmith ?? {};
-      const veinEvt = bsVein.activeSupplyEvent;
-      if (!veinEvt || veinEvt.effect !== "iron_investment") return state;
-      const veinCost = veinEvt.investCost || 30;
-      if (state.denarii < veinCost) return state;
-
-      return {
-        ...state,
-        denarii: state.denarii - veinCost,
-        blacksmith: {
-          ...bsVein,
-          ironVeinActive: true,
-          activeSupplyEvent: null,
-          supplyEventTurnsLeft: 0,
-          usedSupplyEventIds: [...(bsVein.usedSupplyEventIds || []), veinEvt.id],
-          totalGoldInvested: (bsVein.totalGoldInvested || 0) + veinCost,
-        },
-        chronicle: addChronicle(
-          state.chronicle,
-          `Invested ${veinCost} denarii in the iron vein. +${veinEvt.investReward || 3} iron per season.`,
-          state.season, state.year, state.turn, "action"
-        ),
-      };
     }
 
     // -----------------------------------------------------------------------

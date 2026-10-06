@@ -32,7 +32,6 @@ import {
   QUALITY_GRADES,
   DIFFICULTY_DISPLAY,
   RESOURCE_MARKET,
-  generateForgeMarketPrices,
   SCRAP_RECOVERY_RATE,
   getGodricRecommendation,
   GODRIC_RESPECT_TIERS,
@@ -49,6 +48,7 @@ import {
 } from "../data/blacksmith";
 import ForgingGame from "./ForgingGame";
 import { planForgeCompletion } from "../engine/forgeCompletion.ts";
+import {getForgeResourceQuote, getForgeSupplyStatus} from "../engine/forgeAncillaryActions.ts";
 
 // ─── View icon mapping ──────────────────────────────────────────
 const VIEW_ICONS = {
@@ -1412,15 +1412,12 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
 
 // ─── Storefront View ─────────────────────────────────────────
 
-function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, season }) {
+function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season }) {
   const [buyQty, setBuyQty] = useState({});
 
-  const prices = useMemo(() => {
-    return marketPrices || generateForgeMarketPrices(season, () => 0.5);
-  }, [marketPrices, season]);
-
   function handleBuy(resource, qty) {
-    const price = prices[resource] || 1;
+    const price = getForgeResourceQuote(resource, season, blacksmith);
+    if (price === null) return;
     const totalCost = price * qty;
     if (denarii < totalCost) return;
     dispatch({
@@ -1450,12 +1447,12 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
         {FORGE_RESOURCES.map((res) => {
           const marketInfo = RESOURCE_MARKET[res.key];
           if (!marketInfo) return null;
-          const price = prices[res.key] || marketInfo.basePrice;
+          const price = getForgeResourceQuote(res.key, season, blacksmith);
           const seasonMod = marketInfo.seasonal[season] || 1.0;
           const current = forgeResources[res.key] || 0;
           const qty = buyQty[res.key] || 1;
-          const totalCost = price * qty;
-          const canBuy = denarii >= totalCost;
+          const totalCost = price === null ? 0 : price * qty;
+          const canBuy = price !== null && denarii >= totalCost;
 
           // Price trend indicator
           const trend = seasonMod > 1.1 ? "high" : seasonMod < 0.9 ? "low" : "normal";
@@ -1492,7 +1489,7 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
                   )}
                 </div>
                 <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550" }}>
-                  In stock: {current} | Price: {price}d per {marketInfo.unit}
+                  In stock: {current} | Price: {price === null ? "Unavailable" : `${price}d`} per {marketInfo.unit}
                 </div>
               </div>
 
@@ -1526,7 +1523,7 @@ function StorefrontView({ forgeResources, denarii, marketPrices, dispatch, seaso
                 variant="gold"
                 style={{ fontSize: "0.55rem", padding: "4px 10px", whiteSpace: "nowrap" }}
               >
-                Buy {qty} ({totalCost}d)
+                {price === null ? "Unavailable" : `Buy ${qty} (${totalCost}d)`}
               </ForgeButton>
             </div>
           );
@@ -2068,11 +2065,11 @@ function ForgeLedger({ blacksmith, garrison }) {
 
 // ─── Supply Event Banner ──────────────────────────────────────
 
-function SupplyEventBanner({ event, onDismiss, onInvest, denarii }) {
+function SupplyEventBanner({ event, onDismiss, onInvest, denarii, acknowledged, remaining, ironVeinActive }) {
   if (!event) return null;
 
   const isInvestment = event.effect === "iron_investment";
-  const canInvest = isInvestment && denarii >= (event.investCost || 30);
+  const canInvest = isInvestment && !ironVeinActive && denarii >= event.investCost;
 
   return (
     <div
@@ -2100,10 +2097,11 @@ function SupplyEventBanner({ event, onDismiss, onInvest, denarii }) {
         </div>
       </div>
       <div className="flex gap-2" style={{ marginTop: 8 }}>
-        {isInvestment ? (
+        {acknowledged ? <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem"}}>Acknowledged.{remaining > 0 ? ` Supply conditions continue for ${remaining} season${remaining === 1 ? "" : "s"}.` : event.duration > 0 ? " Supply conditions have ended." : ""}</p> : (
+        isInvestment ? (
           <>
             <ForgeButton onClick={onInvest} disabled={!canInvest} variant="gold" style={{ fontSize: "0.6rem" }}>
-              Invest {event.investCost || 30}d
+              Invest {event.investCost}d
             </ForgeButton>
             <ForgeButton onClick={onDismiss} style={{ fontSize: "0.6rem" }}>
               Decline
@@ -2113,6 +2111,7 @@ function SupplyEventBanner({ event, onDismiss, onInvest, denarii }) {
           <ForgeButton onClick={onDismiss} style={{ fontSize: "0.6rem" }}>
             Acknowledged
           </ForgeButton>
+        )
         )}
       </div>
     </div>
@@ -2463,8 +2462,9 @@ export default function BlacksmithTab({ state, dispatch }) {
   const godricRec = useMemo(() => getGodricRecommendation(state), [state]);
   const season = state.season || "spring";
   const buyers = useMemo(() => getAvailableBuyers(season, state), [season, state]);
-  const supplyEvent = bs.activeSupplyEvent;
-  const forgingDisabled = supplyEvent?.effect === "forging_disabled" && (bs.supplyEventTurnsLeft || 0) > 0;
+  const supplyStatus = getForgeSupplyStatus(bs);
+  const supplyEvent = supplyStatus?.event;
+  const forgingDisabled = supplyEvent?.effect === "forging_disabled" && supplyStatus.remaining > 0;
 
   // NPC derived state
   const respect = bs.godricRespect ?? 50;
@@ -2579,6 +2579,9 @@ export default function BlacksmithTab({ state, dispatch }) {
         {supplyEvent && (
           <SupplyEventBanner
             event={supplyEvent}
+            remaining={supplyStatus.remaining}
+            acknowledged={Array.isArray(bs.usedSupplyEventIds) && bs.usedSupplyEventIds.includes(supplyEvent.id)}
+            ironVeinActive={bs.ironVeinActive === true}
             onDismiss={handleDismissSupplyEvent}
             onInvest={handleInvestIronVein}
             denarii={state.denarii || 0}
@@ -2676,7 +2679,7 @@ export default function BlacksmithTab({ state, dispatch }) {
           <StorefrontView
             forgeResources={forgeResources}
             denarii={state.denarii || 0}
-            marketPrices={bs.marketPrices}
+            blacksmith={bs}
             dispatch={dispatch}
             season={season}
           />
