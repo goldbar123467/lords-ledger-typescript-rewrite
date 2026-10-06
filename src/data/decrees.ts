@@ -23,6 +23,31 @@ export interface HallMeterEffects {
   military: number;
 }
 
+export interface DecreeDefinition {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly flavor: string;
+  readonly effects: Readonly<HallMeterEffects>;
+  readonly duration: 'permanent' | '1 event';
+  readonly revokable: boolean;
+}
+export type CouncilAdvisorId = 'edmund' | 'aldous' | 'wulf' | 'margery';
+export interface CouncilChoice {
+  readonly id: string;
+  readonly label: string;
+  readonly consequences: Readonly<HallMeterEffects>;
+  readonly aftermath: string;
+}
+export interface CouncilTopic {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly advisors: Readonly<Record<CouncilAdvisorId, { readonly position: 'support' | 'oppose' | 'neutral'; readonly speech: string }>>;
+  readonly options: readonly [CouncilChoice, ...CouncilChoice[]];
+  readonly historicalNote: string;
+}
+
 interface FeastOption {
   id: string;
   label: string;
@@ -231,7 +256,7 @@ export const DECREE_OPTIONS = [
     revokable: true,
   },
 
-];
+] as const satisfies readonly DecreeDefinition[];
 
 
 // ═══════════════════════════════════════════════════════════════════
@@ -584,7 +609,7 @@ export const COUNCIL_TOPICS = [
       "constant challenge.",
   },
 
-];
+] as const satisfies readonly CouncilTopic[];
 
 
 // ═══════════════════════════════════════════════════════════════════
@@ -700,3 +725,7 @@ export const FEAST_DATA = {
   ],
 
 } as const satisfies FeastData;
+
+export type DecreeId = typeof DECREE_OPTIONS[number]['id'];
+export type CouncilTopicId = typeof COUNCIL_TOPICS[number]['id'];
+export type CouncilChoiceId = typeof COUNCIL_TOPICS[number]['options'][number]['id'];

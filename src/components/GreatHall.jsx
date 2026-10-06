@@ -1,3 +1,4 @@
+import { getAvailableCouncilTopic, isCouncilUnlocked } from '../engine/hallCivic.ts';
 /**
  * GreatHall.jsx
  *
@@ -24,7 +25,7 @@ import {
 } from "../data/greatHall";
 import { getAvailableDisputes } from "../engine/disputeActions.ts";
 import AUDIENCE_ENCOUNTERS from "../data/audience";
-import { DECREE_OPTIONS, COUNCIL_TOPICS, FEAST_DATA } from "../data/decrees";
+import { DECREE_OPTIONS, FEAST_DATA } from "../data/decrees";
 import DisputeScreen from "./DisputeScreen";
 import AudienceChamber from "./AudienceChamber";
 import DecreeDesk from "./DecreeDesk";
@@ -893,13 +894,13 @@ export default function GreatHall({ state, dispatch }) {
     ).slice(0, 5);
   }, [audienceResolvedIds]);
 
-  // Council: pick the first unresolved topic (1 per season)
+  // Council: authored order, first unresolved topic.
   const councilTopic = useMemo(() => {
-    return COUNCIL_TOPICS.find((t) => !councilResolvedIds.includes(t.id)) || null;
+    return getAvailableCouncilTopic(councilResolvedIds);
   }, [councilResolvedIds]);
 
   // Council unlock: turn >= 4 or people meter > 70
-  const councilUnlocked = (state.turn || 1) >= 4 || meters.people > 70;
+  const councilUnlocked = isCouncilUnlocked(state.turn || 1, meters.people);
 
   // ─── View switching (refreshes Edmund line) ────────────────────
 
@@ -936,10 +937,10 @@ export default function GreatHall({ state, dispatch }) {
     });
   };
 
-  const handleIssueDecree = (decreeId, effects) => {
+  const handleIssueDecree = (decreeId) => {
     dispatch({
       type: "HALL_ISSUE_DECREE",
-      payload: { decreeId, effects },
+      payload: { decreeId },
     });
   };
 
@@ -950,10 +951,10 @@ export default function GreatHall({ state, dispatch }) {
     });
   };
 
-  const handleCouncilVote = (topicId, optionId, consequences) => {
+  const handleCouncilVote = (topicId, optionId) => {
     dispatch({
       type: "HALL_COUNCIL_VOTE",
-      payload: { topicId, optionId, consequences },
+      payload: { topicId, optionId },
     });
   };
 

@@ -1,3 +1,4 @@
+import { validateHallCivicState } from '../engine/hallCivic.ts';
 /** Browser storage boundary. The legacy key is read only during explicit import. */
 import seasonalEvents from '../data/seasonalEvents.ts';
 import randomEvents from '../data/randomEvents.ts';
@@ -329,6 +330,8 @@ function validateSnapshot(value: unknown): string | null {
   if (hallIssue) return hallIssue;
   const disputeIssue = validateHallDisputeState(value.greatHall);
   if (disputeIssue) return disputeIssue;
+  const civicIssue = validateHallCivicState(value.greatHall);
+  if (civicIssue) return civicIssue;
 
   const hall = value.greatHall;
   if (!isRecord(hall)) return 'Save Great Hall state is invalid.';

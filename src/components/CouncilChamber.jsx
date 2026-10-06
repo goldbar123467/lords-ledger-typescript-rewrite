@@ -393,24 +393,27 @@ function NoTopicView({ onReturn }) {
 export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLocked }) {
   // Steps: "debate" | "voted"
   const [step, setStep] = useState("debate");
+  const [votedTopic, setVotedTopic] = useState(null);
+  const currentTopic = step === "voted" ? votedTopic : topic;
   const [selectedOption, setSelectedOption] = useState(null);
   const [hoveredOption, setHoveredOption] = useState(null);
   const [showHistNote, setShowHistNote] = useState(false);
 
   // ── Locked state
-  if (isLocked) {
+  if (isLocked && step !== "voted") {
     return <LockedView onReturn={onReturn} />;
   }
 
   // ── No topic available
-  if (!topic) {
+  if (!currentTopic) {
     return <NoTopicView onReturn={onReturn} />;
   }
 
   // ── Handle vote
   const handleVote = (option) => {
+    setVotedTopic(currentTopic);
     setSelectedOption(option);
-    onVote(topic.id, option.id, option.consequences);
+    onVote(currentTopic.id, option.id);
     setStep("voted");
   };
 
@@ -482,7 +485,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
                 margin: "6px 0 8px",
               }}
             >
-              {topic.title}
+              {currentTopic.title}
             </h4>
             <p
               style={{
@@ -493,7 +496,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
                 margin: 0,
               }}
             >
-              {topic.description}
+              {currentTopic.description}
             </p>
           </div>
 
@@ -514,7 +517,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {advisorKeys.map((key) => {
-                const topicAdvisor = topic.advisors?.[key];
+                const topicAdvisor = currentTopic.advisors?.[key];
                 if (!topicAdvisor) return null;
                 return (
                   <AdvisorSeat
@@ -543,7 +546,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
               Your Decision
             </span>
             <div className="flex flex-col gap-3">
-              {topic.options.map((option) => (
+              {currentTopic.options.map((option) => (
                 <button
                   key={option.id}
                   className="ruling-card"
@@ -741,7 +744,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
           </div>
 
           {/* Historical Note toggle */}
-          {topic.historicalNote && (
+          {currentTopic.historicalNote && (
             <div style={{ maxWidth: 500, margin: "0 auto 16px" }}>
               <button
                 onClick={() => setShowHistNote(!showHistNote)}
@@ -790,7 +793,7 @@ export default function CouncilChamber({ topic, advisors, onVote, onReturn, isLo
                       margin: 0,
                     }}
                   >
-                    {topic.historicalNote}
+                    {currentTopic.historicalNote}
                   </p>
                 </div>
               )}

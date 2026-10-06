@@ -204,7 +204,7 @@ export default function DecreeDesk({
 
   const handleSeal = useCallback(() => {
     if (!selectedDecree || !canSeal) return;
-    onIssue(selectedDecree.id, selectedDecree.effects);
+    onIssue(selectedDecree.id);
     setView("sealed");
   }, [selectedDecree, canSeal, onIssue]);
 

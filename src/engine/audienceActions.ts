@@ -1,3 +1,4 @@
+import { applyHallMeterEffects } from './hallMeters.ts';
 import encounters from '../data/audience.ts';
 import type { HallMeterEffects } from '../data/decrees.ts';
 
@@ -32,18 +33,11 @@ export function planAudienceResponse(state: AudienceCommandState, payload: unkno
   const resolved = state.greatHall.audienceResolved ?? [];
   if (!response || !Array.isArray(resolved) || resolved.includes(encounterId)) return null;
   const consequences = { ...response.consequences };
-  const previous = state.greatHall.meters;
-  const clamp = (value: number) => Math.max(0, Math.min(100, value));
   const details = Object.entries(consequences).filter(([, value]) => value !== 0)
     .map(([key, value]) => `${key.charAt(0).toUpperCase() + key.slice(1)} ${value > 0 ? '+' : ''}${value}`);
   return {
     encounterId, consequences,
-    meters: {
-      people: clamp(previous.people + consequences.people),
-      treasury: clamp(previous.treasury + consequences.treasury),
-      church: clamp(previous.church + consequences.church),
-      military: clamp(previous.military + consequences.military),
-    },
+    meters: applyHallMeterEffects(state.greatHall.meters, consequences),
     stewardTrust: Math.min(100, (state.greatHall.stewardTrust ?? 50) + 1),
     chronicleText: `Held audience in the Great Hall${details.length > 0 ? ` (${details.join(', ')})` : ''}`,
   };

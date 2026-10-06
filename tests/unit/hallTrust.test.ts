@@ -22,7 +22,7 @@ test('Hall rewards preserve zero and fractional trust through save continuation'
   if (!topic || !option) throw new Error('Missing authored council choice');
   for (const trust of [0,.5,30.5,50.5,85.5,99,100]) {
     const base=createInitialState(104);
-    const state={...base,phase:'management',greatHall:{...base.greatHall,stewardTrust:trust}};
+    const state={...base,phase:'management',greatHall:{...base.greatHall,stewardTrust:trust,meters:{...base.greatHall.meters,people:71}}};
     const before=structuredClone(state);
     const cases: readonly {action:{type:string;payload:object};gain:number}[]=[
       {action:{type:'HALL_AUDIENCE_RESPOND',payload:{encounterId:'aud_001',responseIndex:0}},gain:1},

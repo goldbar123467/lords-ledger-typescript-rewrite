@@ -1,3 +1,4 @@
+import { applyHallMeterEffects } from './hallMeters.ts';
 import disputes, {type DisputeId, type DisputeRuling} from '../data/disputes.ts';
 import type {HallRuling} from '../data/greatHall.ts';
 import type {HallMeterEffects} from '../data/decrees.ts';
@@ -33,15 +34,8 @@ export function planDisputeRuling(state: DisputeCommandState, payload: unknown) 
   const ruling = dispute?.rulings.find(r => r.id === rulingId);
   if (!dispute || !ruling) return null;
   const consequences = {...ruling.consequences};
-  const previous = state.greatHall.meters;
-  const clamp = (value: number) => Math.max(0, Math.min(100, value));
   return {
     disputeId: dispute.id, rulingId: ruling.id, decree: ruling.decree, consequences,
-    meters: {
-      people: clamp(previous.people + consequences.people),
-      treasury: clamp(previous.treasury + consequences.treasury),
-      church: clamp(previous.church + consequences.church),
-      military: clamp(previous.military + consequences.military),
-    },
+    meters: applyHallMeterEffects(state.greatHall.meters, consequences),
   };
 }

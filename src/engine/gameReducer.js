@@ -1,3 +1,4 @@
+import { planCouncilVote, planDecreeIssue, planDecreeRevocation } from './hallCivic.ts';
 import { planDisputeRuling } from './disputeActions.ts';
 /**
  * gameReducer.js
@@ -2950,17 +2951,10 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_ISSUE_DECREE": {
-      const { decreeId, effects } = action.payload;
+      const plan = planDecreeIssue(state, action.payload);
+      if (!plan) return state;
+      const { decreeId, effects, used, meters: newMeters } = plan;
       const prevHall = state.greatHall;
-      const prevMeters = prevHall.meters;
-
-      const clamp = (v) => Math.max(0, Math.min(100, v));
-      const newMeters = {
-        people: clamp(prevMeters.people + (effects.people || 0)),
-        treasury: clamp(prevMeters.treasury + (effects.treasury || 0)),
-        church: clamp(prevMeters.church + (effects.church || 0)),
-        military: clamp(prevMeters.military + (effects.military || 0)),
-      };
 
       const conParts = Object.entries(effects)
         .filter(([, v]) => v !== 0)
@@ -2980,8 +2974,8 @@ function reduceGame(state, action, random) {
         greatHall: {
           ...prevHall,
           meters: newMeters,
-          activeDecrees: [...prevHall.activeDecrees, decreeId],
-          decreeSlotsUsed: prevHall.decreeSlotsUsed + 1,
+          activeDecrees: [...(prevHall.activeDecrees ?? []), decreeId],
+          decreeSlotsUsed: used,
           hallLog: [...(prevHall.hallLog || []), decreeLogEntry],
         },
         chronicle: addChronicle(
@@ -2997,7 +2991,9 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_REVOKE_DECREE": {
-      const { decreeId } = action.payload;
+      const plan = planDecreeRevocation(state, action.payload);
+      if (!plan) return state;
+      const { decreeId, activeDecrees } = plan;
       const prevHall = state.greatHall;
 
       // Phase 5: Hall log
@@ -3011,7 +3007,7 @@ function reduceGame(state, action, random) {
         ...state,
         greatHall: {
           ...prevHall,
-          activeDecrees: prevHall.activeDecrees.filter((id) => id !== decreeId),
+          activeDecrees,
           hallLog: [...(prevHall.hallLog || []), revokeLogEntry],
         },
         chronicle: addChronicle(
@@ -3027,17 +3023,10 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_COUNCIL_VOTE": {
-      const { topicId, consequences } = action.payload;
+      const plan = planCouncilVote(state, action.payload);
+      if (!plan) return state;
+      const { topicId, consequences, meters: newMeters } = plan;
       const prevHall = state.greatHall;
-      const prevMeters = prevHall.meters;
-
-      const clamp = (v) => Math.max(0, Math.min(100, v));
-      const newMeters = {
-        people: clamp(prevMeters.people + (consequences.people || 0)),
-        treasury: clamp(prevMeters.treasury + (consequences.treasury || 0)),
-        church: clamp(prevMeters.church + (consequences.church || 0)),
-        military: clamp(prevMeters.military + (consequences.military || 0)),
-      };
 
       const conParts = Object.entries(consequences)
         .filter(([, v]) => v !== 0)
@@ -3060,7 +3049,7 @@ function reduceGame(state, action, random) {
         greatHall: {
           ...prevHall,
           meters: newMeters,
-          councilResolved: [...prevHall.councilResolved, topicId],
+          councilResolved: [...(prevHall.councilResolved ?? []), topicId],
           stewardTrust: cncTrust,
           hallLog: [...(prevHall.hallLog || []), councilLogEntry],
         },
