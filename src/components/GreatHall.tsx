@@ -1,7 +1,8 @@
+import {getChandelierPrestigeBonus} from "../engine/forgeTools.ts";
 import type {ForgeSaveState} from '../engine/forgeState.ts';
 import { useEffect, useLayoutEffect, useRef, useState, type Dispatch } from 'react';
 import { Scale, Users, ScrollText, Landmark, Utensils, Shield, AlertTriangle, Star, BookOpen } from 'lucide-react';
-import { AMBIENT_TEXTS, DEFAULT_METERS, selectEdmundLine, getTrustTier, getEdmundMood, REPUTATION_TRACKS, COMPOUND_RULES } from '../data/greatHall.ts';
+import { computeReputation, AMBIENT_TEXTS, DEFAULT_METERS, selectEdmundLine, getTrustTier, getEdmundMood, REPUTATION_TRACKS, COMPOUND_RULES } from '../data/greatHall.ts';
 import type { Dispute, DisputeId } from '../data/disputes.ts';
 import type { SEASON_INFO } from '../data/economy.ts';
 import AUDIENCE_ENCOUNTERS from '../data/audience.ts';
@@ -90,11 +91,11 @@ function SeasonSummary({ state, onReturn }: { state: GreatHallState; onReturn: (
     <HallButton onClick={onReturn}>Return to Throne</HallButton>
   </div>;
 }
-function ThroneRoom({ state, line, disputes, onSelect }: {
-  state: GreatHallState; line: string; disputes: readonly SelectedDispute[]; onSelect: (dispute: SelectedDispute) => void;
+function ThroneRoom({ state, line, disputes, onSelect, reputationTrack }: {
+  reputationTrack: GreatHallState['greatHall']['reputationTrack']; state: GreatHallState; line: string; disputes: readonly SelectedDispute[]; onSelect: (dispute: SelectedDispute) => void;
 }) {
   const trust = state.greatHall.stewardTrust ?? 50, mood = getEdmundMood(state.greatHall.meters.treasury);
-  const track = state.greatHall.reputationTrack;
+  const track = reputationTrack;
   return <div className="hall-throne">
     <header className="hall-seat"><Scale aria-hidden="true" /><h3>The Seat of Judgment</h3>
       <p>From this throne, the lord hears the disputes of the land and shapes the fate of the manor.</p>
@@ -120,6 +121,10 @@ function ThroneRoom({ state, line, disputes, onSelect }: {
 export default function GreatHall({ state, dispatch }: GreatHallProps) {
   const [screen, setScreen] = useState<HallScreen>({kind: 'throne'});
   const hall = state.greatHall, trust = hall.stewardTrust ?? 50;
+  const prestige=getChandelierPrestigeBonus(state.blacksmith);
+  const currentReputation=prestige?computeReputation(hall.rulingHistory,prestige):null;
+  const displayedTitle=currentReputation?.track?currentReputation.title:hall.reputation||'Unknown Lord';
+  const displayedTrack=currentReputation?.track??hall.reputationTrack;
   const [line, setLine] = useState(() => selectEdmundLine(state, 'throne', trust));
   const [ambientIndex, setAmbientIndex] = useState(0), [ambientVisible, setAmbientVisible] = useState(true);
   const nav = useRef<HTMLElement>(null), activeTab = useRef<HTMLButtonElement>(null);
@@ -170,11 +175,12 @@ export default function GreatHall({ state, dispatch }: GreatHallProps) {
     if (!event.target.closest('.civic-view, .dispute-screen')) revealFocusedControl(event);
   }}>
     <header className="hall-heading"><Torch /><div><h2>The Great Hall</h2>
-      <p><span>{hall.reputation || 'Unknown Lord'}</span> &mdash; {state.season.charAt(0).toUpperCase() + state.season.slice(1)}, Year {state.year}</p>
+      <p><span>{displayedTitle}</span> &mdash; {state.season.charAt(0).toUpperCase() + state.season.slice(1)}, Year {state.year}</p>
+    {prestige>0&&<p role="status" className="hall-caption">Deployed Chandelier: +3 prestige toward reputation titles. Rulings determine your path; one working Chandelier applies.</p>}
     </div><Torch /></header>
     <div className="hall-content">
       {hall.pendingHallEvent && <HallEventBanner event={hall.pendingHallEvent} onDismiss={() => dispatch({type:'HALL_DISMISS_EVENT'})} />}
-      {screen.kind === 'throne' && <ThroneRoom state={state} line={line} disputes={availableDisputes} onSelect={selectDispute} />}
+      {screen.kind === 'throne' && <ThroneRoom state={state} reputationTrack={displayedTrack} line={line} disputes={availableDisputes} onSelect={selectDispute} />}
       {screen.kind === 'dispute' && <DisputeScreen dispute={screen.dispute} onRule={(disputeId,rulingId) => dispatch({type:'HALL_RULE_DISPUTE',payload:{disputeId,rulingId}})} onReturn={toThrone} />}
       {screen.kind === 'audience' && <AudienceChamber encounters={availableAudience} resolvedIds={resolvedAudience} onRespond={(encounterId,responseIndex) => dispatch({type:'HALL_AUDIENCE_RESPOND',payload:{encounterId,responseIndex}})} onReturn={toThrone} />}
       {screen.kind === 'decrees' && <DecreeDesk decrees={DECREE_OPTIONS} activeDecreeIds={hall.activeDecrees ?? []} decreeSlots={2-(hall.decreeSlotsUsed ?? 0)} onIssue={decreeId => dispatch({type:'HALL_ISSUE_DECREE',payload:{decreeId}})} onRevoke={decreeId => dispatch({type:'HALL_REVOKE_DECREE',payload:{decreeId}})} onReturn={toThrone} />}

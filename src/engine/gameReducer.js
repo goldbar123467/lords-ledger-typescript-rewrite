@@ -1,3 +1,4 @@
+import {getChandelierPrestigeBonus} from "./forgeTools.ts";
 import { planForgeAncillary, planForgeTalk, getForgeSupplyStatus } from './forgeAncillaryActions.ts';
 import { planForgeVisit } from './forgeVisits.ts';
 import { planForgeItemAction } from './forgeItemActions.ts';
@@ -1861,7 +1862,7 @@ function reduceGame(state, action, random) {
       const advanceTrust = Math.max(0, Math.min(100, (prevHallAdvance.stewardTrust ?? 50) + trustDecay));
 
       // Phase 4: Recompute reputation from full ruling history each season
-      const advanceRep = computeReputation(prevHallAdvance.rulingHistory || []);
+      const advanceRep = computeReputation(prevHallAdvance.rulingHistory || [],getChandelierPrestigeBonus(state.blacksmith));
 
       // Phase 5: Snapshot meter history for trend tracking
       const prevMeterHistory = prevHallAdvance.meterHistory || [];
@@ -2853,7 +2854,7 @@ function reduceGame(state, action, random) {
 
       // Phase 4: Compute reputation from cumulative ruling patterns
       const newHistory = [...(prevHall.rulingHistory ?? []), rulingEntry];
-      const repResult = computeReputation(newHistory);
+      const repResult = computeReputation(newHistory,getChandelierPrestigeBonus(state.blacksmith));
 
       // Phase 4: Trust shifts — small trust bump for each ruling (engagement reward)
       const trustDelta = 2;

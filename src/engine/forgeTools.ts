@@ -1,10 +1,11 @@
 import {FORGEABLE_ITEMS} from '../data/blacksmith.ts';
-export type DeployableToolId = 'plowshare' | 'scythe' | 'nails' | 'hinges_fittings' | 'church_bell' | 'lock_key' | 'cauldron' | 'horseshoes' | 'weather_vane';
+export type DeployableToolId = 'plowshare' | 'scythe' | 'nails' | 'hinges_fittings' | 'church_bell' | 'lock_key' | 'cauldron' | 'horseshoes' | 'weather_vane' | 'chandelier';
 export const CAULDRON_FEAST_BONUS = 3;
+export const CHANDELIER_PRESTIGE_BONUS = 3;
 interface WorkingTool {readonly uid: number; readonly itemId: DeployableToolId; readonly category: 'tool'; readonly grade: string; readonly qualityScore?: number | null}
 function record(value: unknown): value is Record<string, unknown> {return typeof value === 'object' && value !== null && !Array.isArray(value);}
 export function getDeployableTool(id: unknown) {
- return id === 'plowshare' || id === 'scythe' || id === 'nails' || id === 'hinges_fittings' || id === 'church_bell' || id === 'lock_key' || id === 'cauldron' || id === 'horseshoes' || id === 'weather_vane' ? FORGEABLE_ITEMS[id] : null;
+ return id === 'plowshare' || id === 'scythe' || id === 'nails' || id === 'hinges_fittings' || id === 'church_bell' || id === 'lock_key' || id === 'cauldron' || id === 'horseshoes' || id === 'weather_vane' || id === 'chandelier' ? FORGEABLE_ITEMS[id] : null;
 }
 /** Only known working tools grant their fixed authored utility. Preserve original owned records. */
 export function isWorkingTool(value: unknown): value is WorkingTool {
@@ -20,7 +21,7 @@ export function getDeployedToolIds(blacksmith: unknown): ReadonlySet<DeployableT
  return ids;
 }
 export function getToolDescription(id: unknown): string {
- return id === 'weather_vane' ? 'Next-season Estate outlook: farm potential, food needs and building wear.' : id === 'plowshare' ? 'Food production +5%, including garden grain.' : id === 'scythe' ? 'Farm grain output +5% per season.' : id === 'nails' ? 'Estate building and upgrade costs -5%, rounded up to whole denarii.' : id === 'hinges_fittings' ? 'Seasonal building wear -5%.' : id === 'church_bell' ? 'Chapel Faith +8 on first working bell deployment, capped at 100.' : id === 'lock_key' ? 'Raid coin losses -5%, rounded up to whole denarii.' : id === 'cauldron' ? `Feast People approval +${CAULDRON_FEAST_BONUS}.` : id === 'horseshoes' ? 'Market trade-good sale proceeds +5%; bonus rounds to hundredths.' : '';
+ return id === 'chandelier' ? 'Great Hall prestige +3 toward earned reputation titles.' : id === 'weather_vane' ? 'Next-season Estate outlook: farm potential, food needs and building wear.' : id === 'plowshare' ? 'Food production +5%, including garden grain.' : id === 'scythe' ? 'Farm grain output +5% per season.' : id === 'nails' ? 'Estate building and upgrade costs -5%, rounded up to whole denarii.' : id === 'hinges_fittings' ? 'Seasonal building wear -5%.' : id === 'church_bell' ? 'Chapel Faith +8 on first working bell deployment, capped at 100.' : id === 'lock_key' ? 'Raid coin losses -5%, rounded up to whole denarii.' : id === 'cauldron' ? `Feast People approval +${CAULDRON_FEAST_BONUS}.` : id === 'horseshoes' ? 'Market trade-good sale proceeds +5%; bonus rounds to hundredths.' : '';
 }
 /** Construction prices remain whole denarii; round up so the discount never exceeds 5%. */
 export function getConstructionCost(baseCost: number, blacksmith: unknown): number {
@@ -29,11 +30,14 @@ export function getConstructionCost(baseCost: number, blacksmith: unknown): numb
 
 export function getToolDeploymentDescription(id: unknown): string {
  const description = getToolDescription(id);
+ if (id === 'chandelier') return description + ' Rulings determine your path. One working Chandelier applies.';
  if (id === 'weather_vane') return description + ' Based on current estate conditions; does not predict random events. One working vane applies.';
  if (id === 'church_bell') return description + ' Additional bells give no extra Faith.';
  return description ? description + (id === 'nails' || id === 'hinges_fittings' || id === 'lock_key' || id === 'cauldron' || id === 'horseshoes' ? ' One of each tool applies.' : ' One of each tool applies; outputs round to whole units.') : '';
 }
 
 export function getBrokenToolDescription(id: unknown): string {
- return id === 'weather_vane' ? 'Broken tool. Provides no seasonal outlook.' : id === 'horseshoes' ? 'Broken tool. Provides no trade bonus.' : id === 'cauldron' ? 'Broken tool. Provides no feast bonus.' : id === 'lock_key' ? 'Broken tool. Provides no treasury protection.' : id === 'church_bell' ? 'Broken tool. Provides no Faith gain.' : id === 'nails' ? 'Broken tool. Provides no construction discount.' : id === 'hinges_fittings' ? 'Broken tool. Provides no wear protection.' : 'Broken tool. Provides no production bonus.';
+ return id === 'chandelier' ? 'Broken tool. Provides no Hall prestige.' : id === 'weather_vane' ? 'Broken tool. Provides no seasonal outlook.' : id === 'horseshoes' ? 'Broken tool. Provides no trade bonus.' : id === 'cauldron' ? 'Broken tool. Provides no feast bonus.' : id === 'lock_key' ? 'Broken tool. Provides no treasury protection.' : id === 'church_bell' ? 'Broken tool. Provides no Faith gain.' : id === 'nails' ? 'Broken tool. Provides no construction discount.' : id === 'hinges_fittings' ? 'Broken tool. Provides no wear protection.' : 'Broken tool. Provides no production bonus.';
 }
+
+export function getChandelierPrestigeBonus(blacksmith:unknown):0|3 {return getDeployedToolIds(blacksmith).has('chandelier')?CHANDELIER_PRESTIGE_BONUS:0;}

@@ -108,3 +108,6 @@ export function validateHallDisputeState(value: unknown): string | null {
   // Do not infer chronology, current effect values, or equality of historical count and length.
   return null;
 }
+
+/** Narrow only the dispute fields established by the shared runtime validator. */
+export function isHallDisputeState(value:unknown):value is Pick<HallSaveState,'rulingHistory'|'disputesResolved'> {return validateHallDisputeState(value)===null;}

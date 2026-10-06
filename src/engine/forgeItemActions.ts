@@ -1,4 +1,6 @@
-import {getDeployableTool, isWorkingTool, getDeployedToolIds} from './forgeTools.ts';
+import {computeReputation} from "../data/greatHall.ts";
+import {isHallDisputeState} from "./hallAudienceState.ts";
+import {CHANDELIER_PRESTIGE_BONUS,getDeployableTool, isWorkingTool, getDeployedToolIds} from './forgeTools.ts';
 import {hasDefenseBonus} from './forgeReadiness.ts';
 import {FORGE_RESOURCES, SCRAP_RECOVERY_RATE, getAvailableBuyers, getBuyerPrice, type ForgeBuyerDefinition, type ForgeBuyerId, type ForgeSeason, type ForgeResourceId} from '../data/blacksmith.ts';
 export type ForgeItemCommand =
@@ -44,6 +46,12 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
   const firstBell=item.itemId==='church_bell' && !getDeployedToolIds(bs).has('church_bell');
   let chapelPatch: {chapel: Record<string,unknown>} | Record<string,never> = {};
   let faithGain=0;
+  let hallPatch:{greatHall:Record<string,unknown>}|Record<string,never>={};
+  if(item.itemId==='chandelier'&&!getDeployedToolIds(bs).has('chandelier')){
+   if(!isHallDisputeState(state.greatHall))return null;
+   const reputation=computeReputation(state.greatHall.rulingHistory,CHANDELIER_PRESTIGE_BONUS);
+   if(reputation.track!==null)hallPatch={greatHall:{...state.greatHall,reputation:reputation.title,reputationTrack:reputation.track}};
+  }
   if(firstBell) {
    if(!record(state.chapel)) return null;
    const faith=state.chapel.faith ?? 50;
@@ -51,7 +59,7 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
    const nextFaith=Math.min(100,faith+8);faithGain=nextFaith-faith;
    chapelPatch={chapel:{...state.chapel,faith:nextFaith}};
   }
-  return {patch:{...chapelPatch,blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
+  return {patch:{...chapelPatch,...hallPatch,blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
    message:getDeployableTool(item.itemId)?`Deployed a ${item.grade} ${item.name} on the estate.${firstBell?` Chapel Faith +${faithGain}.`:""}`:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
  }
  if(type==='BLACKSMITH_SCRAP_ITEM') {

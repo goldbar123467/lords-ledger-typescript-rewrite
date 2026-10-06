@@ -291,7 +291,7 @@ export const REPUTATION_TRACKS = {
  * Analyze ruling history to determine dominant track and title.
  * Returns { track, title, scores } where track is the key in REPUTATION_TRACKS.
  */
-export function computeReputation(rulingHistory: readonly HallRuling[] | null | undefined): ReputationResult {
+export function computeReputation(rulingHistory: readonly HallRuling[] | null | undefined, prestige: 0 | 3 = 0): ReputationResult {
   if (!rulingHistory || rulingHistory.length === 0) {
     return { track: null, title: "Unknown Lord", scores: {} };
   }
@@ -341,7 +341,8 @@ export function computeReputation(rulingHistory: readonly HallRuling[] | null | 
   const trackConfig = REPUTATION_TRACKS[dominantTrack];
   let title = "Fledgling Judge";
   for (const t of trackConfig.titles) {
-    if (maxScore >= t.threshold) title = t.title;
+    // Prestige advances titles on the earned path; it does not rewrite ruling scores.
+    if (maxScore + (prestige === 3 ? 3 : 0) >= t.threshold) title = t.title;
   }
 
   return { track: dominantTrack, title, scores };
@@ -533,10 +534,10 @@ export function computeCompoundFlags(rulingHistory: readonly HallRuling[] | null
  * Package Great Hall data for the Kingdom Investor Pitch (PBL assessment).
  * Returns a structured summary suitable for student presentations.
  */
-export function exportPitchData(state: HallPitchState) {
+export function exportPitchData(state: HallPitchState, prestige: 0 | 3 = 0) {
   const hall = state.greatHall || {};
   const history = hall.rulingHistory || [];
-  const repResult = computeReputation(history);
+  const repResult = computeReputation(history, prestige);
 
   // Ruling distribution
   let mercifulCount = 0;
