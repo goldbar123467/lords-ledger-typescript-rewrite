@@ -81,6 +81,11 @@ test('invalid saved Bard content and history are rejected while older saves rema
   const badOptions = structuredClone(envelope);
   badOptions.state.tavern.bardCurrentContent.optionOrder = [0, 0, 1];
   assert.equal(readV2Save(JSON.stringify(badOptions)).ok, false);
+  for (const optionOrder of [[2, 0, 99], [-1, 0, 1], [0, 0.1, 2]]) {
+    const invalidIndex = structuredClone(envelope);
+    invalidIndex.state.tavern.bardCurrentContent.optionOrder = optionOrder;
+    assert.equal(readV2Save(JSON.stringify(invalidIndex)).ok, false);
+  }
   const badId = structuredClone(envelope);
   badId.state.tavern.bardCurrentContent.id = 'unknown';
   assert.equal(readV2Save(JSON.stringify(badId)).ok, false);

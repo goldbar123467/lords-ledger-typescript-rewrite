@@ -1,11 +1,21 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { BARD_TALES, BARD_STATE_COMMENTS, BARD_RIDDLES } from "../data/tavern";
+import { useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { BARD_TALES, BARD_STATE_COMMENTS, BARD_RIDDLES } from "../data/tavern.ts";
+import type { BardContent } from "../engine/tavernBard.ts";
+
+export interface BardsCornerProps {
+  readonly state: {
+    readonly tavern?: { readonly bardCurrentContent?: Readonly<BardContent> | null } | null;
+  };
+  readonly onNext: () => void;
+  readonly onAnswer: (option: string) => void;
+  readonly onBack: () => void;
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function SpeechBubble({ children, animKey }) {
+function SpeechBubble({ children, animKey }: { children: ReactNode; animKey?: number }) {
   return (
     <div
       key={animKey}
@@ -51,7 +61,7 @@ function BardPortrait() {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
+export default function BardsCorner({ state, onNext, onAnswer, onBack }: BardsCornerProps) {
   const content = state.tavern?.bardCurrentContent ?? null;
   const [entryContent] = useState(() => content);
   const [advanceOnEntry] = useState(() =>
@@ -59,7 +69,7 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
   );
   const visibleContent = advanceOnEntry && content === entryContent ? null : content;
   const seededRef = useRef(false);
-  const responseRef = useRef(null);
+  const responseRef = useRef<HTMLDivElement | null>(null);
   const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
@@ -74,7 +84,7 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
     setAnimKey((k) => k + 1);
   }, [onNext]);
 
-  const handleRiddleAnswer = useCallback((option) => onAnswer(option), [onAnswer]);
+  const handleRiddleAnswer = useCallback((option: string) => onAnswer(option), [onAnswer]);
   const riddle = visibleContent?.type === "riddle"
     ? BARD_RIDDLES.find(item => item.id === visibleContent.id)
     : null;
@@ -88,7 +98,7 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
 
   // --- Render content body ---------------------------------------------------
 
-  let body = null;
+  let body: ReactNode = null;
 
   if (visibleContent === null) {
     body = null;
@@ -147,7 +157,11 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }) {
         </SpeechBubble>
 
         <div className="flex flex-col gap-2 mt-3">
-          {visibleContent.optionOrder.map((index) => riddle.options[index]).map((option) => {
+          {visibleContent.optionOrder.map((index) => {
+            const option = riddle.options[index];
+            if (option === undefined) throw new Error("Saved Bard option index is invalid.");
+            return option;
+          }).map((option) => {
             let bg = "#1a1610";
             let border = "#6a5a42";
             let textColor = "#c8b090";
