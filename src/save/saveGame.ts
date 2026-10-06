@@ -391,7 +391,24 @@ function validateSnapshot(value: unknown): string | null {
       if (!isBuildingId(building)) return `Save building ${index} type is not recognized.`;
       continue; // Current legacy adapter supports authored string entries.
     }
-    if (!isRecord(building) || typeof building.instanceId !== 'string' ||
+    if (!isRecord(building)) return `Save building ${index} is invalid.`;
+    const prototype = Object.getPrototypeOf(building);
+    const serializer = Object.getOwnPropertyDescriptor(building, 'toJSON');
+    if ((prototype !== Object.prototype && prototype !== null) ||
+        (serializer && (!('value' in serializer) || typeof serializer.value === 'function'))) {
+      return `Save building ${index} must be a plain data record.`;
+    }
+    // Consumed fields must survive JSON without running getters or losing waivers.
+    for (const key of ['instanceId', 'type', 'condition', 'builtOnTurn', 'freeUpkeep']) {
+      const field = Object.getOwnPropertyDescriptor(building, key);
+      if ((!field && key !== 'freeUpkeep') || (field && (!field.enumerable || !('value' in field)))) {
+        return `Save building ${index}.${key} must be an enumerable data field.`;
+      }
+    }
+    if (building.freeUpkeep !== undefined && typeof building.freeUpkeep !== 'boolean') {
+      return `Save building ${index}.freeUpkeep must be a boolean.`;
+    }
+    if (typeof building.instanceId !== 'string' ||
         typeof building.type !== 'string' || !isNonnegativeNumber(building.condition) ||
         building.condition > 100 || !isNonnegativeNumber(building.builtOnTurn)) {
       return `Save building ${index} is invalid.`;
