@@ -36,5 +36,3 @@ Full browser, visual, and campaign checks are not part of this checkpoint operat
 Tracked migration documents, fixtures, and regression tests are included. Bulky ignored evidence remains in the original rewrite worktree under `artifacts/v2/`; the latest independent reports are `tester-synergy-ts-review/report.md` and `grader-synergy-ts-review/report.md` there. Those local artifacts are not included in this repository's commit.
 
 When development resumes, verify normal and perspective-flip counter/reward timing, capture and inspect the corrected toast at 390x844 and 1366x768, run relevant save and gameplay browser tests, then request independent retests against the corrected fingerprint. Continue the remaining migration only after resolving those findings.
-
-To run locally: `npm ci`, then `npm run dev -- --host 127.0.0.1 --port 5180 --strictPort`; open `http://127.0.0.1:5180`.

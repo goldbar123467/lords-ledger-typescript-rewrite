@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-Outcome, Military, Watchtower and Chapel views use checked TypeScript within their recorded scopes. Chapel authored data is checked; malformed tithes, unaffordable rewards, repeated outcomes, enlarged keyboard visibility and misleading effect/cost claims are repaired with independent review. All five manuscript transitions now use checked TypeScript domain logic, preserving legal play, partial saves, RNG and logs. All 153 units, strict typecheck, lint, build and 31 focused Chapel/save browsers pass. Nested Chapel validation rejects malformed data; explicit manuscript recovery preserves estate progress and stored bytes until Save. Independent reviewers accept the scoped data correction and verified recovery-status fix. Production remains 1,427 lines above baseline; 27 source JavaScript/JSX files remain. See [verification notes](docs/v2/verification.md) for scoped evidence and limits.
+The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People and Audience views; People and Chapel transitions; Hall authored audience/dispute registries and shared helpers; authoritative audience/dispute commands; and consumed audience/dispute save validation. The latest save section passes all 211 unit tests, typecheck, lint, build and 40 focused browser tests, with independent tester/grader review. Nineteen source JavaScript/JSX files remain. Production has 47,397 lines versus the original 45,347, so the reduction goal remains unmet. See [verification notes](docs/v2/verification.md) for build-specific evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Finish Chapel interface readability/accessibility and its remaining gameplay contracts.
+1. Migrate DisputeScreen, correct speech-reveal timing and add keyboard reveal controls.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

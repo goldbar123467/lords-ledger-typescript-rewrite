@@ -1,4 +1,5 @@
 import encounters from '../data/audience.ts';
+import disputes, { type DisputeId, type DisputeRuling } from '../data/disputes.ts';
 import { SEASON_INFO } from '../data/economy.ts';
 import type { HallMeterEffects } from '../data/decrees.ts';
 
@@ -20,6 +21,21 @@ export interface HallAudienceSaveState {
   audienceResolved?: string[] | null;
   stewardTrust?: number | null;
   hallLog?: HallLogEntry[] | null;
+}
+
+/** Historical values are preserved, not reconstructed from today's authored effects. */
+export interface HallDisputeEntry {
+  disputeId: DisputeId;
+  rulingId: DisputeRuling['id'];
+  consequences: Partial<HallMeterEffects> | null;
+  decree: string;
+  turn: number;
+  season: keyof typeof SEASON_INFO;
+  year: number;
+}
+export interface HallSaveState extends HallAudienceSaveState {
+  rulingHistory?: HallDisputeEntry[] | null;
+  disputesResolved?: number | null;
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -67,5 +83,25 @@ export function validateHallAudienceState(value: unknown): string | null {
   const trust = value.stewardTrust;
   if (trust != null && (!finite(trust) || trust < 0 || trust > 100)) return 'Save Great Hall steward trust is invalid.';
   if (value.hallLog != null && !dense(value.hallLog, logEntry)) return 'Save Great Hall log is invalid.';
+  return null;
+}
+
+/** Validate persisted records produced by the reducer, including pre-guard repeats. */
+export function validateHallDisputeState(value: unknown): string | null {
+  if (!record(value)) return 'Save Great Hall state is invalid.';
+  if (['rulingHistory', 'disputesResolved'].some(key => key in value && !serializedField(value, key))) {
+    return 'Save Great Hall serialized dispute fields are invalid.';
+  }
+  if (value.disputesResolved != null && !count(value.disputesResolved)) return 'Save Great Hall dispute count is invalid.';
+  if (value.rulingHistory != null && !dense(value.rulingHistory, entry => {
+    if (!record(entry) || !['disputeId', 'rulingId', 'consequences', 'decree', 'turn', 'season', 'year']
+      .every(key => serializedField(entry, key))) return false;
+    const dispute = disputes.find(dispute => dispute.id === entry.disputeId);
+    if (!dispute || !dispute.rulings.some(ruling => ruling.id === entry.rulingId)) return false;
+    // Reuse the shared dated Hall-log shape and partial/null effect contract.
+    return logEntry({ type: 'dispute', text: entry.decree, turn: entry.turn,
+      season: entry.season, year: entry.year, consequences: entry.consequences });
+  })) return 'Save Great Hall ruling history is invalid.';
+  // Do not infer chronology, current effect values, or equality of historical count and length.
   return null;
 }
