@@ -1,5 +1,57 @@
+import type { SEASON_INFO } from './economy.ts';
+import type { EquippedItem } from '../engine/forgeReadiness.ts';
+import type { HallRuling } from './greatHall.ts';
+export type ForgeSeason = keyof typeof SEASON_INFO;
+export type ForgeResourceId = 'iron' | 'steel' | 'coal' | 'leather' | 'wood';
+export type ForgeCategory = typeof ITEM_CATEGORIES[number]['id'];
+export type ForgeDifficulty = keyof typeof FORGING_DIFFICULTY;
+export type ForgeItemId = keyof typeof FORGEABLE_ITEMS;
+export type ForgeGrade = keyof typeof QUALITY_GRADES;
+export type ForgeBuyerId = typeof SEASONAL_BUYERS[number]['id'];
+export type ForgeSupplyId = typeof FORGE_SUPPLY_EVENTS[number]['id'];
+export type ForgeTemperature = keyof typeof FORGE_TEMP_CONFIG;
+type NonEmptyLines = readonly [string, ...string[]];
+export interface ForgeItemDefinition {
+  readonly id: string; readonly name: string; readonly category: ForgeCategory; readonly difficulty: ForgeDifficulty;
+  readonly cost: Readonly<Record<ForgeResourceId | 'gold', number>>;
+  readonly baseMilitary: number; readonly baseTradeValue: number; readonly description: string; readonly effect?: string;
+}
+/** A const registry also checks that each authored ID matches its property key. */
+function defineForgeItems<const T extends Readonly<Record<string, ForgeItemDefinition>>>(items: T & {readonly [K in keyof T]: {readonly id: K}}): T {
+  return items;
+}
+interface ForgeGradeDefinition {
+  readonly grade: string; readonly minScore: number; readonly color: string; readonly statMultiplier: number;
+  readonly tradeMultiplier: number; readonly description: string; readonly durability: string;
+}
+interface ForgeRespectTier { readonly min:number; readonly title:string; readonly behavior:string; readonly borderColor:string }
+export interface ForgeBuyerDefinition {
+  readonly id:string; readonly name:string; readonly description:string; readonly seasons:readonly ForgeSeason[];
+  readonly prefers:readonly ForgeCategory[]; readonly premium:number; readonly dialogue:string;
+  readonly bulkBonus?:number; readonly masterworkBonus?:number; readonly respectCost?:number;
+  readonly riskFlag?:'soldToMortimer'; readonly requiresFlag?:'welcomedHenrik'; readonly godricWarning?:string;
+}
+interface SupplyFields {readonly id:string;readonly name:string;readonly description:string;readonly duration:number;readonly godricComment:string}
+export type ForgeSupplyDefinition = SupplyFields & (
+  {readonly effect:'iron_price_double'|'coal_price_half'|'steel_bonus_5'|'iron_loss_30'|'forging_disabled'|'royal_reward_50'} |
+  {readonly id:'iron_vein';readonly effect:'iron_investment';readonly investCost:number;readonly investReward:number}
+);
+/** Only existing commentary inputs; this is not the full Forge/save contract. */
+export interface ForgeCommentaryState {
+  readonly garrison?:number|null; readonly denarii?:number|null;
+  readonly blacksmith?: {
+    readonly inventory?:readonly unknown[]|null; readonly equipped?:readonly Readonly<EquippedItem>[]|null;
+    readonly resources?:Readonly<Partial<Record<ForgeResourceId,number>>>|null;
+    readonly totalItemsForged?:number|null; readonly godricRespect?:number|null; readonly masterworksCreated?:number|null;
+  }|null;
+}
+export interface ForgeBuyerState {
+  readonly greatHall?:{readonly rulingHistory?:readonly HallRuling[]|Readonly<{welcomedHenrik?:boolean}>|null}|null;
+}
+export interface ForgePricingItem {readonly category:string;readonly grade?:string|null;readonly tradeValue?:number|null}
+
 /**
- * blacksmith.js — Data constants for the Blacksmith's Forge tab
+ * blacksmith.ts — Data constants for the Blacksmith's Forge tab
  *
  * Phase 1: Ambient atmosphere, NPC dialogue stubs, forge state config.
  * Phase 2+: Item database, forging mini-game params, commission system.
@@ -24,7 +76,7 @@ export const FORGE_COLORS = {
   leather:     "#5a3a20",
   parchment:   "#e8dcc8",
   inkBlack:    "#1a1208",
-};
+} as const satisfies Readonly<Record<string, string>>;
 
 // ─── Forge temperature states ───────────────────────────────────
 export const FORGE_TEMP_CONFIG = {
@@ -60,7 +112,7 @@ export const FORGE_TEMP_CONFIG = {
     embers: true,
     description: "Blinding heat. The air shimmers.",
   },
-};
+} as const satisfies Readonly<Record<string, {readonly label:string;readonly glowColor:string;readonly glowSize:number;readonly bgOverlay:string;readonly embers:boolean;readonly description:string}>>;
 
 // ─── Forge resource display config ──────────────────────────────
 export const FORGE_RESOURCES = [
@@ -69,7 +121,7 @@ export const FORGE_RESOURCES = [
   { key: "coal",    label: "Coal",    color: "#3a2a20", icon: "◆" },
   { key: "leather", label: "Leather", color: "#5a3a20", icon: "▧" },
   { key: "wood",    label: "Wood",    color: "#6a5a3a", icon: "▮" },
-];
+] as const satisfies readonly {readonly key:ForgeResourceId;readonly label:string;readonly color:string;readonly icon:string}[];
 
 // ─── Godric greetings (mood-based) ──────────────────────────────
 export const GODRIC_GREETINGS = {
@@ -99,7 +151,7 @@ export const GODRIC_GREETINGS = {
     "I've trained apprentices for twenty years. You have the best hands I've seen — for a lord.",
     "The merchants are asking about our ironwork. We're building a reputation.",
   ],
-};
+} as const satisfies Readonly<Record<string, NonEmptyLines>>;
 
 // ─── Wat idle behaviors ─────────────────────────────────────────
 export const WAT_IDLE = [
@@ -113,7 +165,7 @@ export const WAT_IDLE = [
   "Wat has drawn a detailed diagram of a sword on the wall with charcoal.",
   "Wat tries to balance a nail on his nose. He succeeds for approximately one second.",
   "Wat whispers something to his favorite hammer. He sees you looking. He stops.",
-];
+] as const satisfies NonEmptyLines;
 
 // ─── Ambient text (cycles in the forge footer) ─────────────────
 export const FORGE_AMBIENT_TEXTS = [
@@ -129,7 +181,7 @@ export const FORGE_AMBIENT_TEXTS = [
   "The forge smells of charcoal, metal, and sweat.",
   "Shadows dance on the soot-stained walls as the fire breathes.",
   "A draft from the chimney draws the smoke upward in lazy spirals.",
-];
+] as const satisfies NonEmptyLines;
 
 // ─── Forge navigation config ────────────────────────────────────
 // Icons are imported in the component to avoid lucide dependency in data
@@ -140,7 +192,7 @@ export const FORGE_VIEWS = [
   { id: "orders",     label: "Orders" },
   { id: "storefront", label: "Storefront" },
   { id: "ledger",     label: "Ledger" },
-];
+] as const satisfies readonly {readonly id:string;readonly label:string}[];
 
 // ─── Bellows config ─────────────────────────────────────────────
 export const BELLOWS_CONFIG = {
@@ -149,7 +201,7 @@ export const BELLOWS_CONFIG = {
   heatThreshold: 50,      // bellowsCharge needed to increase temp
   decayPerSecond: 2,       // charge decays over time
   cooldownMs: 500,         // min ms between pumps
-};
+} as const satisfies {readonly chargePerPump:number;readonly maxCharge:number;readonly heatThreshold:number;readonly decayPerSecond:number;readonly cooldownMs:number};
 
 // ─── Godric bellows reactions ───────────────────────────────────
 export const GODRIC_BELLOWS = {
@@ -163,7 +215,7 @@ export const GODRIC_BELLOWS = {
     "Easy, my lord. Too much air and the coals scatter.",
     "The forge is hot enough. Save your strength for the anvil.",
   ],
-};
+} as const satisfies Readonly<Record<string, NonEmptyLines>>;
 
 // ─── Weapon rack silhouettes ────────────────────────────────────
 export const RACK_SILHOUETTES = [
@@ -173,7 +225,7 @@ export const RACK_SILHOUETTES = [
   { type: "mace",   label: "Mace",        width: 12, height: 36 },
   { type: "shield", label: "Tower Shield", width: 28, height: 32 },
   { type: "dagger", label: "Dagger",      width: 6,  height: 24 },
-];
+] as const satisfies readonly {readonly type:string;readonly label:string;readonly width:number;readonly height:number}[];
 
 // ═══════════════════════════════════════════════════════════════
 // PHASE 2 — Forging Mini-Game Data
@@ -185,7 +237,7 @@ export const FORGING_DIFFICULTY = {
   medium: { strikes: 8,  tempo: 750, perfectWindow: 140, goodWindow: 240, label: "Medium" },
   hard:   { strikes: 12, tempo: 600, perfectWindow: 100, goodWindow: 180, label: "Hard" },
   master: { strikes: 16, tempo: 500, perfectWindow: 80,  goodWindow: 150, label: "Master" },
-};
+} as const satisfies Readonly<Record<string, {readonly strikes:number;readonly tempo:number;readonly perfectWindow:number;readonly goodWindow:number;readonly label:string}>>;
 
 // ─── Item category config ─────────────────────────────────────
 export const ITEM_CATEGORIES = [
@@ -193,10 +245,10 @@ export const ITEM_CATEGORIES = [
   { id: "armor",       label: "Armor",       icon: "⛊" },
   { id: "tool",        label: "Tools",       icon: "⚒" },
   { id: "trade_good",  label: "Trade Goods", icon: "⚖" },
-];
+] as const satisfies readonly {readonly id:string;readonly label:string;readonly icon:string}[];
 
 // ─── Full item database (35 items across 4 categories) ────────
-export const FORGEABLE_ITEMS = {
+export const FORGEABLE_ITEMS = defineForgeItems({
   // ── WEAPONS (10) ──────────────────────────────────────────
   dagger: {
     id: "dagger", name: "Dagger", category: "weapon", difficulty: "easy",
@@ -414,7 +466,7 @@ export const FORGEABLE_ITEMS = {
     baseMilitary: 0, baseTradeValue: 35,
     description: "A luxury export. Silver wire hammered into channels carved along the blade.",
   },
-};
+});
 
 // ─── Quality grade definitions ──────────────────────────────────
 export const QUALITY_GRADES = {
@@ -463,9 +515,9 @@ export const QUALITY_GRADES = {
     description: "Ruined. The metal cracked. Only good for melting down.",
     durability: "Broken",
   },
-};
+} as const satisfies Readonly<Record<string, ForgeGradeDefinition>>;
 
-export function calculateGrade(qualityScore) {
+export function calculateGrade(qualityScore: number) {
   if (qualityScore >= 90) return QUALITY_GRADES.Masterwork;
   if (qualityScore >= 70) return QUALITY_GRADES.Fine;
   if (qualityScore >= 50) return QUALITY_GRADES.Standard;
@@ -516,7 +568,7 @@ export const GODRIC_FORGING = {
   perfectQuench: "Listen to that hiss. That's a blade that will hold its edge for years.",
   goodQuench: "Adequate. The temper is set. It'll serve.",
   missedQuench: "You quenched too soon. The core will be brittle. It'll hold, but... I wouldn't trust it against plate.",
-};
+} as const satisfies Readonly<Record<string, string | NonEmptyLines>>;
 
 // ─── Godric result reactions (by grade) ─────────────────────────
 export const GODRIC_RESULTS = {
@@ -545,7 +597,7 @@ export const GODRIC_RESULTS = {
     "I... we should melt this down. Quickly. Before anyone sees it.",
     "Three bars of iron. Gone. Well. Everyone learns.",
   ],
-};
+} as const satisfies Readonly<Record<ForgeGrade, NonEmptyLines>>;
 
 // ═══════════════════════════════════════════════════════════════
 // PHASE 3 — Commission System Data
@@ -558,12 +610,13 @@ export const RESOURCE_MARKET = {
   coal:    { basePrice: 1, label: "Charcoal",     unit: "sack", seasonal: { spring: 0.9, summer: 0.9, autumn: 1.0, winter: 1.3 } },
   leather: { basePrice: 1, label: "Tanned Hides", unit: "hide", seasonal: { spring: 0.8, summer: 0.8, autumn: 1.0, winter: 1.3 } },
   wood:    { basePrice: 1, label: "Cut Timber",   unit: "plank", seasonal: { spring: 0.9, summer: 0.9, autumn: 1.0, winter: 1.1 } },
-};
+} as const satisfies Readonly<Record<ForgeResourceId, {readonly basePrice:number;readonly label:string;readonly unit:string;readonly seasonal:Readonly<Record<ForgeSeason,number>>}>>;
 
 // Generate fluctuating market prices for a given season
-export function generateForgeMarketPrices(season, random) {
-  const prices = {};
-  for (const [key, cfg] of Object.entries(RESOURCE_MARKET)) {
+export function generateForgeMarketPrices(season: ForgeSeason, random: () => number) {
+  const prices: Record<ForgeResourceId, number> = {iron:0,steel:0,coal:0,leather:0,wood:0};
+  for (const {key} of FORGE_RESOURCES) {
+    const cfg = RESOURCE_MARKET[key];
     const seasonMod = cfg.seasonal[season] || 1.0;
     const fluctuation = 0.7 + random() * 0.6;
     prices[key] = Math.max(1, Math.round(cfg.basePrice * seasonMod * fluctuation));
@@ -580,10 +633,10 @@ export const DIFFICULTY_DISPLAY = {
   medium: { anvils: 2, label: "Medium", color: "#a89050" },
   hard:   { anvils: 3, label: "Hard",   color: "#c86030" },
   master: { anvils: 4, label: "Master", color: "#c82020" },
-};
+} as const satisfies Readonly<Record<ForgeDifficulty, {readonly anvils:number;readonly label:string;readonly color:string}>>;
 
 // ─── Godric commission recommendations ────────────────────────
-export function getGodricRecommendation(state) {
+export function getGodricRecommendation(state: ForgeCommentaryState) {
   const bs = state.blacksmith || {};
   const garrison = state.garrison || 0;
   const denarii = state.denarii || 0;
@@ -622,17 +675,17 @@ export const GODRIC_RESPECT_TIERS = [
   { min: 40, title: "My lord.", behavior: "warm", borderColor: FORGE_COLORS.emberCore },
   { min: 20, title: "My lord.", behavior: "neutral", borderColor: "#8a7a5a" },
   { min: 0,  title: "...my lord.", behavior: "disdain", borderColor: "#4a3a2a" },
-];
+] as const satisfies readonly [ForgeRespectTier, ...ForgeRespectTier[]];
 
-export function getGodricTier(respect) {
+export function getGodricTier(respect: number) {
   for (const tier of GODRIC_RESPECT_TIERS) {
     if (respect >= tier.min) return tier;
   }
-  return GODRIC_RESPECT_TIERS[GODRIC_RESPECT_TIERS.length - 1];
+  return GODRIC_RESPECT_TIERS.reduce((_previous, tier) => tier);
 }
 
 // ─── Godric mood derivation ──────────────────────────────────
-export function deriveGodricMood(state) {
+export function deriveGodricMood(state: ForgeCommentaryState) {
   const bs = state.blacksmith || {};
   const respect = bs.godricRespect ?? 50;
   const garrison = state.garrison || 0;
@@ -679,9 +732,9 @@ export const GODRIC_MILITARY = {
     "My lord, I am proud of what we've built here. Every soldier carries steel I'd put my name on.",
     "If our enemies are wise, they'll look at our garrison and choose a different fight.",
   ],
-};
+} as const satisfies Readonly<Record<string, NonEmptyLines>>;
 
-export function getReadinessTier(equipped, garrison) {
+export function getReadinessTier(equipped: readonly Readonly<EquippedItem>[], garrison: number) {
   if (garrison === 0) return "adequate";
   const ratio = equipped.length / Math.max(garrison, 1);
   if (ratio >= 0.8) return "peak";
@@ -793,10 +846,10 @@ export const WAT_FACTS = [
     dialogue: "I just \u2014 I just touched the quenching tongs and they were still \u2014 OW. My lord, do you know what iron smells like when it touches skin? I do. Intimately.",
     topic: null,
   },
-];
+] as const satisfies readonly {readonly trigger:string;readonly dialogue:string;readonly topic:string|null}[];
 
 // Pick a fact by trigger type, using an index for deterministic selection
-export function pickWatFact(trigger, index) {
+export function pickWatFact(trigger: string, index: number) {
   const matching = WAT_FACTS.filter(f => f.trigger === trigger);
   if (matching.length === 0) {
     const general = WAT_FACTS.filter(f => f.trigger === "forge_general");
@@ -845,7 +898,7 @@ export const GODRIC_WAT_BANTER = [
     { speaker: "wat", line: "[flinches violently]" },
     { speaker: "godric", line: "...We'll work on it." },
   ],
-];
+] as const satisfies readonly (readonly {readonly speaker:"godric"|"wat";readonly line:string}[])[];
 
 // ═══════════════════════════════════════════════════════════════
 // PHASE 5 — Economy Loop, Garrison Integration, Trade System
@@ -904,16 +957,16 @@ export const SEASONAL_BUYERS = [
     requiresFlag: "welcomedHenrik",
     dialogue: "Your forge grows famous! I have buyers across the sea.",
   },
-];
+] as const satisfies readonly ForgeBuyerDefinition[];
 
 /**
  * Get buyers available this season, filtered by game state conditions.
  */
-export function getAvailableBuyers(season, state) {
+export function getAvailableBuyers(season: ForgeSeason, state: ForgeBuyerState) {
   const rulingHistory = state.greatHall?.rulingHistory || {};
-  return SEASONAL_BUYERS.filter(buyer => {
+  return SEASONAL_BUYERS.filter((buyer: ForgeBuyerDefinition) => {
     if (!buyer.seasons.includes(season)) return false;
-    if (buyer.requiresFlag && !rulingHistory[buyer.requiresFlag]) return false;
+    if (buyer.requiresFlag && !('welcomedHenrik' in rulingHistory && rulingHistory.welcomedHenrik)) return false;
     return true;
   });
 }
@@ -921,10 +974,10 @@ export function getAvailableBuyers(season, state) {
 /**
  * Calculate the price a buyer pays for an item.
  */
-export function getBuyerPrice(buyer, item, inventoryCount) {
+export function getBuyerPrice(buyer: ForgeBuyerDefinition, item: ForgePricingItem, inventoryCount: number) {
   let price = item.tradeValue || 0;
   // Premium for preferred categories
-  if (buyer.prefers.includes(item.category)) {
+  if (buyer.prefers.some(category => category === item.category)) {
     price = Math.round(price * (1 + buyer.premium));
   }
   // Masterwork bonus for arms dealer
@@ -998,13 +1051,13 @@ export const FORGE_SUPPLY_EVENTS = [
     investReward: 3,
     godricComment: "There's iron in the eastern hills. If you invest, I'll never complain about supply again. Well. Not about iron.",
   },
-];
+] as const satisfies readonly ForgeSupplyDefinition[];
 
 /**
  * Select a supply event for the current season (20% chance per season after turn 3).
  * Returns null or a supply event object.
  */
-export function rollForgeSupplyEvent(turn, usedEventIds, random) {
+export function rollForgeSupplyEvent(turn: number, usedEventIds: readonly string[], random: () => number) {
   if (turn < 4) return null;
   if (random() > 0.2) return null;
   const available = FORGE_SUPPLY_EVENTS.filter(e => !usedEventIds.includes(e.id));

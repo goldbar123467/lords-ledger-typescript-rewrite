@@ -73,7 +73,7 @@ import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } f
 import { getInitialPeopleState } from "../data/people.ts";
 import {
   generateForgeMarketPrices, rollForgeSupplyEvent, RESOURCE_MARKET,
-} from "../data/blacksmith.js";
+} from "../data/blacksmith.ts";
 
 // ---------------------------------------------------------------------------
 // Constants
