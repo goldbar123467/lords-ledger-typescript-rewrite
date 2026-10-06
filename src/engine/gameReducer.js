@@ -1,3 +1,4 @@
+import { planForgeVisit } from './forgeVisits.ts';
 import { planForgeItemAction } from './forgeItemActions.ts';
 import { planForgeCompletion } from './forgeCompletion.ts';
 import { planHallEventDismissal } from './hallConsequences.ts';
@@ -3312,23 +3313,8 @@ function reduceGame(state, action, random) {
     // BLACKSMITH_VISIT — Track forge visits, adjust respect
     // -----------------------------------------------------------------------
     case "BLACKSMITH_VISIT": {
-      const bs = state.blacksmith ?? {};
-      const turnsSinceVisit = state.turn - (bs.lastVisitTurn || 0);
-
-      // +1 respect for visiting, -3 if 3+ turns since last visit
-      let respectDelta = 1;
-      if (turnsSinceVisit >= 3 && bs.lastVisitTurn > 0) {
-        respectDelta = -3;
-      }
-
-      return {
-        ...state,
-        blacksmith: {
-          ...bs,
-          lastVisitTurn: state.turn,
-          godricRespect: Math.max(0, Math.min(100, (bs.godricRespect || 50) + respectDelta)),
-        },
-      };
+      const blacksmith = planForgeVisit(state);
+      return blacksmith ? {...state, blacksmith} : state;
     }
 
     // -----------------------------------------------------------------------

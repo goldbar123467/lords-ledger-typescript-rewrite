@@ -1,0 +1,11 @@
+import {expect,test} from '@playwright/test';import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';import {writeV2Save} from '../../../src/save/saveGame.ts';
+for(const width of [390,1366])for(const respect of [0,50])test('Forge visits cannot farm respect through navigation and Load '+width+' respect'+respect,async({page},info)=>{
+ const initial=createInitialState(104),base={...initial,phase:'management',activeTab:'forge',tutorialsSeen:['forge','estate'],blacksmith:{...initial.blacksmith,godricRespect:respect}},expected=gameReducer(base,{type:'BLACKSMITH_VISIT'}),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setViewportSize({width,height:844});await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},writeV2Save(base));await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();
+ const value=page.getByRole('heading',{name:'Godric',exact:true}).locator('..').getByText(String(respect+1),{exact:true});await expect(value).toBeVisible();await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));await page.screenshot({path:info.outputPath('first-visit.png'),animations:'disabled'});
+ for(let i=0;i<2;i++){
+  await page.getByRole('button',{name:'Estate tab',exact:true}).click();await page.getByRole('button',{name:'Forge tab',exact:true}).click();await expect(value).toBeVisible();await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(writeV2Save(expected));
+  await page.reload();await page.getByRole('button',{name:'Load saved game',exact:true}).click();await expect(value).toBeVisible();await page.getByRole('button',{name:'Load saved game',exact:true}).click();await expect(value).toBeVisible();await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(writeV2Save(expected));
+ }
+ await page.screenshot({path:info.outputPath('after-repeated-load.png'),animations:'disabled'});expect(errors).toEqual([]);
+});
