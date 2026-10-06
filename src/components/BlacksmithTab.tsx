@@ -2,7 +2,7 @@ import {remainingMarketSupply} from "../engine/marketSupply.ts";
 import {getDeployableTool, isWorkingTool, getToolDeploymentDescription, getBrokenToolDescription} from '../engine/forgeTools.ts';
 import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadiness.ts';
 /**
- * BlacksmithTab.jsx
+ * BlacksmithTab.tsx
  *
  * Phase 1 — The Forge Itself
  * Phase 3 — Commission System, Armory, Storefront
@@ -13,7 +13,7 @@ import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadines
  * internal navigation, and atmospheric cycling text.
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type Dispatch, type ReactNode, type CSSProperties, type MouseEventHandler, type KeyboardEvent } from "react";
 import {
   Hammer, Swords, Shield, ClipboardList, Store,
   Wind, Check, X, Package, Coins, Trash2, ScrollText, AlertTriangle,
@@ -37,23 +37,62 @@ import {
   RESOURCE_MARKET,
   SCRAP_RECOVERY_RATE,
   getGodricRecommendation,
-  GODRIC_RESPECT_TIERS,
   getGodricTier,
   deriveGodricMood,
   GODRIC_MILITARY,
   getReadinessTier,
-  WAT_FACTS,
   pickWatFact,
   GODRIC_WAT_BANTER,
   getAvailableBuyers,
   getBuyerPrice,
   calculateForgeReadiness,
 } from "../data/blacksmith";
-import ForgingGame from "./ForgingGame";
+import ForgingGame, {type ForgingResult} from "./ForgingGame";
+import type {ForgeSaveState, ForgeSavedItem} from "../engine/forgeState.ts";
+import type {ForgeAncillaryCommand} from "../engine/forgeAncillaryActions.ts";
+import type {ForgeItemCommand} from "../engine/forgeItemActions.ts";
+import type {ForgeCompletionCommand} from "../engine/forgeCompletion.ts";
+import type {ForgeResourceId, ForgeCategory, ForgeSeason, ForgeTemperature, ForgeBuyerDefinition, ForgeBuyerId, ForgeBuyerState, ForgeSupplyDefinition, ForgeGrade} from "../data/blacksmith.ts";
+import type {ResourceId} from "../data/economy.ts";
 import { planForgeCompletion } from "../engine/forgeCompletion.ts";
 import {getForgeResourceQuote, getForgeSupplyStatus, planForgeTalk} from "../engine/forgeAncillaryActions.ts";
 
 import {createRandomCursor, isRandomState, seedLegacySnapshot} from '../engine/random.ts';
+
+type ForgeView = typeof FORGE_VIEWS[number]['id'] | 'forge_result';
+type ForgeRecipe = ForgingResult['item'];
+type ForgeResources = Readonly<Record<ForgeResourceId, number>>;
+type ForgeAction = ForgeAncillaryCommand | ForgeItemCommand |
+  {type:'BLACKSMITH_FORGE_COMPLETE'; payload:ForgeCompletionCommand} |
+  {type:'BLACKSMITH_VISIT' | 'BLACKSMITH_TALK'};
+type ForgeDispatch = Dispatch<ForgeAction>;
+type Destination = 'equip' | 'sell' | 'scrap' | 'store';
+interface LocalForgeState {
+  temperature:ForgeTemperature; bellowsCharge:number; bellowsCooldown:boolean; fuelLevel:number; isLit:boolean;
+}
+interface BlacksmithViewState extends ForgeBuyerState {
+  readonly phase:string; readonly turn:number; readonly year:number; readonly season:ForgeSeason;
+  readonly denarii:number; readonly inventory:Readonly<Record<ResourceId,number>>;
+  readonly blacksmith:ForgeSaveState; readonly garrison:number; readonly rngState?:number; readonly market?:unknown;
+}
+interface CollectedResult {readonly item:ForgeRecipe; readonly grade:ForgingResult['grade']; readonly qualityScore:number; readonly itemUid:number}
+type RespectTier = ReturnType<typeof getGodricTier>;
+type Banter = typeof GODRIC_WAT_BANTER[number];
+type WatFact = ReturnType<typeof pickWatFact>;
+interface WorkshopProps {
+  forgeState:LocalForgeState; resources:ForgeResources; godricGreeting:string|undefined; watBehavior:string|undefined;
+  onPumpBellows:()=>void; respect:number; tier:RespectTier; militaryLine?:string|null;
+  onGodricTalk:()=>void; watFact:WatFact; onWatTalk:()=>void; banter:Banter|null|undefined;
+}
+/** Historical saved grade wording is retained; unknown labels use the existing Standard appearance. */
+function gradeDefinition(grade:string) {
+  return Object.entries(QUALITY_GRADES).find(([name])=>name===grade)?.[1] ?? QUALITY_GRADES.Standard;
+}
+function isGrade(value:string):value is ForgeGrade {return Object.hasOwn(QUALITY_GRADES,value);}
+function materialAmount(resources:ForgeResources,key:string):number {
+  const material=FORGE_RESOURCES.find(resource=>resource.key===key);
+  return material ? resources[material.key] : 0;
+}
 
 // ─── View icon mapping ──────────────────────────────────────────
 const VIEW_ICONS = {
@@ -75,7 +114,7 @@ const EMBER_POSITIONS = Array.from({ length: 16 }, (_, i) => ({
   size: 2 + ((i * 11) % 30) * 0.1,
 }));
 
-function EmberParticles({ active, intensity = "normal" }) {
+function EmberParticles({ active, intensity = "normal" }: {active:boolean; intensity?:ForgeTemperature|"normal"}) {
   if (!active) return null;
   const count = intensity === "hot" ? 12 : intensity === "white-hot" ? 16 : 8;
 
@@ -116,7 +155,7 @@ function EmberParticles({ active, intensity = "normal" }) {
 
 // ─── Forge Hearth ───────────────────────────────────────────────
 
-function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldown }) {
+function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldown }: Pick<LocalForgeState,"temperature"|"bellowsCharge"|"bellowsCooldown"> & {onPumpBellows:()=>void}) {
   const tempConfig = FORGE_TEMP_CONFIG[temperature] || FORGE_TEMP_CONFIG.cold;
   const isLit = temperature !== "cold";
 
@@ -309,7 +348,7 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
 
 // ─── Anvil (CSS-drawn) ──────────────────────────────────────────
 
-function Anvil({ forgeLit }) {
+function Anvil({ forgeLit }: {forgeLit:boolean}) {
   return (
     <div
       aria-label="Anvil"
@@ -495,7 +534,7 @@ function WeaponRack() {
 
 // ─── Resource Shelf ─────────────────────────────────────────────
 
-function ResourceShelf({ resources }) {
+function ResourceShelf({ resources }: {resources:ForgeResources}) {
   return (
     <div
       style={{
@@ -577,7 +616,7 @@ function ResourceShelf({ resources }) {
 
 // ─── NPC Portrait (reusable) ────────────────────────────────────
 
-function NpcPortrait({ initial, role, borderColor, size = 64 }) {
+function NpcPortrait({ initial, role, borderColor, size = 64 }: {initial:string|undefined; role:"smith"|"apprentice"|"buyer"; borderColor:string; size?:number}) {
   const bgMap = {
     smith:      "linear-gradient(135deg, #3a2a18, #1a1208)",
     apprentice: "linear-gradient(135deg, #2a2018, #1a1510)",
@@ -596,7 +635,7 @@ function NpcPortrait({ initial, role, borderColor, size = 64 }) {
         fontFamily: "Cinzel Decorative, Cinzel, serif",
         fontSize: size * 0.35,
         color: FORGE_COLORS.parchment,
-        background: bgMap[role] || bgMap.smith,
+        background: role === "buyer" ? bgMap.smith : bgMap[role],
         flexShrink: 0,
       }}
     >
@@ -607,7 +646,7 @@ function NpcPortrait({ initial, role, borderColor, size = 64 }) {
 
 // ─── NPC Panels (Interactive — Phase 4) ─────────────────────────
 
-function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }) {
+function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }: {greeting:string|undefined; respect:number; tier:RespectTier; onTalk:()=>void; militaryLine?:string|null}) {
   const [showMilitary, setShowMilitary] = useState(false);
 
   return (
@@ -726,7 +765,7 @@ function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }) {
   );
 }
 
-function WatPanel({ idleBehavior, fact, onTalk }) {
+function WatPanel({ idleBehavior, fact, onTalk }: {idleBehavior:string|undefined; fact:WatFact; onTalk:()=>void}) {
   const [showFact, setShowFact] = useState(false);
 
   return (
@@ -816,7 +855,7 @@ function WatPanel({ idleBehavior, fact, onTalk }) {
 
 // ─── Garrison Readiness Meter ───────────────────────────────────
 
-function GarrisonReadiness({ garrison, maxGarrison }) {
+function GarrisonReadiness({ garrison, maxGarrison }: {garrison:number; maxGarrison:number}) {
   const readiness = maxGarrison > 0 ? Math.round((garrison / maxGarrison) * 100) : 0;
   const barColor =
     readiness >= 70 ? "#4a8a3a"
@@ -880,7 +919,7 @@ function GarrisonReadiness({ garrison, maxGarrison }) {
 
 // ─── Forge Navigation ───────────────────────────────────────────
 
-function ForgeNavigation({ currentView, onSetView }) {
+function ForgeNavigation({ currentView, onSetView }: {currentView:ForgeView; onSetView:(view:ForgeView)=>void}) {
   return (
     <div
       style={{
@@ -941,7 +980,7 @@ function ForgeNavigation({ currentView, onSetView }) {
 }
 
 // ─── Forge Button (reusable styled button) ──────────────────
-function ForgeButton({ onClick, disabled, children, variant = "default", style: extraStyle }) {
+function ForgeButton({ onClick, disabled, children, variant = "default", style: extraStyle }: {onClick:MouseEventHandler<HTMLButtonElement>; disabled?:boolean; children:ReactNode; variant?:"default"|"danger"|"gold"|"green"; style?:CSSProperties}) {
   const colors = {
     default: { border: FORGE_COLORS.iron, bg: "rgba(139,58,0,0.15)", text: FORGE_COLORS.emberCore, hoverBg: "rgba(255,107,26,0.15)" },
     danger:  { border: "#6a2020", bg: "rgba(198,40,40,0.1)", text: "#c86040", hoverBg: "rgba(198,40,40,0.2)" },
@@ -987,7 +1026,7 @@ function ForgeButton({ onClick, disabled, children, variant = "default", style: 
 }
 
 // ─── Section Label ───────────────────────────────────────────
-function SectionLabel({ children }) {
+function SectionLabel({ children }: {children:ReactNode}) {
   return (
     <div
       style={{
@@ -1007,19 +1046,19 @@ function SectionLabel({ children }) {
 
 // ─── Commission Desk (Orders View) ──────────────────────────
 
-function CommissionDesk({ resources, denarii, onCommission, godricRec }) {
-  const [activeCategory, setActiveCategory] = useState("weapon");
+function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resources:ForgeResources; denarii:number; onCommission:(item:ForgeRecipe)=>void; godricRec:string}) {
+  const [activeCategory, setActiveCategory] = useState<ForgeCategory>("weapon");
 
   const items = useMemo(() =>
     Object.values(FORGEABLE_ITEMS).filter(i => i.category === activeCategory),
     [activeCategory]
   );
 
-  function canAfford(item) {
+  function canAfford(item:ForgeRecipe) {
     if ((item.cost.gold || 0) > denarii) return false;
     for (const [key, amt] of Object.entries(item.cost)) {
       if (key === "gold") continue;
-      if (amt > 0 && (resources[key] || 0) < amt) return false;
+      if (amt > 0 && materialAmount(resources,key) < amt) return false;
     }
     return true;
   }
@@ -1142,7 +1181,7 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }) {
                   Military: +{item.baseMilitary}
                 </div>
               )}
-              {item.effect && (
+              {'effect' in item && item.effect && (
                 <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#6a8a5a", marginBottom: 2 }}>
                   {item.effect}
                 </div>
@@ -1155,7 +1194,7 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }) {
               <div className="flex flex-wrap gap-x-3 gap-y-1" style={{ marginBottom: 8 }}>
                 {Object.entries(item.cost).map(([key, amt]) => {
                   if (amt === 0) return null;
-                  const has = key === "gold" ? denarii >= amt : (resources[key] || 0) >= amt;
+                  const has = key === "gold" ? denarii >= amt : materialAmount(resources,key) >= amt;
                   return (
                     <span
                       key={key}
@@ -1194,23 +1233,23 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }) {
 
 // ─── Armory View ─────────────────────────────────────────────
 
-function ArmoryView({ inventory, equipped, dispatch, garrison }) {
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const armoryRef = useRef(null), dialogRef = useRef(null);
+function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:readonly ForgeSavedItem[]; equipped:readonly ForgeSavedItem[]; dispatch:ForgeDispatch; garrison:number}) {
+  const [selectedItem, setSelectedItem] = useState<ForgeSavedItem|null>(null);
+  const [confirmAction, setConfirmAction] = useState<{action:Destination; item:ForgeSavedItem}|null>(null);
+  const armoryRef = useRef<HTMLDivElement>(null), dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!confirmAction) return;
-    const trigger = document.activeElement, armory = armoryRef.current;
+    const active = document.activeElement, trigger = active instanceof HTMLElement ? active : null, armory = armoryRef.current;
     dialogRef.current?.querySelector('button')?.focus();
     return () => {
       if (trigger?.isConnected) trigger.focus();
-      else armory?.querySelector('[data-forge-item-uid="' + confirmAction.item.uid + '"]')?.focus();
+      else armory?.querySelector<HTMLButtonElement>('[data-forge-item-uid="' + confirmAction.item.uid + '"]')?.focus();
     };
   }, [confirmAction]);
-  function handleDialogKey(event) {
+  function handleDialogKey(event:KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Escape') {event.preventDefault(); setConfirmAction(null); return;}
     if (event.key !== 'Tab') return;
-    const buttons = event.currentTarget.querySelectorAll('button:not([disabled])');
+    const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
     const first = buttons[0], last = buttons[buttons.length - 1];
     if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last?.focus();}
     else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first?.focus();}
@@ -1219,7 +1258,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
   const totalMilitary = equipped.reduce((sum, i) => sum + (i.militaryBonus || 0), 0);
   const {weapon: weaponCount, armor: armorCount} = countFunctionalEquipment(equipped);
 
-  function handleAction(action, item) {
+  function handleAction(action:Destination, item:ForgeSavedItem) {
     setConfirmAction({ action, item });
   }
 
@@ -1237,8 +1276,8 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
     setSelectedItem(null);
   }
 
-  function renderItemCard(item, isEquipped) {
-    const gradeData = QUALITY_GRADES[item.grade] || QUALITY_GRADES.Standard;
+  function renderItemCard(item:ForgeSavedItem, isEquipped:boolean) {
+    const gradeData = gradeDefinition(item.grade);
     const isSelected = selectedItem?.uid === item.uid;
 
     return (
@@ -1261,7 +1300,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
           </span>
         </button>
         <div className="flex gap-3" style={{ marginTop: 2 }}>
-          {item.militaryBonus > 0 && (
+          {(item.militaryBonus ?? 0) > 0 && (
             <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#8a9098" }}>
               +{item.militaryBonus} mil
             </span>
@@ -1439,10 +1478,10 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
 
 // ─── Storefront View ─────────────────────────────────────────
 
-function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season, market, turn }) {
-  const [buyQty, setBuyQty] = useState({});
+function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season, market, turn }: {forgeResources:ForgeResources; denarii:number; blacksmith:ForgeSaveState; dispatch:ForgeDispatch; season:ForgeSeason; market:unknown; turn:number}) {
+  const [buyQty, setBuyQty] = useState<Partial<Record<ForgeResourceId,number>>>({});
 
-  function handleBuy(resource, qty) {
+  function handleBuy(resource:ForgeResourceId, qty:number) {
     const price = getForgeResourceQuote(resource, season, blacksmith);
     if (price === null) return;
     const totalCost = price * qty;
@@ -1571,12 +1610,12 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
 
 // ─── Post-Forge Result View ─────────────────────────────────
 
-function ForgeResultView({ result, dispatch, onDone }) {
+function ForgeResultView({ result, dispatch, onDone }: {result:CollectedResult; dispatch:ForgeDispatch; onDone:()=>void}) {
   const [actionTaken, setActionTaken] = useState(false);
   if (!result) return null;
 
   const { item, grade, qualityScore } = result;
-  const gradeData = QUALITY_GRADES[grade.grade] || QUALITY_GRADES.Standard;
+  const gradeData = gradeDefinition(grade.grade);
   const militaryBonus = Math.round((item.baseMilitary || 0) * (gradeData.statMultiplier ?? 1));
   const tradeValue = Math.round((item.baseTradeValue || 0) * (gradeData.tradeMultiplier ?? 1));
   const isWeaponOrArmor = item.category === "weapon" || item.category === "armor";
@@ -1585,7 +1624,7 @@ function ForgeResultView({ result, dispatch, onDone }) {
   // These actions move/transform it from inventory.
   const latestUid = result.itemUid;
 
-  function handleDestination(action) {
+  function handleDestination(action:Destination) {
     if (actionTaken) return;
     setActionTaken(true);
     if (action === "equip" && (isWeaponOrArmor || getDeployableTool(item.id))) {
@@ -1671,12 +1710,12 @@ function ForgeResultView({ result, dispatch, onDone }) {
 
 // ─── Seasonal Buyers Panel (in Armory sell flow) ────────────
 
-function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }) {
-  const [confirmSale, setConfirmSale] = useState(null);
+function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:readonly (ForgeBuyerDefinition & {id:ForgeBuyerId})[]; inventory:readonly ForgeSavedItem[]; dispatch:ForgeDispatch; salesThisSeason:number}) {
+  const [confirmSale, setConfirmSale] = useState<{buyer:ForgeBuyerDefinition & {id:ForgeBuyerId}; item:ForgeSavedItem; price:number}|null>(null);
 
   if (buyers.length === 0) return null;
 
-  function handleSellToBuyer(buyer, item) {
+  function handleSellToBuyer(buyer:ForgeBuyerDefinition & {id:ForgeBuyerId}, item:ForgeSavedItem) {
     const price = getBuyerPrice(buyer, item, salesThisSeason);
     setConfirmSale({ buyer, item, price });
   }
@@ -1831,7 +1870,7 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }) {
 
 // ─── Forge Ledger View ────────────────────────────────────────
 
-function ForgeLedger({ blacksmith, garrison }) {
+function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garrison:number}) {
   const bs = blacksmith || {};
   const log = bs.productionLog || [];
   const totalForged = bs.totalItemsForged || 0;
@@ -1843,7 +1882,7 @@ function ForgeLedger({ blacksmith, garrison }) {
   // Grade breakdown
   const gradeCount = { Masterwork: 0, Fine: 0, Standard: 0, Rough: 0, Scrap: 0 };
   for (const entry of log) {
-    if (gradeCount[entry.grade] !== undefined) gradeCount[entry.grade]++;
+    if (isGrade(entry.grade)) gradeCount[entry.grade]++;
   }
 
   // Quality trend (last 10 items)
@@ -1918,17 +1957,17 @@ function ForgeLedger({ blacksmith, garrison }) {
           <div className="grid gap-2">
             {Object.entries(gradeCount).map(([grade, count]) => {
               const pct = totalForged > 0 ? (count / totalForged) * 100 : 0;
-              const gradeData = QUALITY_GRADES[grade] || {};
+              const gradeData = isGrade(grade) ? QUALITY_GRADES[grade] : undefined;
               return (
                 <div key={grade} className="flex items-center gap-2">
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: gradeData.color || "#5a5550", width: 70, textAlign: "right" }}>
+                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: gradeData?.color || "#5a5550", width: 70, textAlign: "right" }}>
                     {grade}
                   </span>
                   <div style={{ flex: 1, height: 12, borderRadius: 3, backgroundColor: "#1a1510", overflow: "hidden", border: "1px solid #2a2420" }}>
                     <div style={{
                       height: "100%",
                       width: `${pct}%`,
-                      backgroundColor: gradeData.color || "#5a5550",
+                      backgroundColor: gradeData?.color || "#5a5550",
                       borderRadius: 3,
                       transition: "width 600ms ease",
                       opacity: 0.7,
@@ -2003,12 +2042,12 @@ function ForgeLedger({ blacksmith, garrison }) {
             Production by Type
           </div>
           <div className="flex justify-center gap-4">
-            {[
+            {([
               { key: "weapon", label: "Weapons", icon: "⚔", color: FORGE_COLORS.emberCore },
               { key: "armor", label: "Armor", icon: "⛊", color: "#8a9098" },
               { key: "tool", label: "Tools", icon: "⚒", color: "#6a8a5a" },
               { key: "trade_good", label: "Trade", icon: "⚖", color: "#d4a820" },
-            ].map((cat) => (
+            ] as const).map((cat) => (
               <div key={cat.key} className="text-center">
                 <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.9rem", color: cat.color }}>{catCount[cat.key]}</div>
                 <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.45rem", color: "#5a5550", letterSpacing: "1px" }}>{cat.icon} {cat.label.toUpperCase()}</div>
@@ -2068,14 +2107,14 @@ function ForgeLedger({ blacksmith, garrison }) {
           </div>
           <div className="grid gap-1">
             {log.slice(-8).reverse().map((entry, i) => {
-              const gradeData = QUALITY_GRADES[entry.grade] || {};
+              const gradeData = isGrade(entry.grade) ? QUALITY_GRADES[entry.grade] : undefined;
               return (
                 <div key={i} className="flex items-center justify-between" style={{ padding: "3px 0", borderBottom: "1px solid rgba(90,85,80,0.1)" }}>
                   <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.6rem", color: FORGE_COLORS.parchment }}>
                     {entry.name}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: gradeData.color || "#5a5550" }}>
+                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: gradeData?.color || "#5a5550" }}>
                       {entry.grade}
                     </span>
                     <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#a89050" }}>
@@ -2097,7 +2136,7 @@ function ForgeLedger({ blacksmith, garrison }) {
 
 // ─── Supply Event Banner ──────────────────────────────────────
 
-function SupplyEventBanner({ event, onDismiss, onInvest, denarii, acknowledged, remaining, ironVeinActive }) {
+function SupplyEventBanner({ event, onDismiss, onInvest, denarii, acknowledged, remaining, ironVeinActive }: {event:ForgeSupplyDefinition; onDismiss:()=>void; onInvest:()=>void; denarii:number; acknowledged:boolean; remaining:number; ironVeinActive:boolean}) {
   if (!event) return null;
 
   const isInvestment = event.effect === "iron_investment";
@@ -2152,7 +2191,7 @@ function SupplyEventBanner({ event, onDismiss, onInvest, denarii, acknowledged, 
 
 // ─── Banter Display ──────────────────────────────────────────
 
-function BanterDisplay({ banter }) {
+function BanterDisplay({ banter }: {banter:Banter}) {
   if (!banter) return null;
 
   return (
@@ -2192,7 +2231,7 @@ function Workshop({
   watFact,
   onWatTalk,
   banter,
-}) {
+}: WorkshopProps) {
   const isLit = forgeState.temperature !== "cold";
 
   return (
@@ -2287,13 +2326,13 @@ function Workshop({
 
 // ─── Main Component ─────────────────────────────────────────────
 
-export default function BlacksmithTab({ state, dispatch }) {
-  const [currentView, setCurrentView] = useState("workshop");
+export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithViewState; dispatch:ForgeDispatch}) {
+  const [currentView, setCurrentView] = useState<ForgeView>("workshop");
   const [ambientIndex, setAmbientIndex] = useState(0);
   const [ambientVisible, setAmbientVisible] = useState(true);
 
   // Local forge state (Phase 1 — local only; Phase 2+ will move to reducer)
-  const [forgeState, setForgeState] = useState({
+  const [forgeState, setForgeState] = useState<LocalForgeState>({
     temperature: "cold",
     bellowsCharge: 0,
     bellowsCooldown: false,
@@ -2302,14 +2341,14 @@ export default function BlacksmithTab({ state, dispatch }) {
   });
 
   // NPC state
-  const [godricLine, setGodricLine] = useState(null);
-  const [activeBanter, setActiveBanter] = useState(null);
+  const [godricLine, setGodricLine] = useState<string|null|undefined>(null);
+  const [activeBanter, setActiveBanter] = useState<Banter|null|undefined>(null);
 
   const [watBehavior] = useState(
     () => WAT_IDLE[Math.floor(Math.random() * WAT_IDLE.length)]
   );
 
-  const [godricBellowsLine, setGodricBellowsLine] = useState(null);
+  const [godricBellowsLine, setGodricBellowsLine] = useState<string|null|undefined>(null);
 
   // Dispatch visit tracking on mount
   const visitDispatched = useRef(false);
@@ -2323,7 +2362,7 @@ export default function BlacksmithTab({ state, dispatch }) {
   }, [dispatch]);
 
   // Bellows cooldown ref
-  const bellowsTimerRef = useRef(null);
+  const bellowsTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   // Cycle ambient text every 8 seconds
   useEffect(() => {
@@ -2361,10 +2400,10 @@ export default function BlacksmithTab({ state, dispatch }) {
       // Temperature escalation
       let newTemp = prev.temperature;
       if (newCharge >= BELLOWS_CONFIG.heatThreshold) {
-        const temps = ["cold", "warm", "hot", "white-hot"];
+        const temps = ["cold", "warm", "hot", "white-hot"] as const;
         const currentIdx = temps.indexOf(prev.temperature);
         if (currentIdx < temps.length - 1) {
-          newTemp = temps[currentIdx + 1];
+          newTemp = temps[currentIdx + 1] ?? prev.temperature;
         }
       }
 
@@ -2404,21 +2443,21 @@ export default function BlacksmithTab({ state, dispatch }) {
   }, []);
 
   // Commission item (pre-selected from Commission Desk)
-  const [commissionItem, setCommissionItem] = useState(null);
+  const [commissionItem, setCommissionItem] = useState<ForgeRecipe|null>(null);
 
   // Post-forge result for destination routing
-  const [forgeResult, setForgeResult] = useState(null);
-  const [forgeError, setForgeError] = useState(null);
+  const [forgeResult, setForgeResult] = useState<CollectedResult|null>(null);
+  const [forgeError, setForgeError] = useState<string|null>(null);
 
   // Commission handler — start forging a specific item
-  const handleCommission = useCallback((item) => {
+  const handleCommission = useCallback((item:ForgeRecipe) => {
     setForgeError(null);
     setCommissionItem(item);
     setCurrentView("forging");
   }, []);
 
   // Forging completion handler — dispatch + show destination screen
-  const handleForgingComplete = useCallback((result) => {
+  const handleForgingComplete = useCallback((result:ForgingResult) => {
     const payload = {itemId: result.item.id, qualityScore: result.qualityScore, completionUid: result.completionUid};
     if (!planForgeCompletion(state, payload)) {
       setCommissionItem(null);
@@ -2497,7 +2536,7 @@ export default function BlacksmithTab({ state, dispatch }) {
   const buyers = useMemo(() => getAvailableBuyers(season, state), [season, state]);
   const supplyStatus = getForgeSupplyStatus(bs);
   const supplyEvent = supplyStatus?.event;
-  const forgingDisabled = supplyEvent?.effect === "forging_disabled" && supplyStatus.remaining > 0;
+  const forgingDisabled = supplyStatus !== null && supplyEvent?.effect === "forging_disabled" && supplyStatus.remaining > 0;
 
   // NPC derived state
   const respect = bs.godricRespect ?? 50;
