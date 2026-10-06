@@ -32,7 +32,9 @@ export async function nativeZoomContext(output:string,baseURL:string):Promise<{c
 
 /** Capture the browser compositor directly; Playwright's CSS clip is wrong under native zoom. */
 export async function captureNativeViewport(page:Page,path:string):Promise<void>{
- await page.locator('.forge-minigame').evaluate(el=>{
+ await page.evaluate(()=>{
+  const el=document.querySelector('.forge-ui')??document.querySelector('.forge-minigame');
+  if(!el)return;
   // Match standard screenshot behavior for decorative CSS animation only.
   for(const animation of el.getAnimations({subtree:true}))if(animation.effect?.getComputedTiming().iterations!==Infinity)animation.finish();
  });

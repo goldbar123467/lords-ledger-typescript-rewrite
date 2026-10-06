@@ -13,7 +13,7 @@ import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadines
  * internal navigation, and atmospheric cycling text.
  */
 
-import { useState, useEffect, useRef, useCallback, useMemo, type Dispatch, type ReactNode, type CSSProperties, type MouseEventHandler, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type Dispatch, type ReactNode, type CSSProperties, type MouseEventHandler, useId } from "react";
 import {
   Hammer, Swords, Shield, ClipboardList, Store,
   Wind, Check, X, Package, Coins, Trash2, ScrollText, AlertTriangle,
@@ -48,6 +48,7 @@ import {
   calculateForgeReadiness,
 } from "../data/blacksmith";
 import ForgingGame, {type ForgingResult} from "./ForgingGame";
+import {useHallReadingFocus} from "../hooks/useHallReadingFocus.ts";
 import type {ForgeSaveState, ForgeSavedItem} from "../engine/forgeState.ts";
 import type {ForgeAncillaryCommand} from "../engine/forgeAncillaryActions.ts";
 import type {ForgeItemCommand} from "../engine/forgeItemActions.ts";
@@ -94,6 +95,20 @@ function materialAmount(resources:ForgeResources,key:string):number {
   return material ? resources[material.key] : 0;
 }
 
+/** Bright text tones preserve semantic cues on the Forge's coal surfaces. */
+const FORGE_TEXT_TONES:Readonly<Record<string,string>>={
+    '#5a5550':'var(--forge-muted)', '#4a4030':'var(--forge-muted)', '#6a5a4a':'var(--forge-muted)',
+    '#8a7a5a':'var(--forge-muted)', '#a89070':'var(--forge-muted)', '#a89050':'var(--forge-gold)',
+    '#c8b090':'var(--forge-text)', '#8a9098':'var(--forge-steel)', '#6a8a5a':'var(--forge-success)',
+    '#6a9a5a':'var(--forge-success)', '#c86040':'var(--forge-danger)', '#c62828':'var(--forge-danger)',
+    '#d4a820':'var(--forge-gold)', '#ffd700':'var(--forge-gold)', '#ff6b1a':'var(--forge-ember)',
+    '#cc5500':'var(--forge-ember)', '#ff4500':'var(--forge-ember)', '#4a3a2a':'var(--forge-muted)',
+    '#8a8a8a':'var(--forge-steel)', '#c0c0c0':'var(--forge-steel)', '#ffcc00':'var(--forge-gold)'
+};
+function forgeTextColor(color:string|undefined):string {
+  return FORGE_TEXT_TONES[color??''] ?? 'var(--forge-text)';
+}
+
 // ─── View icon mapping ──────────────────────────────────────────
 const VIEW_ICONS = {
   workshop:   Hammer,
@@ -128,7 +143,7 @@ function EmberParticles({ active, intensity = "normal" }: {active:boolean; inten
         height: "60%",
         pointerEvents: "none",
         overflow: "hidden",
-        zIndex: 2,
+        zIndex: 2
       }}
     >
       {EMBER_POSITIONS.slice(0, count).map((pos, i) => (
@@ -145,7 +160,7 @@ function EmberParticles({ active, intensity = "normal" }: {active:boolean; inten
             backgroundColor: FORGE_COLORS.sparkYellow,
             boxShadow: `0 0 ${pos.size + 2}px ${pos.size}px rgba(255, 215, 0, 0.5)`,
             animationDelay: `${pos.delay}s`,
-            animationDuration: `${pos.duration}s`,
+            animationDuration: `${pos.duration}s`
           }}
         />
       ))}
@@ -178,7 +193,7 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
             : "none",
           position: "relative",
           overflow: "hidden",
-          transition: "all 800ms ease",
+          transition: "all 800ms ease"
         }}
       >
         {/* Fire core glow */}
@@ -192,7 +207,7 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
               right: "20%",
               height: "70%",
               background: `radial-gradient(ellipse at center bottom, ${tempConfig.glowColor} 0%, transparent 70%)`,
-              pointerEvents: "none",
+              pointerEvents: "none"
             }}
           />
         )}
@@ -207,39 +222,26 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
             height: 30,
             background: isLit
               ? `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,107,26,0.1) 8px, rgba(255,107,26,0.1) 10px)`
-              : `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(58,54,50,0.3) 8px, rgba(58,54,50,0.3) 10px)`,
+              : `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(58,54,50,0.3) 8px, rgba(58,54,50,0.3) 10px)`
           }}
         />
 
         {/* Temperature label */}
-        <div
-          style={{
-            position: "absolute",
-            top: 8,
-            left: 12,
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.55rem",
-            letterSpacing: "1.5px",
-            textTransform: "uppercase",
-            color: isLit ? FORGE_COLORS.emberCore : "#5a5550",
-          }}
+        <div className="forge-caption"
+          style={{position: "absolute", top: 8, left: 12, color:forgeTextColor(isLit ? FORGE_COLORS.emberCore : "#5a5550")}}
         >
           {tempConfig.label}
         </div>
 
         {/* Hearth label */}
-        <div
+        <div className="forge-caption"
           style={{
             position: "absolute",
             bottom: 8,
             left: 0,
             right: 0,
             textAlign: "center",
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            color: isLit ? "rgba(255,107,26,0.6)" : "#3a3632",
+            color:forgeTextColor(isLit ? "rgba(255,107,26,0.6)" : "#3a3632")
           }}
         >
           The Forge Hearth
@@ -259,13 +261,13 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
           alignItems: "center",
           justifyContent: "center",
           gap: 12,
-          marginTop: 10,
+          marginTop: 10
         }}
       >
         <button
           onClick={onPumpBellows}
           disabled={bellowsCooldown}
-          className={bellowsCooldown ? "" : "forge-bellows-squeeze"}
+          className={bellowsCooldown ? "forge-caption" : "forge-caption forge-bellows-squeeze"}
           style={{
             display: "flex",
             alignItems: "center",
@@ -274,12 +276,9 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
             border: `1px solid ${bellowsCooldown ? "#2a2420" : FORGE_COLORS.emberDim}`,
             borderRadius: 4,
             backgroundColor: bellowsCooldown ? "rgba(26,21,16,0.5)" : "rgba(139,58,0,0.15)",
-            color: bellowsCooldown ? "#5a5550" : FORGE_COLORS.emberCore,
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.7rem",
-            letterSpacing: "1px",
+            color:forgeTextColor(bellowsCooldown ? "#5a5550" : FORGE_COLORS.emberCore),
             cursor: bellowsCooldown ? "not-allowed" : "pointer",
-            transition: "all 200ms ease",
+            transition: "all 200ms ease"
           }}
           onMouseEnter={(e) => {
             if (!bellowsCooldown) {
@@ -306,7 +305,7 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
               borderRadius: 3,
               overflow: "hidden",
               backgroundColor: "#1a1510",
-              border: "1px solid #2a2420",
+              border: "1px solid #2a2420"
             }}
           >
             <div
@@ -324,19 +323,12 @@ function ForgeHearth({ temperature, onPumpBellows, bellowsCharge, bellowsCooldow
                 boxShadow:
                   bellowsCharge > 60
                     ? `0 0 6px ${FORGE_COLORS.emberCore}60`
-                    : "none",
+                    : "none"
               }}
             />
           </div>
-          <div
-            style={{
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.5rem",
-              color: "#5a5550",
-              textAlign: "center",
-              marginTop: 2,
-              letterSpacing: "1px",
-            }}
+          <div className="forge-caption"
+            style={{color:forgeTextColor("#5a5550"), textAlign: "center", marginTop: 2}}
           >
             AIR {bellowsCharge}%
           </div>
@@ -370,7 +362,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
             : `linear-gradient(180deg, ${FORGE_COLORS.anvilGrey} 0%, #2a2825 70%, #1a1815 100%)`,
           borderRadius: "3px 3px 2px 2px",
           boxShadow: `0 3px 5px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08)`,
-          transition: "background 600ms ease",
+          transition: "background 600ms ease"
         }}
       >
         {/* Pointed horn on LEFT (CSS triangle) */}
@@ -384,7 +376,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
             borderTop: "8px solid transparent",
             borderBottom: "8px solid transparent",
             borderRight: `22px solid ${FORGE_COLORS.anvilGrey}`,
-            filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.45))",
+            filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.45))"
           }}
         />
         {/* Heel / step on RIGHT top surface */}
@@ -397,7 +389,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
             height: 12,
             background: `linear-gradient(180deg, ${FORGE_COLORS.iron} 0%, ${FORGE_COLORS.anvilGrey} 100%)`,
             borderRadius: "2px",
-            boxShadow: "0 2px 3px rgba(0,0,0,0.4)",
+            boxShadow: "0 2px 3px rgba(0,0,0,0.4)"
           }}
         />
         {/* Top surface reflection when lit */}
@@ -411,7 +403,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
               height: "50%",
               borderRadius: "3px 3px 0 0",
               background: "linear-gradient(180deg, rgba(255,107,26,0.12) 0%, transparent 100%)",
-              pointerEvents: "none",
+              pointerEvents: "none"
             }}
           />
         )}
@@ -426,7 +418,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
             : `linear-gradient(180deg, ${FORGE_COLORS.anvilGrey} 0%, #1a1815 100%)`,
           clipPath: "polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%)",
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
-          transition: "background 600ms ease",
+          transition: "background 600ms ease"
         }}
       />
       {/* Stand / base (wider than waist) */}
@@ -436,7 +428,7 @@ function Anvil({ forgeLit }: {forgeLit:boolean}) {
           height: 22,
           background: FORGE_COLORS.leather,
           borderRadius: "2px 2px 6px 6px",
-          boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+          boxShadow: "0 4px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)"
         }}
       />
     </div>
@@ -454,7 +446,7 @@ function WeaponRack() {
         justifyContent: "center",
         gap: 16,
         padding: "8px 16px",
-        marginTop: 8,
+        marginTop: 8
       }}
     >
       {RACK_SILHOUETTES.map((weapon, i) => (
@@ -474,7 +466,7 @@ function WeaponRack() {
             filter: "brightness(1)",
             transition: "filter 300ms ease",
             cursor: "default",
-            position: "relative",
+            position: "relative"
           }}
           className="forge-weapon-silhouette"
         >
@@ -491,7 +483,7 @@ function WeaponRack() {
                 borderLeft: `${weapon.width / 2}px solid transparent`,
                 borderRight: `${weapon.width / 2}px solid transparent`,
                 borderBottom: `6px solid #4a3f35`,
-                filter: "inherit",
+                filter: "inherit"
               }}
             />
           )}
@@ -506,7 +498,7 @@ function WeaponRack() {
                 height: 16,
                 backgroundColor: "#4a3f35",
                 borderRadius: "0 8px 8px 0",
-                filter: "inherit",
+                filter: "inherit"
               }}
             />
           )}
@@ -522,7 +514,7 @@ function WeaponRack() {
                 height: 16,
                 backgroundColor: "#4a3f35",
                 borderRadius: "50%",
-                filter: "inherit",
+                filter: "inherit"
               }}
             />
           )}
@@ -542,7 +534,7 @@ function ResourceShelf({ resources }: {resources:ForgeResources}) {
         flexWrap: "wrap",
         gap: 12,
         justifyContent: "center",
-        padding: "8px 0",
+        padding: "8px 0"
       }}
     >
       {FORGE_RESOURCES.map((res) => {
@@ -560,26 +552,16 @@ function ResourceShelf({ resources }: {resources:ForgeResources}) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                marginBottom: 2,
+                marginBottom: 2
               }}
             >
-              <span
-                style={{
-                  fontFamily: "Cinzel, serif",
-                  fontSize: "0.55rem",
-                  color: res.color,
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                }}
+              <span className="forge-caption"
+                style={{color: forgeTextColor(res.color)}}
               >
                 {res.icon} {res.label}
               </span>
-              <span
-                style={{
-                  fontFamily: "Cinzel, serif",
-                  fontSize: "0.6rem",
-                  color: "#a89070",
-                }}
+              <span className="forge-caption"
+                style={{color: forgeTextColor("#a89070")}}
               >
                 {value}
               </span>
@@ -590,7 +572,7 @@ function ResourceShelf({ resources }: {resources:ForgeResources}) {
                 borderRadius: 3,
                 overflow: "hidden",
                 backgroundColor: "#1a1510",
-                border: "1px solid #2a2420",
+                border: "1px solid #2a2420"
               }}
             >
               <div
@@ -603,7 +585,7 @@ function ResourceShelf({ resources }: {resources:ForgeResources}) {
                   boxShadow:
                     res.key === "coal"
                       ? `inset 0 0 4px ${FORGE_COLORS.emberDim}`
-                      : "none",
+                      : "none"
                 }}
               />
             </div>
@@ -636,7 +618,7 @@ function NpcPortrait({ initial, role, borderColor, size = 64 }: {initial:string|
         fontSize: size * 0.35,
         color: FORGE_COLORS.parchment,
         background: role === "buyer" ? bgMap.smith : bgMap[role],
-        flexShrink: 0,
+        flexShrink: 0
       }}
     >
       {initial}
@@ -656,20 +638,15 @@ function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }: {greetin
         border: `1px solid ${tier.borderColor}40`,
         borderRadius: 6,
         backgroundColor: "rgba(26,21,16,0.6)",
-        padding: 12,
+        padding: 12
       }}
     >
       <div className="flex items-start gap-3">
         <NpcPortrait initial="G" role="smith" borderColor={tier.borderColor} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h4
-              style={{
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.8rem",
-                color: tier.borderColor,
-                margin: "0 0 2px",
-              }}
+            <h4 className="forge-caption"
+              style={{color: forgeTextColor(tier.borderColor), margin: "0 0 2px"}}
             >
               Godric
             </h4>
@@ -681,7 +658,7 @@ function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }: {greetin
                   height: 4,
                   borderRadius: 2,
                   backgroundColor: "#1a1510",
-                  overflow: "hidden",
+                  overflow: "hidden"
                 }}
               >
                 <div
@@ -690,69 +667,50 @@ function GodricPanel({ greeting, respect, tier, onTalk, militaryLine }: {greetin
                     height: "100%",
                     borderRadius: 2,
                     backgroundColor: tier.borderColor,
-                    transition: "width 600ms ease",
+                    transition: "width 600ms ease"
                   }}
                 />
               </div>
-              <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.45rem", color: "#5a5550" }}>
+              <span className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
                 {respect}
               </span>
             </div>
           </div>
-          <p
-            style={{
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.55rem",
-              color: "#6a5a42",
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              margin: "0 0 6px",
-            }}
+          <p className="forge-caption"
+            style={{color: forgeTextColor("#6a5a42"), margin: "0 0 6px"}}
           >
             Master Smith
           </p>
-          <p
-            style={{
-              fontFamily: "Almendra, Crimson Text, serif",
-              fontStyle: "italic",
-              fontSize: "0.85rem",
-              color: "#c8b090",
-              lineHeight: 1.4,
-              margin: "0 0 6px",
-            }}
+          <p className="forge-lore"
+            style={{color: forgeTextColor("#c8b090"), margin: "0 0 6px"}}
           >
             &ldquo;{showMilitary && militaryLine ? militaryLine : greeting}&rdquo;
           </p>
           <div className="flex gap-2">
-            <button
+            <button className="forge-caption"
               onClick={onTalk}
               style={{
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.55rem",
-                color: tier.borderColor,
+                color: forgeTextColor(tier.borderColor),
                 background: "rgba(255,107,26,0.08)",
                 border: `1px solid ${tier.borderColor}40`,
                 borderRadius: 3,
                 padding: "3px 8px",
-                cursor: "pointer",
-                letterSpacing: "0.5px",
+                cursor: "pointer"
               }}
             >
               Talk
             </button>
             {militaryLine && (
-              <button
+              <button className="forge-caption"
+                aria-expanded={showMilitary}
                 onClick={() => setShowMilitary(prev => !prev)}
                 style={{
-                  fontFamily: "Cinzel, serif",
-                  fontSize: "0.55rem",
-                  color: "#8a9098",
+                  color: forgeTextColor("#8a9098"),
                   background: "rgba(90,85,80,0.08)",
                   border: "1px solid rgba(90,85,80,0.3)",
                   borderRadius: 3,
                   padding: "3px 8px",
-                  cursor: "pointer",
-                  letterSpacing: "0.5px",
+                  cursor: "pointer"
                 }}
               >
                 {showMilitary ? "Greeting" : "Readiness"}
@@ -775,73 +733,45 @@ function WatPanel({ idleBehavior, fact, onTalk }: {idleBehavior:string|undefined
         border: "1px solid rgba(90,85,80,0.2)",
         borderRadius: 6,
         backgroundColor: "rgba(26,21,16,0.6)",
-        padding: 12,
+        padding: 12
       }}
     >
       <div className="flex items-start gap-3">
         <NpcPortrait initial="W" role="apprentice" borderColor="#8a7a5a" size={56} />
         <div className="flex-1 min-w-0">
-          <h4
-            style={{
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.8rem",
-              color: "#a89070",
-              margin: "0 0 2px",
-            }}
+          <h4 className="forge-caption"
+            style={{color: forgeTextColor("#a89070"), margin: "0 0 2px"}}
           >
             Wat
           </h4>
-          <p
-            style={{
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.55rem",
-              color: "#6a5a42",
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              margin: "0 0 6px",
-            }}
+          <p className="forge-caption"
+            style={{color: forgeTextColor("#6a5a42"), margin: "0 0 6px"}}
           >
             Apprentice
           </p>
-          <p
-            style={{
-              fontFamily: "Almendra, Crimson Text, serif",
-              fontStyle: "italic",
-              fontSize: showFact ? "0.75rem" : "0.8rem",
-              color: showFact ? "#b8a878" : "#8a7a5a",
-              lineHeight: 1.4,
-              margin: "0 0 4px",
-            }}
+          <p className="forge-lore"
+            style={{color: forgeTextColor(showFact ? "#b8a878" : "#8a7a5a"), margin: "0 0 4px"}}
           >
             {showFact && fact ? fact.dialogue : idleBehavior}
           </p>
           {showFact && fact?.topic && (
-            <p style={{
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.45rem",
-              color: "#6a8a5a",
-              letterSpacing: "1px",
-              margin: "0 0 4px",
-            }}>
+            <p className="forge-caption"  style={{color: forgeTextColor("#6a8a5a"), margin: "0 0 4px"}}>
               {fact.topic}
             </p>
           )}
           <div className="flex gap-2">
-            <button
+            <button className="forge-caption"
               onClick={() => {
                 if (!showFact) onTalk();
                 setShowFact(prev => !prev);
               }}
               style={{
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.55rem",
-                color: "#a89070",
+                color: forgeTextColor("#a89070"),
                 background: "rgba(90,85,80,0.08)",
                 border: "1px solid rgba(90,85,80,0.3)",
                 borderRadius: 3,
                 padding: "3px 8px",
-                cursor: "pointer",
-                letterSpacing: "0.5px",
+                cursor: "pointer"
               }}
             >
               {showFact ? "Never mind" : "Did you know...?"}
@@ -855,193 +785,64 @@ function WatPanel({ idleBehavior, fact, onTalk }: {idleBehavior:string|undefined
 
 // ─── Garrison Readiness Meter ───────────────────────────────────
 
-function GarrisonReadiness({ garrison, maxGarrison }: {garrison:number; maxGarrison:number}) {
-  const readiness = maxGarrison > 0 ? Math.round((garrison / maxGarrison) * 100) : 0;
-  const barColor =
-    readiness >= 70 ? "#4a8a3a"
-    : readiness >= 40 ? FORGE_COLORS.emberCore
-    : "#c62828";
-
-  return (
-    <div style={{ minWidth: 140 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 2,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.55rem",
-            color: "#a89070",
-            letterSpacing: "1px",
-            textTransform: "uppercase",
-          }}
-        >
-          Garrison
-        </span>
-        <span
-          style={{
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.6rem",
-            color: barColor,
-          }}
-        >
-          {garrison}/{maxGarrison}
-        </span>
-      </div>
-      <div
-        style={{
-          height: 7,
-          borderRadius: 4,
-          overflow: "hidden",
-          backgroundColor: "#1a1510",
-          border: "1px solid #2a2420",
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${readiness}%`,
-            borderRadius: 4,
-            backgroundColor: barColor,
-            transition: "width 600ms ease",
-            boxShadow: `0 0 4px ${barColor}40`,
-          }}
-        />
-      </div>
+function GarrisonReadiness({garrison,maxGarrison}:{garrison:number;maxGarrison:number}) {
+  const readiness=maxGarrison>0?Math.round(garrison/maxGarrison*100):0;
+  return <div className="forge-garrison">
+    <span>Garrison</span><strong>{garrison}/{maxGarrison}</strong>
+    <div className="forge-meter" role="meter" aria-label="Garrison capacity" aria-valuemin={0} aria-valuemax={maxGarrison} aria-valuenow={Math.min(garrison,maxGarrison)} aria-valuetext={garrison+' soldiers; reference capacity '+maxGarrison}>
+      <div style={{width:Math.min(readiness,100)+'%'}}/>
     </div>
-  );
+  </div>;
 }
 
 // ─── Forge Navigation ───────────────────────────────────────────
 
-function ForgeNavigation({ currentView, onSetView }: {currentView:ForgeView; onSetView:(view:ForgeView)=>void}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        gap: 2,
-        padding: "6px 0",
-        borderTop: `1px solid ${FORGE_COLORS.iron}40`,
-        borderBottom: `1px solid ${FORGE_COLORS.iron}40`,
-        marginTop: 12,
-      }}
-    >
-      {FORGE_VIEWS.map((view) => {
-        const isActive = currentView === view.id;
-        const ViewIcon = VIEW_ICONS[view.id];
-
-        return (
-          <button
-            key={view.id}
-            onClick={() => onSetView(view.id)}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "6px 4px",
-              border: "none",
-              borderBottom: isActive ? `2px solid ${FORGE_COLORS.emberCore}` : "2px solid transparent",
-              backgroundColor: isActive ? "rgba(255,107,26,0.08)" : "transparent",
-              color: isActive ? FORGE_COLORS.emberCore : "#5a5550",
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.6rem",
-              letterSpacing: "1px",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              transition: "all 200ms ease",
-            }}
-            onMouseEnter={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = "rgba(255,107,26,0.05)";
-                e.currentTarget.style.color = FORGE_COLORS.emberGlow;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isActive) {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "#5a5550";
-              }
-            }}
-          >
-            <ViewIcon size={13} />
-            <span className="hidden sm:inline">{view.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
+function ForgeNavigation({currentView,onSetView}:{currentView:ForgeView;onSetView:(view:ForgeView)=>void}) {
+  return <nav className="forge-navigation" aria-label="Forge">
+    {FORGE_VIEWS.map(view=>{
+      const isActive=currentView===view.id, ViewIcon=VIEW_ICONS[view.id];
+      return <button type="button" key={view.id} aria-current={isActive?'page':undefined} onClick={()=>onSetView(view.id)}>
+        <ViewIcon size={18} aria-hidden="true"/><span>{view.label}</span>
+      </button>;
+    })}
+  </nav>;
 }
 
 // ─── Forge Button (reusable styled button) ──────────────────
-function ForgeButton({ onClick, disabled, children, variant = "default", style: extraStyle }: {onClick:MouseEventHandler<HTMLButtonElement>; disabled?:boolean; children:ReactNode; variant?:"default"|"danger"|"gold"|"green"; style?:CSSProperties}) {
-  const colors = {
-    default: { border: FORGE_COLORS.iron, bg: "rgba(139,58,0,0.15)", text: FORGE_COLORS.emberCore, hoverBg: "rgba(255,107,26,0.15)" },
-    danger:  { border: "#6a2020", bg: "rgba(198,40,40,0.1)", text: "#c86040", hoverBg: "rgba(198,40,40,0.2)" },
-    gold:    { border: "#8a7a3a", bg: "rgba(255,215,0,0.08)", text: "#d4a820", hoverBg: "rgba(255,215,0,0.15)" },
-    green:   { border: "#3a6a3a", bg: "rgba(74,138,58,0.1)", text: "#6a9a5a", hoverBg: "rgba(74,138,58,0.2)" },
-  };
-  const c = colors[variant] || colors.default;
+function ForgeButton({onClick,disabled,children,variant='default',style,className=''}:{onClick:MouseEventHandler<HTMLButtonElement>;disabled?:boolean;children:ReactNode;variant?:'default'|'danger'|'gold'|'green';style?:CSSProperties;className?:string}) {
+  return <button type="button" className={'forge-button forge-button-'+variant+' '+className} onClick={onClick} disabled={disabled} style={style}>{children}</button>;
+}
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        fontFamily: "Cinzel, serif",
-        fontSize: "0.7rem",
-        letterSpacing: "1px",
-        color: disabled ? "#4a4030" : c.text,
-        background: disabled ? "rgba(26,21,16,0.3)" : c.bg,
-        border: `1px solid ${disabled ? "#2a2420" : c.border}`,
-        padding: "6px 16px",
-        borderRadius: 4,
-        cursor: disabled ? "not-allowed" : "pointer",
-        transition: "all 200ms ease",
-        opacity: disabled ? 0.5 : 1,
-        ...extraStyle,
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.backgroundColor = c.hoverBg;
-          e.currentTarget.style.borderColor = c.text;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.backgroundColor = c.bg;
-          e.currentTarget.style.borderColor = c.border;
-        }
-      }}
-    >
-      {children}
-    </button>
-  );
+/** Native top-layer confirmation keeps the game inert until the choice is dismissed. */
+function ForgeConfirmation({title,children,onDismiss,fallbackItemUid}:{title:string;children:ReactNode;onDismiss:()=>void;fallbackItemUid:number}) {
+  const ref=useRef<HTMLDialogElement>(null), heading=useRef<HTMLHeadingElement>(null), titleId=useId();
+  useEffect(()=>{
+    const dialog=ref.current;if(!dialog)return;
+    const previous=document.activeElement;dialog.showModal();heading.current?.focus();
+    return ()=>{
+      dialog.close();
+      const fallback=document.querySelector<HTMLElement>('[data-forge-item-uid="'+fallbackItemUid+'"]') ?? document.querySelector<HTMLElement>('.forge-navigation button[aria-current="page"]');
+      const target=previous instanceof HTMLElement && previous.isConnected && !previous.matches(':disabled')?previous:fallback;
+      target?.focus();
+    };
+  },[fallbackItemUid]);
+  return <dialog ref={ref} className="forge-confirmation" aria-modal="true" aria-labelledby={titleId}
+    onCancel={event=>{event.preventDefault();onDismiss();}}
+    onKeyDown={event=>{
+      if(event.key!=='Tab')return;
+      const buttons=event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'), first=buttons[0],last=buttons[buttons.length-1];
+      if(document.activeElement===heading.current){event.preventDefault();(event.shiftKey?last:first)?.focus();}
+      else if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+    }}
+    onClick={event=>{const rect=event.currentTarget.getBoundingClientRect();if(event.target===event.currentTarget&&(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom))onDismiss();}}>
+    <h3 ref={heading} id={titleId} tabIndex={-1}>{title}</h3>{children}
+  </dialog>;
 }
 
 // ─── Section Label ───────────────────────────────────────────
-function SectionLabel({ children }: {children:ReactNode}) {
-  return (
-    <div
-      style={{
-        fontFamily: "Cinzel, serif",
-        fontSize: "0.55rem",
-        color: "#5a5550",
-        letterSpacing: "2px",
-        textTransform: "uppercase",
-        textAlign: "center",
-        marginBottom: 8,
-      }}
-    >
-      {children}
-    </div>
-  );
+function SectionLabel({children}:{children:ReactNode}) {
+  return <h3 className="forge-section-label">{children}</h3>;
 }
 
 // ─── Commission Desk (Orders View) ──────────────────────────
@@ -1072,20 +873,13 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
           marginBottom: 12,
           border: `1px solid ${FORGE_COLORS.emberDim}30`,
           borderRadius: 6,
-          backgroundColor: "rgba(26,21,16,0.6)",
+          backgroundColor: "rgba(26,21,16,0.6)"
         }}
       >
         <div className="flex items-start gap-2">
           <NpcPortrait initial="G" role="smith" borderColor={FORGE_COLORS.emberCore} size={36} />
-          <p
-            style={{
-              fontFamily: "Almendra, Crimson Text, serif",
-              fontStyle: "italic",
-              fontSize: "0.8rem",
-              color: "#c8b090",
-              margin: 0,
-              lineHeight: 1.4,
-            }}
+          <p className="forge-lore"
+            style={{color: forgeTextColor("#c8b090"), margin: 0}}
           >
             &ldquo;{godricRec}&rdquo;
           </p>
@@ -1097,8 +891,9 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
         {ITEM_CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.id;
           return (
-            <button
+            <button className="forge-caption"
               key={cat.id}
+              aria-pressed={isActive}
               onClick={() => setActiveCategory(cat.id)}
               style={{
                 flex: 1,
@@ -1106,12 +901,9 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
                 border: "none",
                 borderBottom: isActive ? `2px solid ${FORGE_COLORS.emberCore}` : "2px solid transparent",
                 backgroundColor: isActive ? "rgba(255,107,26,0.08)" : "transparent",
-                color: isActive ? FORGE_COLORS.emberCore : "#5a5550",
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.6rem",
-                letterSpacing: "1px",
+                color: forgeTextColor(isActive ? FORGE_COLORS.emberCore : "#5a5550"),
                 cursor: "pointer",
-                transition: "all 200ms ease",
+                transition: "all 200ms ease"
               }}
             >
               {cat.icon} {cat.label}
@@ -1121,7 +913,7 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
       </div>
 
       {/* Item grid */}
-      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%,260px), 1fr))" }}>
         {items.map((item) => {
           const affordable = canAfford(item);
           const diff = DIFFICULTY_DISPLAY[item.difficulty] || DIFFICULTY_DISPLAY.easy;
@@ -1134,59 +926,42 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
                 borderRadius: 6,
                 backgroundColor: "rgba(26,21,16,0.5)",
                 padding: 10,
-                opacity: affordable ? 1 : 0.6,
-                transition: "all 200ms ease",
+                transition: "all 200ms ease"
               }}
             >
               {/* Item name + difficulty */}
               <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                <h4
-                  style={{
-                    fontFamily: "Cinzel, serif",
-                    fontSize: "0.75rem",
-                    color: affordable ? FORGE_COLORS.parchment : "#5a5550",
-                    margin: 0,
-                  }}
+                <h4 className="forge-caption"
+                  style={{color: forgeTextColor(affordable ? FORGE_COLORS.parchment : "#5a5550"), margin: 0}}
                 >
                   {item.name}
                 </h4>
-                <span
-                  style={{
-                    fontFamily: "Cinzel, serif",
-                    fontSize: "0.5rem",
-                    color: diff.color,
-                    letterSpacing: "1px",
-                  }}
+                <span className="forge-caption"
+                  style={{color: forgeTextColor(diff.color)}}
                 >
                   {"⚒".repeat(diff.anvils)}
                 </span>
               </div>
 
               {/* Description */}
-              <p
-                style={{
-                  fontFamily: "Crimson Text, serif",
-                  fontSize: "0.72rem",
-                  color: "#8a7a5a",
-                  margin: "0 0 6px",
-                  lineHeight: 1.3,
-                }}
+              <p className="forge-body"
+                style={{color: forgeTextColor("#8a7a5a"), margin: "0 0 6px"}}
               >
                 {item.description}
               </p>
 
               {/* Stats row */}
               {item.baseMilitary > 0 && (
-                <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#8a9098", marginBottom: 2 }}>
+                <div className="forge-caption"  style={{color: forgeTextColor("#8a9098"), marginBottom: 2}}>
                   Military: +{item.baseMilitary}
                 </div>
               )}
               {'effect' in item && item.effect && (
-                <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#6a8a5a", marginBottom: 2 }}>
+                <div className="forge-caption"  style={{color: forgeTextColor("#6a8a5a"), marginBottom: 2}}>
                   {item.effect}
                 </div>
               )}
-              <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#a89050", marginBottom: 6 }}>
+              <div className="forge-caption"  style={{color: forgeTextColor("#a89050"), marginBottom: 6}}>
                 Trade: {item.baseTradeValue} denarii
               </div>
 
@@ -1196,30 +971,23 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
                   if (amt === 0) return null;
                   const has = key === "gold" ? denarii >= amt : materialAmount(resources,key) >= amt;
                   return (
-                    <span
+                    <span className="forge-caption"
                       key={key}
-                      style={{
-                        fontFamily: "Cinzel, serif",
-                        fontSize: "0.55rem",
-                        color: has ? "#6a8a5a" : "#c86040",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                      }}
+                      style={{color: forgeTextColor(has ? "#6a8a5a" : "#c86040"), display: "flex", alignItems: "center", gap: 2}}
                     >
-                      {has ? <Check size={9} /> : <X size={9} />}
-                      {amt} {key}
+                      {has ? <Check size={14} aria-hidden="true" /> : <X size={14} aria-hidden="true" />}
+                      {amt} {key}{!has && " (short)"}
                     </span>
                   );
                 })}
               </div>
 
               {/* Commission button */}
-              <ForgeButton
+              <ForgeButton className="forge-caption"
                 onClick={() => onCommission(item)}
                 disabled={!affordable}
                 variant="gold"
-                style={{ width: "100%", fontSize: "0.6rem", padding: "5px 8px" }}
+                style={{width: "100%", padding: "5px 8px"}}
               >
                 Commission
               </ForgeButton>
@@ -1236,24 +1004,9 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }: {resour
 function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:readonly ForgeSavedItem[]; equipped:readonly ForgeSavedItem[]; dispatch:ForgeDispatch; garrison:number}) {
   const [selectedItem, setSelectedItem] = useState<ForgeSavedItem|null>(null);
   const [confirmAction, setConfirmAction] = useState<{action:Destination; item:ForgeSavedItem}|null>(null);
-  const armoryRef = useRef<HTMLDivElement>(null), dialogRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!confirmAction) return;
-    const active = document.activeElement, trigger = active instanceof HTMLElement ? active : null, armory = armoryRef.current;
-    dialogRef.current?.querySelector('button')?.focus();
-    return () => {
-      if (trigger?.isConnected) trigger.focus();
-      else armory?.querySelector<HTMLButtonElement>('[data-forge-item-uid="' + confirmAction.item.uid + '"]')?.focus();
-    };
-  }, [confirmAction]);
-  function handleDialogKey(event:KeyboardEvent<HTMLDivElement>) {
-    if (event.key === 'Escape') {event.preventDefault(); setConfirmAction(null); return;}
-    if (event.key !== 'Tab') return;
-    const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
-    const first = buttons[0], last = buttons[buttons.length - 1];
-    if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last?.focus();}
-    else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first?.focus();}
-  }
+
+
+
 
   const totalMilitary = equipped.reduce((sum, i) => sum + (i.militaryBonus || 0), 0);
   const {weapon: weaponCount, armor: armorCount} = countFunctionalEquipment(equipped);
@@ -1288,27 +1041,37 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:read
           borderRadius: 6,
           backgroundColor: isSelected ? "rgba(255,107,26,0.06)" : "rgba(26,21,16,0.5)",
           padding: 8,
-          transition: "all 200ms ease",
+          transition: "all 200ms ease"
         }}
       >
-        <button type="button" className="flex items-center justify-between" data-forge-item-uid={item.uid} aria-label={`Select ${item.grade} ${item.name}`} aria-expanded={isSelected} onClick={() => setSelectedItem(isSelected ? null : item)} style={{width: "100%", minHeight: 44, gap: 8, marginBottom: 2, padding: 0, border: 0, background: "transparent", textAlign: "left", cursor: "pointer"}}>
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.875rem", color: FORGE_COLORS.parchment }}>
+        <button type="button" className="flex items-center justify-between" data-forge-item-uid={item.uid} aria-label={`Select ${item.grade} ${item.name}`} aria-expanded={isSelected} onClick={() => setSelectedItem(isSelected ? null : item)} style={{
+          width: "100%",
+          minHeight: 44,
+          gap: 8,
+          marginBottom: 2,
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          textAlign: "left",
+          cursor: "pointer"
+        }}>
+          <span className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.parchment)}}>
             {item.name}
           </span>
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.75rem", color: gradeData.color }}>
+          <span className="forge-caption"  style={{color: forgeTextColor(gradeData.color)}}>
             {item.grade}
           </span>
         </button>
         <div className="flex gap-3" style={{ marginTop: 2 }}>
           {(item.militaryBonus ?? 0) > 0 && (
-            <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#8a9098" }}>
+            <span className="forge-caption"  style={{color: forgeTextColor("#8a9098")}}>
               +{item.militaryBonus} mil
             </span>
           )}
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#a89050" }}>
+          <span className="forge-caption"  style={{color: forgeTextColor("#a89050")}}>
             {item.tradeValue}d
           </span>
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#6a5a4a" }}>
+          <span className="forge-caption"  style={{color: forgeTextColor("#6a5a4a")}}>
             {item.durability}
           </span>
         </div>
@@ -1317,93 +1080,47 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:read
         {isSelected && !isEquipped && (
           <div className="flex gap-2" style={{ marginTop: 8 }}>
             {getDeployableTool(item.itemId) && (
-              <ForgeButton onClick={(e) => {e.stopPropagation(); handleAction("equip", item);}} variant="green" disabled={!isWorkingTool(item)} style={{flex: 1, fontSize: "0.75rem", padding: "6px"}}>Deploy</ForgeButton>
+              <ForgeButton className="forge-caption"  onClick={(e) => {e.stopPropagation(); handleAction("equip", item);}} variant="green" disabled={!isWorkingTool(item)} style={{flex: 1, padding: "6px"}}>Deploy</ForgeButton>
             )}
             {(item.category === "weapon" || item.category === "armor") && (
-              <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("equip", item); }} variant="green" disabled={!hasDefenseBonus(item.militaryBonus)}
-                style={{ flex: 1, fontSize: "0.55rem", padding: "4px 6px" }}>
+              <ForgeButton className="forge-caption"  onClick={(e) => { e.stopPropagation(); handleAction("equip", item); }} variant="green" disabled={!hasDefenseBonus(item.militaryBonus)}
+                style={{flex: 1, padding: "4px 6px"}}>
                 <Shield size={10} /> Equip
               </ForgeButton>
             )}
-            <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("sell", item); }} variant="gold"
-              style={{ flex: 1, fontSize: "0.55rem", padding: "4px 6px" }}>
+            <ForgeButton className="forge-caption"  onClick={(e) => { e.stopPropagation(); handleAction("sell", item); }} variant="gold"
+              style={{flex: 1, padding: "4px 6px"}}>
               <Coins size={10} /> Sell
             </ForgeButton>
-            <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("scrap", item); }} variant="danger"
-              style={{ flex: 1, fontSize: "0.55rem", padding: "4px 6px" }}>
+            <ForgeButton className="forge-caption"  onClick={(e) => { e.stopPropagation(); handleAction("scrap", item); }} variant="danger"
+              style={{flex: 1, padding: "4px 6px"}}>
               <Trash2 size={10} /> Scrap
             </ForgeButton>
           </div>
         )}
-        {isSelected && getDeployableTool(item.itemId) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem", marginTop: 8}}>{isWorkingTool(item) ? `${isEquipped ? 'Deployed. ' : ''}${getToolDeploymentDescription(item.itemId)}` : getBrokenToolDescription(item.itemId)}</p>}
+        {isSelected && getDeployableTool(item.itemId) && <p className="forge-caption"  role="status" style={{color: forgeTextColor(FORGE_COLORS.parchment), marginTop: 8}}>{isWorkingTool(item) ? `${isEquipped ? 'Deployed. ' : ''}${getToolDeploymentDescription(item.itemId)}` : getBrokenToolDescription(item.itemId)}</p>}
         {isSelected && (item.category === "weapon" || item.category === "armor") && !hasDefenseBonus(item.militaryBonus) && (
-          <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", marginTop: 8}}>Provides no defense bonus.</p>
+          <p className="forge-caption"  role="status" style={{color: forgeTextColor(FORGE_COLORS.parchment), marginTop: 8}}>Provides no defense bonus.</p>
         )}
       </div>
     );
   }
 
   return (
-    <div ref={armoryRef}>
+    <div >
       {/* Confirmation dialog */}
-      {confirmAction && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-          }}
-          onClick={() => setConfirmAction(null)}
-        >
-          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="forge-item-confirmation-title" onKeyDown={handleDialogKey}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: "#1a1510",
-              border: `1px solid ${FORGE_COLORS.emberDim}`,
-              borderRadius: 8,
-              padding: 20,
-              maxWidth: 360,
-              width: "90%",
-            }}
-          >
-            <h3 id="forge-item-confirmation-title" style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: FORGE_COLORS.parchment, margin: "0 0 8px" }}>
-              {confirmAction.action === "equip" ? (getDeployableTool(confirmAction.item.itemId) ? "Deploy on the Estate?" : "Equip to Garrison?") :
-               confirmAction.action === "sell" ? "Sell Item?" : "Scrap Item?"}
-            </h3>
-            <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.8rem", color: "#a89070", margin: "0 0 4px" }}>
-              {confirmAction.item.grade} {confirmAction.item.name}
-            </p>
-            {confirmAction.action === "equip" && (
-              <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#6a8a5a", margin: "0 0 12px" }}>
-                {getDeployableTool(confirmAction.item.itemId) ? `${getToolDeploymentDescription(confirmAction.item.itemId)}` : `+${confirmAction.item.militaryBonus} military bonus to garrison.`}
-              </p>
-            )}
-            {confirmAction.action === "sell" && (
-              <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#a89050", margin: "0 0 12px" }}>
-                Receive {confirmAction.item.tradeValue} denarii.
-              </p>
-            )}
-            {confirmAction.action === "scrap" && (
-              <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#c86040", margin: "0 0 12px" }}>
-                Destroy item. Recover ~{Math.round(SCRAP_RECOVERY_RATE * 100)}% of materials.
-              </p>
-            )}
-            <div className="flex gap-2">
-              <ForgeButton onClick={executeAction} variant={confirmAction.action === "scrap" ? "danger" : "gold"}
-                style={{ flex: 1 }}>
-                Confirm
-              </ForgeButton>
-              <ForgeButton onClick={() => setConfirmAction(null)} style={{ flex: 1 }}>
-                Cancel
-              </ForgeButton>
-            </div>
-          </div>
+      {confirmAction && <ForgeConfirmation fallbackItemUid={confirmAction.item.uid}
+        title={confirmAction.action==='equip'?(getDeployableTool(confirmAction.item.itemId)?'Deploy on the Estate?':'Equip to Garrison?'):confirmAction.action==='sell'?'Sell Item?':'Scrap Item?'}
+        onDismiss={()=>setConfirmAction(null)}>
+        <p>{confirmAction.item.grade} {confirmAction.item.name}</p>
+        {confirmAction.action==='equip' && <p className="forge-success">{getDeployableTool(confirmAction.item.itemId)?getToolDeploymentDescription(confirmAction.item.itemId):'+'+confirmAction.item.militaryBonus+' military bonus to garrison.'}</p>}
+        {confirmAction.action==='sell' && <p>Receive {confirmAction.item.tradeValue} denarii.</p>}
+        {confirmAction.action==='scrap' && <p className="forge-danger">Destroy item. Recover ~{Math.round(SCRAP_RECOVERY_RATE*100)}% of materials.</p>}
+        <div className="forge-confirm-actions">
+          <ForgeButton onClick={executeAction} variant={confirmAction.action==='scrap'?'danger':'gold'}>Confirm</ForgeButton>
+          <ForgeButton onClick={()=>setConfirmAction(null)}>Cancel</ForgeButton>
         </div>
-      )}
+      </ForgeConfirmation>}
 
       {/* Garrison equipment summary */}
       <div
@@ -1412,32 +1129,32 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:read
           marginBottom: 12,
           border: "1px solid rgba(90,85,80,0.2)",
           borderRadius: 6,
-          backgroundColor: "rgba(26,21,16,0.5)",
+          backgroundColor: "rgba(26,21,16,0.5)"
         }}
       >
         <SectionLabel>Usable Garrison Equipment</SectionLabel>
-        <div className="flex justify-center gap-6">
+        <div className="forge-stat-grid">
           <div className="text-center">
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1.1rem", color: "#8a9098" }}>{totalMilitary}</div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>
+            <div className="forge-value"  style={{color: forgeTextColor("#8a9098")}}>{totalMilitary}</div>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
               TOTAL BONUS
             </div>
           </div>
           <div className="text-center">
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1.1rem", color: FORGE_COLORS.emberCore }}>{weaponCount}</div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>
+            <div className="forge-value"  style={{color: forgeTextColor(FORGE_COLORS.emberCore)}}>{weaponCount}</div>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
               WEAPONS
             </div>
           </div>
           <div className="text-center">
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1.1rem", color: "#6a8a5a" }}>{armorCount}</div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>
+            <div className="forge-value"  style={{color: forgeTextColor("#6a8a5a")}}>{armorCount}</div>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
               ARMOR
             </div>
           </div>
           <div className="text-center">
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1.1rem", color: FORGE_COLORS.parchment }}>{garrison}</div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>
+            <div className="forge-value"  style={{color: forgeTextColor(FORGE_COLORS.parchment)}}>{garrison}</div>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
               SOLDIERS
             </div>
           </div>
@@ -1448,7 +1165,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:read
       {equipped.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <SectionLabel>Equipped ({equipped.length})</SectionLabel>
-          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+          <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%,260px), 1fr))" }}>
             {equipped.map(item => renderItemCard(item, true))}
           </div>
         </div>
@@ -1457,18 +1174,11 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }: {inventory:read
       {/* Stored inventory */}
       <SectionLabel>Armory ({inventory.length})</SectionLabel>
       {inventory.length === 0 ? (
-        <p style={{
-          fontFamily: "Almendra, Crimson Text, serif",
-          fontStyle: "italic",
-          fontSize: "0.8rem",
-          color: "#4a4030",
-          textAlign: "center",
-          padding: "20px 0",
-        }}>
+        <p className="forge-lore"  style={{color: forgeTextColor("#4a4030"), textAlign: "center", padding: "20px 0"}}>
           The armory is empty. Visit the Commission Desk to forge something.
         </p>
       ) : (
-        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+        <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%,260px), 1fr))" }}>
           {inventory.map(item => renderItemCard(item, false))}
         </div>
       )}
@@ -1498,12 +1208,7 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
 
       {/* Season indicator */}
       <div className="text-center" style={{ marginBottom: 12 }}>
-        <span style={{
-          fontFamily: "Almendra, Crimson Text, serif",
-          fontStyle: "italic",
-          fontSize: "0.875rem",
-          color: "#c8b090",
-        }}>
+        <span className="forge-lore"  style={{color: forgeTextColor("#c8b090")}}>
           Purchases share a 100-unit supply per material each season with the Market. Selling does not replenish it.
         </span>
       </div>
@@ -1535,37 +1240,38 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
                 padding: "8px 12px",
                 border: "1px solid rgba(90,85,80,0.2)",
                 borderRadius: 6,
-                backgroundColor: "rgba(26,21,16,0.5)",
+                backgroundColor: "rgba(26,21,16,0.5)"
               }}
             >
               {/* Resource info */}
               <div style={{ flex: "1 1 auto", minWidth: 0 }}>
                 <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.75rem", color: res.color }}>
+                  <span className="forge-caption"  style={{color: forgeTextColor(res.color)}}>
                     {res.icon} {marketInfo.label}
                   </span>
                   {trend === "high" && (
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#c86040" }}>
+                    <span className="forge-caption"  style={{color: forgeTextColor("#c86040")}}>
                       SCARCE
                     </span>
                   )}
                   {trend === "low" && (
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#6a8a5a" }}>
+                    <span className="forge-caption"  style={{color: forgeTextColor("#6a8a5a")}}>
                       ABUNDANT
                     </span>
                   )}
                 </div>
-                <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550" }}>
+                <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
                   In stock: {current} | Price: {price === null ? "Unavailable" : `${price}d`} per {marketInfo.unit}
                 </div>
-                <span style={{color:"#c8b090",fontSize:"0.875rem"}}>Supply: {remaining}</span>
+                <span className="forge-caption"  style={{color: forgeTextColor("#c8b090")}}>Supply: {remaining}</span>
               </div>
 
               {/* Quantity selector */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1" role="group" aria-label={res.label+' quantity'}>
                 {[1, 5, 10].map((q) => (
-                  <button
+                  <button className="forge-caption"
                     key={q}
+                    aria-pressed={qty===q}
                     onClick={() => setBuyQty(prev => ({ ...prev, [res.key]: q }))}
                     style={{
                       width: 28,
@@ -1573,10 +1279,8 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
                       border: `1px solid ${qty === q ? FORGE_COLORS.emberCore : FORGE_COLORS.iron}`,
                       borderRadius: 3,
                       backgroundColor: qty === q ? "rgba(255,107,26,0.15)" : "transparent",
-                      color: qty === q ? FORGE_COLORS.emberCore : "#5a5550",
-                      fontFamily: "Cinzel, serif",
-                      fontSize: "0.6rem",
-                      cursor: "pointer",
+                      color: forgeTextColor(qty === q ? FORGE_COLORS.emberCore : "#5a5550"),
+                      cursor: "pointer"
                     }}
                   >
                     {q}
@@ -1585,11 +1289,11 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
               </div>
 
               {/* Buy button */}
-              <ForgeButton
+              <ForgeButton className="forge-caption"
                 onClick={() => handleBuy(res.key, qty)}
                 disabled={!canBuy}
                 variant="gold"
-                style={{ fontSize: "0.55rem", padding: "4px 10px", whiteSpace: "nowrap" }}
+                style={{padding: "4px 10px", whiteSpace: "nowrap"}}
               >
                 {remaining===0?"Out of stock":price === null ? "Unavailable" : `Buy ${qty} (${totalCost}d)`}
               </ForgeButton>
@@ -1600,7 +1304,7 @@ function StorefrontView({ forgeResources, denarii, blacksmith, dispatch, season,
 
       {/* Treasury display */}
       <div className="text-center" style={{ marginTop: 12 }}>
-        <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.7rem", color: "#a89050" }}>
+        <span className="forge-caption"  style={{color: forgeTextColor("#a89050")}}>
           Treasury: {denarii} denarii
         </span>
       </div>
@@ -1648,41 +1352,41 @@ function ForgeResultView({ result, dispatch, onDone }: {result:CollectedResult; 
             padding: "12px 24px",
             border: `2px solid ${gradeData.color}60`,
             borderRadius: 8,
-            backgroundColor: "rgba(26,21,16,0.8)",
+            backgroundColor: "rgba(26,21,16,0.8)"
           }}
         >
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: gradeData.color, letterSpacing: "2px", marginBottom: 4 }}>
+          <div className="forge-caption"  style={{color: forgeTextColor(gradeData.color), marginBottom: 4}}>
             {gradeData.grade.toUpperCase()}
           </div>
-          <div style={{ fontFamily: "Cinzel Decorative, Cinzel, serif", fontSize: "1.1rem", color: FORGE_COLORS.parchment, marginBottom: 4 }}>
+          <div className="forge-heading"  style={{color: forgeTextColor(FORGE_COLORS.parchment), marginBottom: 4}}>
             {item.name}
           </div>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.65rem", color: "#8a7a5a" }}>
+          <div className="forge-caption"  style={{color: forgeTextColor("#8a7a5a")}}>
             Quality: {qualityScore}% | {gradeData.durability}
           </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="flex justify-center gap-6" style={{ marginBottom: 16 }}>
+      <div className="forge-stat-grid" style={{ marginBottom: 16 }}>
         {militaryBonus > 0 && (
           <div className="text-center">
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1rem", color: "#8a9098" }}>+{militaryBonus}</div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>MILITARY</div>
+            <div className="forge-value"  style={{color: forgeTextColor("#8a9098")}}>+{militaryBonus}</div>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>MILITARY</div>
           </div>
         )}
         <div className="text-center">
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "1rem", color: "#a89050" }}>{tradeValue}d</div>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "1px" }}>TRADE VALUE</div>
+          <div className="forge-value"  style={{color: forgeTextColor("#a89050")}}>{tradeValue}d</div>
+          <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>TRADE VALUE</div>
         </div>
       </div>
 
       {/* Destination buttons */}
       <SectionLabel>What shall we do with it?</SectionLabel>
-      {isWeaponOrArmor && !hasDefenseBonus(militaryBonus) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", textAlign: "center", marginBottom: 8}}>Provides no defense bonus.</p>}
+      {isWeaponOrArmor && !hasDefenseBonus(militaryBonus) && <p className="forge-caption"  role="status" style={{color: forgeTextColor(FORGE_COLORS.parchment), textAlign: "center", marginBottom: 8}}>Provides no defense bonus.</p>}
       <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(2, 1fr)", maxWidth: 400, margin: "0 auto" }}>
         {getDeployableTool(item.id) && <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !isWorkingTool({uid: latestUid, itemId: item.id, category: item.category, grade: grade.grade, qualityScore})}>Deploy on Estate</ForgeButton>}
-        {getDeployableTool(item.id) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.875rem"}}>{grade.grade === 'Scrap' ? getBrokenToolDescription(item.id) : `${getToolDeploymentDescription(item.id)}`}</p>}
+        {getDeployableTool(item.id) && <p className="forge-caption"  role="status" style={{color: forgeTextColor(FORGE_COLORS.parchment)}}>{grade.grade === 'Scrap' ? getBrokenToolDescription(item.id) : `${getToolDeploymentDescription(item.id)}`}</p>}
         {isWeaponOrArmor && (
           <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !hasDefenseBonus(militaryBonus)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 8px" }}>
@@ -1743,7 +1447,7 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:re
                 border: `1px solid ${buyer.id === "mortimer_agent" ? "#6a2020" : "rgba(90,85,80,0.2)"}`,
                 borderRadius: 6,
                 backgroundColor: buyer.id === "mortimer_agent" ? "rgba(106,32,32,0.08)" : "rgba(26,21,16,0.5)",
-                padding: 10,
+                padding: 10
               }}
             >
               <div className="flex items-start gap-2" style={{ marginBottom: 6 }}>
@@ -1754,44 +1458,28 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:re
                   size={36}
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 style={{ fontFamily: "Cinzel, serif", fontSize: "0.7rem", color: FORGE_COLORS.parchment, margin: 0 }}>
+                  <h4 className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.parchment), margin: 0}}>
                     {buyer.name}
                   </h4>
-                  <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.7rem", color: "#8a7a5a", margin: "2px 0 0", lineHeight: 1.3 }}>
+                  <p className="forge-body"  style={{color: forgeTextColor("#8a7a5a"), margin: "2px 0 0"}}>
                     {buyer.description}
                   </p>
                 </div>
                 {buyer.premium > 0 && (
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#d4a820", letterSpacing: "1px" }}>
+                  <span className="forge-caption"  style={{color: forgeTextColor("#d4a820")}}>
                     +{Math.round(buyer.premium * 100)}%
                   </span>
                 )}
               </div>
 
               {/* Dialogue */}
-              <p style={{
-                fontFamily: "Almendra, Crimson Text, serif",
-                fontStyle: "italic",
-                fontSize: "0.75rem",
-                color: "#c8b090",
-                margin: "0 0 6px",
-                paddingLeft: 8,
-                borderLeft: "2px solid rgba(90,85,80,0.3)",
-              }}>
+              <p className="forge-lore"  style={{color: forgeTextColor("#c8b090"), margin: "0 0 6px", paddingLeft: 8, borderLeft: "2px solid rgba(90,85,80,0.3)"}}>
                 &ldquo;{buyer.dialogue}&rdquo;
               </p>
 
               {/* Godric warning for Mortimer */}
               {buyer.godricWarning && (
-                <p style={{
-                  fontFamily: "Almendra, Crimson Text, serif",
-                  fontStyle: "italic",
-                  fontSize: "0.7rem",
-                  color: "#c86040",
-                  margin: "0 0 6px",
-                  paddingLeft: 8,
-                  borderLeft: "2px solid #6a2020",
-                }}>
+                <p className="forge-lore"  style={{color: forgeTextColor("#c86040"), margin: "0 0 6px", paddingLeft: 8, borderLeft: "2px solid #6a2020"}}>
                   Godric: &ldquo;{buyer.godricWarning}&rdquo;
                 </p>
               )}
@@ -1802,19 +1490,17 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:re
                   {preferred.map((item) => {
                     const price = getBuyerPrice(buyer, item, salesThisSeason);
                     return (
-                      <button
+                      <button className="forge-caption"
                         key={item.uid}
                         onClick={() => handleSellToBuyer(buyer, item)}
                         style={{
-                          fontFamily: "Cinzel, serif",
-                          fontSize: "0.55rem",
-                          color: FORGE_COLORS.parchment,
+                          color: forgeTextColor(FORGE_COLORS.parchment),
                           background: "rgba(139,58,0,0.12)",
                           border: `1px solid ${FORGE_COLORS.iron}`,
                           borderRadius: 4,
                           padding: "4px 8px",
                           cursor: "pointer",
-                          transition: "all 200ms ease",
+                          transition: "all 200ms ease"
                         }}
                       >
                         {item.name} ({price}d)
@@ -1823,7 +1509,7 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:re
                   })}
                 </div>
               ) : (
-                <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.65rem", color: "#4a4030", fontStyle: "italic" }}>
+                <p className="forge-body"  style={{color: forgeTextColor("#4a4030")}}>
                   No items in stock that interest this buyer.
                 </p>
               )}
@@ -1833,37 +1519,15 @@ function BuyerPanel({ buyers, inventory, dispatch, salesThisSeason }: {buyers:re
       </div>
 
       {/* Confirm sale dialog */}
-      {confirmSale && (
-        <div
-          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}
-          onClick={() => setConfirmSale(null)}
-        >
-          <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: "#1a1510", border: `1px solid ${FORGE_COLORS.emberDim}`, borderRadius: 8, padding: 20, maxWidth: 360, width: "90%" }}>
-            <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: FORGE_COLORS.parchment, margin: "0 0 8px" }}>
-              Sell to {confirmSale.buyer.name}?
-            </h3>
-            <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.8rem", color: "#a89070", margin: "0 0 4px" }}>
-              {confirmSale.item.grade} {confirmSale.item.name}
-            </p>
-            <p style={{ fontFamily: "Cinzel, serif", fontSize: "0.8rem", color: "#d4a820", margin: "0 0 4px" }}>
-              {confirmSale.price} denarii
-            </p>
-            {confirmSale.buyer.respectCost && (
-              <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#c86040", margin: "0 0 8px" }}>
-                Godric will disapprove. ({confirmSale.buyer.respectCost} respect)
-              </p>
-            )}
-            <div className="flex gap-2">
-              <ForgeButton onClick={executeSale} variant={confirmSale.buyer.id === "mortimer_agent" ? "danger" : "gold"} style={{ flex: 1 }}>
-                Sell
-              </ForgeButton>
-              <ForgeButton onClick={() => setConfirmSale(null)} style={{ flex: 1 }}>
-                Cancel
-              </ForgeButton>
-            </div>
-          </div>
+      {confirmSale && <ForgeConfirmation title={'Sell to '+confirmSale.buyer.name+'?'} fallbackItemUid={confirmSale.item.uid} onDismiss={()=>setConfirmSale(null)}>
+        <p>{confirmSale.item.grade} {confirmSale.item.name}</p>
+        <p className="forge-gold">{confirmSale.price} denarii</p>
+        {confirmSale.buyer.respectCost && <p className="forge-danger">Godric will disapprove. ({confirmSale.buyer.respectCost} respect)</p>}
+        <div className="forge-confirm-actions">
+          <ForgeButton onClick={executeSale} variant={confirmSale.buyer.id==='mortimer_agent'?'danger':'gold'}>Sell</ForgeButton>
+          <ForgeButton onClick={()=>setConfirmSale(null)}>Cancel</ForgeButton>
         </div>
-      )}
+      </ForgeConfirmation>}
     </div>
   );
 }
@@ -1907,7 +1571,7 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
           gap: 8,
-          marginBottom: 16,
+          marginBottom: 16
         }}
       >
         {[
@@ -1925,13 +1589,13 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
               padding: "8px 4px",
               border: "1px solid rgba(90,85,80,0.2)",
               borderRadius: 6,
-              backgroundColor: "rgba(26,21,16,0.5)",
+              backgroundColor: "rgba(26,21,16,0.5)"
             }}
           >
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "1rem", color: stat.color }}>
+            <div className="forge-value"  style={{color: forgeTextColor(stat.color)}}>
               {typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}
             </div>
-            <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.45rem", color: "#5a5550", letterSpacing: "1px" }}>
+            <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
               {stat.label}
             </div>
           </div>
@@ -1944,13 +1608,13 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
         border: "1px solid rgba(90,85,80,0.2)",
         borderRadius: 6,
         backgroundColor: "rgba(26,21,16,0.5)",
-        marginBottom: 12,
+        marginBottom: 12
       }}>
-        <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+        <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 8}}>
           Quality Distribution
         </div>
         {totalForged === 0 ? (
-          <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#4a4030", textAlign: "center", fontStyle: "italic" }}>
+          <p className="forge-body"  style={{color: forgeTextColor("#4a4030"), textAlign: "center"}}>
             No items forged yet.
           </p>
         ) : (
@@ -1960,7 +1624,7 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
               const gradeData = isGrade(grade) ? QUALITY_GRADES[grade] : undefined;
               return (
                 <div key={grade} className="flex items-center gap-2">
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: gradeData?.color || "#5a5550", width: 70, textAlign: "right" }}>
+                  <span className="forge-caption"  style={{color: forgeTextColor(gradeData?.color || "#5a5550"), width: 110, minWidth: 110, textAlign: "right"}}>
                     {grade}
                   </span>
                   <div style={{ flex: 1, height: 12, borderRadius: 3, backgroundColor: "#1a1510", overflow: "hidden", border: "1px solid #2a2420" }}>
@@ -1970,10 +1634,10 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
                       backgroundColor: gradeData?.color || "#5a5550",
                       borderRadius: 3,
                       transition: "width 600ms ease",
-                      opacity: 0.7,
+                      opacity: 0.7
                     }} />
                   </div>
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#8a7a5a", width: 20, textAlign: "right" }}>
+                  <span className="forge-caption"  style={{color: forgeTextColor("#8a7a5a"), width: 20, textAlign: "right"}}>
                     {count}
                   </span>
                 </div>
@@ -1990,9 +1654,9 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
           border: "1px solid rgba(90,85,80,0.2)",
           borderRadius: 6,
           backgroundColor: "rgba(26,21,16,0.5)",
-          marginBottom: 12,
+          marginBottom: 12
         }}>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", textAlign: "center", marginBottom: 8 }}>
+          <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 8}}>
             Quality Trend (Last {recentQuality.length})
           </div>
           <div className="flex items-end gap-1" style={{ height: 50, justifyContent: "center" }}>
@@ -2007,19 +1671,11 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
                     backgroundColor: barColor,
                     borderRadius: "2px 2px 0 0",
                     opacity: 0.8,
-                    position: "relative",
+                    position: "relative"
                   }}
                   title={`${q}%`}
                 >
-                  <span style={{
-                    position: "absolute",
-                    bottom: "100%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    fontFamily: "Cinzel, serif",
-                    fontSize: "0.4rem",
-                    color: "#5a5550",
-                  }}>
+                  <span className="forge-caption"  style={{position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", color: forgeTextColor("#5a5550")}}>
                     {q}
                   </span>
                 </div>
@@ -2036,12 +1692,12 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
           border: "1px solid rgba(90,85,80,0.2)",
           borderRadius: 6,
           backgroundColor: "rgba(26,21,16,0.5)",
-          marginBottom: 12,
+          marginBottom: 12
         }}>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", textAlign: "center", marginBottom: 6 }}>
+          <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 6}}>
             Production by Type
           </div>
-          <div className="flex justify-center gap-4">
+          <div className="forge-stat-grid">
             {([
               { key: "weapon", label: "Weapons", icon: "⚔", color: FORGE_COLORS.emberCore },
               { key: "armor", label: "Armor", icon: "⛊", color: "#8a9098" },
@@ -2049,8 +1705,8 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
               { key: "trade_good", label: "Trade", icon: "⚖", color: "#d4a820" },
             ] as const).map((cat) => (
               <div key={cat.key} className="text-center">
-                <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.9rem", color: cat.color }}>{catCount[cat.key]}</div>
-                <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.45rem", color: "#5a5550", letterSpacing: "1px" }}>{cat.icon} {cat.label.toUpperCase()}</div>
+                <div className="forge-caption"  style={{color: forgeTextColor(cat.color)}}>{catCount[cat.key]}</div>
+                <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>{cat.icon} {cat.label.toUpperCase()}</div>
               </div>
             ))}
           </div>
@@ -2063,12 +1719,12 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
         border: "1px solid rgba(90,85,80,0.2)",
         borderRadius: 6,
         backgroundColor: "rgba(26,21,16,0.5)",
-        marginBottom: 12,
+        marginBottom: 12
       }}>
-        <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", textAlign: "center", marginBottom: 6 }}>
+        <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 6}}>
           Garrison Equipment Readiness
         </div>
-        <div className="flex justify-center gap-6">
+        <div className="forge-stat-grid">
           {[
             { label: "ARMED", value: `${readiness.armed}/${garrison}`, color: readiness.armed >= garrison ? "#6a8a5a" : FORGE_COLORS.emberCore },
             { label: "ARMORED", value: `${readiness.armored}/${garrison}`, color: readiness.armored >= garrison ? "#6a8a5a" : "#8a9098" },
@@ -2076,8 +1732,8 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
             { label: "DEF BONUS", value: `+${readiness.defenseBonus}`, color: "#6a8a5a" },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: s.color }}>{s.value}</div>
-              <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.4rem", color: "#5a5550", letterSpacing: "1px" }}>{s.label}</div>
+              <div className="forge-caption"  style={{color: forgeTextColor(s.color)}}>{s.value}</div>
+              <div className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -2089,7 +1745,7 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
             borderRadius: 4,
             backgroundColor: readiness.readiness >= 60 ? "#6a8a5a" : readiness.readiness >= 30 ? FORGE_COLORS.emberCore : "#c86040",
             transition: "width 600ms ease",
-            boxShadow: `0 0 6px ${readiness.readiness >= 60 ? "#6a8a5a" : FORGE_COLORS.emberCore}40`,
+            boxShadow: `0 0 6px ${readiness.readiness >= 60 ? "#6a8a5a" : FORGE_COLORS.emberCore}40`
           }} />
         </div>
       </div>
@@ -2100,9 +1756,9 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
           padding: "10px 12px",
           border: "1px solid rgba(90,85,80,0.2)",
           borderRadius: 6,
-          backgroundColor: "rgba(26,21,16,0.5)",
+          backgroundColor: "rgba(26,21,16,0.5)"
         }}>
-          <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", textAlign: "center", marginBottom: 6 }}>
+          <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), textAlign: "center", marginBottom: 6}}>
             Recent Production ({Math.min(log.length, 8)} of {log.length})
           </div>
           <div className="grid gap-1">
@@ -2110,17 +1766,17 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
               const gradeData = isGrade(entry.grade) ? QUALITY_GRADES[entry.grade] : undefined;
               return (
                 <div key={i} className="flex items-center justify-between" style={{ padding: "3px 0", borderBottom: "1px solid rgba(90,85,80,0.1)" }}>
-                  <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.6rem", color: FORGE_COLORS.parchment }}>
+                  <span className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.parchment)}}>
                     {entry.name}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: gradeData?.color || "#5a5550" }}>
+                    <span className="forge-caption"  style={{color: forgeTextColor(gradeData?.color || "#5a5550")}}>
                       {entry.grade}
                     </span>
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#a89050" }}>
+                    <span className="forge-caption"  style={{color: forgeTextColor("#a89050")}}>
                       {entry.tradeValue}d
                     </span>
-                    <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.45rem", color: "#5a5550" }}>
+                    <span className="forge-caption"  style={{color: forgeTextColor("#5a5550")}}>
                       T{entry.turn}
                     </span>
                   </div>
@@ -2150,36 +1806,36 @@ function SupplyEventBanner({ event, onDismiss, onInvest, denarii, acknowledged, 
         border: `1px solid ${FORGE_COLORS.emberDim}`,
         borderRadius: 6,
         backgroundColor: "rgba(139,58,0,0.08)",
-        borderLeft: `3px solid ${FORGE_COLORS.emberCore}`,
+        borderLeft: `3px solid ${FORGE_COLORS.emberCore}`
       }}
     >
       <div className="flex items-start gap-2" style={{ marginBottom: 6 }}>
         <AlertTriangle size={14} style={{ color: FORGE_COLORS.emberCore, marginTop: 2, flexShrink: 0 }} />
         <div className="flex-1 min-w-0">
-          <h4 style={{ fontFamily: "Cinzel, serif", fontSize: "0.75rem", color: FORGE_COLORS.parchment, margin: "0 0 4px" }}>
+          <h4 className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.parchment), margin: "0 0 4px"}}>
             {event.name}
           </h4>
-          <p style={{ fontFamily: "Crimson Text, serif", fontSize: "0.75rem", color: "#a89070", margin: "0 0 6px", lineHeight: 1.3 }}>
+          <p className="forge-body"  style={{color: forgeTextColor("#a89070"), margin: "0 0 6px"}}>
             {event.description}
           </p>
-          <p style={{ fontFamily: "Almendra, Crimson Text, serif", fontStyle: "italic", fontSize: "0.75rem", color: "#c8b090", margin: 0 }}>
+          <p className="forge-lore"  style={{color: forgeTextColor("#c8b090"), margin: 0}}>
             Godric: &ldquo;{event.godricComment}&rdquo;
           </p>
         </div>
       </div>
       <div className="flex gap-2" style={{ marginTop: 8 }}>
-        {acknowledged ? <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem"}}>Acknowledged.{remaining > 0 ? ` Supply conditions continue for ${remaining} season${remaining === 1 ? "" : "s"}.` : event.duration > 0 ? " Supply conditions have ended." : ""}</p> : (
+        {acknowledged ? <p className="forge-caption"  role="status" style={{color: forgeTextColor(FORGE_COLORS.parchment)}}>Acknowledged.{remaining > 0 ? ` Supply conditions continue for ${remaining} season${remaining === 1 ? "" : "s"}.` : event.duration > 0 ? " Supply conditions have ended." : ""}</p> : (
         isInvestment ? (
           <>
-            <ForgeButton onClick={onInvest} disabled={!canInvest} variant="gold" style={{ fontSize: "0.6rem" }}>
+            <ForgeButton className="forge-caption"  onClick={onInvest} disabled={!canInvest} variant="gold" >
               Invest {event.investCost}d
             </ForgeButton>
-            <ForgeButton onClick={onDismiss} style={{ fontSize: "0.6rem" }}>
+            <ForgeButton className="forge-caption"  onClick={onDismiss} >
               Decline
             </ForgeButton>
           </>
         ) : (
-          <ForgeButton onClick={onDismiss} style={{ fontSize: "0.6rem" }}>
+          <ForgeButton className="forge-caption"  onClick={onDismiss} >
             Acknowledged
           </ForgeButton>
         )
@@ -2201,14 +1857,14 @@ function BanterDisplay({ banter }: {banter:Banter}) {
         padding: "8px 12px",
         border: `1px solid ${FORGE_COLORS.emberDim}20`,
         borderRadius: 6,
-        backgroundColor: "rgba(26,21,16,0.5)",
+        backgroundColor: "rgba(26,21,16,0.5)"
       }}
     >
-      <div style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#5a5550", letterSpacing: "2px", textTransform: "uppercase", marginBottom: 6, textAlign: "center" }}>
+      <div className="forge-caption"  style={{color: forgeTextColor("#5a5550"), marginBottom: 6, textAlign: "center"}}>
         Overheard at the Forge
       </div>
       {banter.map(({ speaker, line }, i) => (
-        <p key={i} style={{ fontFamily: "Almendra, Crimson Text, serif", fontSize: "0.75rem", color: speaker === "godric" ? FORGE_COLORS.emberCore : "#a89070", margin: "2px 0", lineHeight: 1.3 }}>
+        <p className="forge-lore"  key={i} style={{color: forgeTextColor(speaker === "godric" ? FORGE_COLORS.emberCore : "#a89070"), margin: "2px 0"}}>
           <strong>{speaker === "godric" ? "Godric" : "Wat"}:</strong> &ldquo;{line}&rdquo;
         </p>
       ))}
@@ -2275,19 +1931,11 @@ function Workshop({
           padding: "10px 12px",
           border: "1px solid rgba(58,54,50,0.4)",
           borderRadius: 6,
-          backgroundColor: "rgba(26,21,16,0.75)",
+          backgroundColor: "rgba(26,21,16,0.75)"
         }}
       >
-        <div
-          style={{
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.55rem",
-            color: "#c4a24a",
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            textAlign: "center",
-            marginBottom: 4,
-          }}
+        <div className="forge-caption"
+          style={{color: forgeTextColor("#c4a24a"), textAlign: "center", marginBottom: 4}}
         >
           Weapon Rack
         </div>
@@ -2302,19 +1950,11 @@ function Workshop({
           padding: "10px 12px",
           border: "1px solid rgba(58,54,50,0.4)",
           borderRadius: 6,
-          backgroundColor: "rgba(26,21,16,0.75)",
+          backgroundColor: "rgba(26,21,16,0.75)"
         }}
       >
-        <div
-          style={{
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.55rem",
-            color: "#c4a24a",
-            letterSpacing: "2px",
-            textTransform: "uppercase",
-            textAlign: "center",
-            marginBottom: 6,
-          }}
+        <div className="forge-caption"
+          style={{color: forgeTextColor("#c4a24a"), textAlign: "center", marginBottom: 6}}
         >
           Forge Materials
         </div>
@@ -2327,6 +1967,7 @@ function Workshop({
 // ─── Main Component ─────────────────────────────────────────────
 
 export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithViewState; dispatch:ForgeDispatch}) {
+  const revealFocusedControl=useHallReadingFocus();
   const [currentView, setCurrentView] = useState<ForgeView>("workshop");
   const [ambientIndex, setAmbientIndex] = useState(0);
   const [ambientVisible, setAmbientVisible] = useState(true);
@@ -2560,13 +2201,13 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
 
   return (
     <div
-      className="w-full max-w-2xl mx-auto forge-container"
+      className="forge-ui mx-auto forge-container"
+      onFocusCapture={event=>{if(!event.target.closest('.forge-minigame, dialog'))revealFocusedControl(event);}}
       style={{
         position: "relative",
         minHeight: 500,
         borderRadius: 8,
         overflow: "hidden",
-        /* Forge background: soot ceiling to coal-red floor */
         background: `
           radial-gradient(
             ellipse 60% 80% at 50% 90%,
@@ -2586,29 +2227,22 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
         border: `1px solid ${isLit ? "rgba(255,107,26,0.15)" : FORGE_COLORS.iron + "30"}`,
         padding: "0 0 8px",
         paddingBottom: "180px",
-        transition: "background 800ms ease",
+        transition: "background 800ms ease"
       }}
     >
       {/* ═══ Header ═══ */}
       <div
         style={{
           padding: "12px 16px 10px",
-          borderBottom: `1px solid ${isLit ? "rgba(255,107,26,0.15)" : FORGE_COLORS.iron + "30"}`,
+          borderBottom: `1px solid ${isLit ? "rgba(255,107,26,0.15)" : FORGE_COLORS.iron + "30"}`
         }}
       >
         {/* Title row */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Hammer size={18} style={{ color: FORGE_COLORS.emberCore }} />
-            <h2
-              style={{
-                fontFamily: "Cinzel Decorative, Cinzel, serif",
-                fontSize: "1rem",
-                color: FORGE_COLORS.emberCore,
-                letterSpacing: "2px",
-                margin: 0,
-                textShadow: isLit ? `0 0 12px ${FORGE_COLORS.emberCore}40` : "none",
-              }}
+            <h2 className="forge-heading"
+              style={{color: forgeTextColor(FORGE_COLORS.emberCore), margin: 0, textShadow: isLit ? `0 0 12px ${FORGE_COLORS.emberCore}40` : "none"}}
             >
               The Blacksmith&rsquo;s Forge
             </h2>
@@ -2622,14 +2256,9 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
           style={{ marginTop: 6 }}
         >
           {FORGE_RESOURCES.map((res) => (
-            <span
+            <span className="forge-caption"
               key={res.key}
-              style={{
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.6rem",
-                color: res.color,
-                letterSpacing: "1px",
-              }}
+              style={{color: forgeTextColor(res.color)}}
             >
               {res.label}: {forgeResources[res.key] || 0}
             </span>
@@ -2682,13 +2311,13 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
           forgingDisabled ? (
             <div className="text-center" style={{ padding: "40px 0" }}>
               <AlertTriangle size={32} style={{ color: FORGE_COLORS.emberDim, margin: "0 auto 12px" }} />
-              <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "0.9rem", color: FORGE_COLORS.emberCore, marginBottom: 8 }}>
+              <h3 className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.emberCore), marginBottom: 8}}>
                 Forge Offline
               </h3>
-              <p style={{ fontFamily: "Almendra, Crimson Text, serif", fontStyle: "italic", fontSize: "0.85rem", color: "#c8b090" }}>
+              <p className="forge-lore"  style={{color: forgeTextColor("#c8b090")}}>
                 &ldquo;{supplyEvent?.godricComment || "The bellows need repair."}&rdquo;
               </p>
-              <p style={{ fontFamily: "Cinzel, serif", fontSize: "0.6rem", color: "#5a5550", marginTop: 8 }}>
+              <p className="forge-caption"  style={{color: forgeTextColor("#5a5550"), marginTop: 8}}>
                 Forging resumes in {bs.supplyEventTurnsLeft || 1} season{(bs.supplyEventTurnsLeft || 1) > 1 ? "s" : ""}.
               </p>
             </div>
@@ -2716,7 +2345,7 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
           forgingDisabled ? (
             <div className="text-center" style={{ padding: "40px 0" }}>
               <AlertTriangle size={24} style={{ color: FORGE_COLORS.emberDim, margin: "0 auto 8px" }} />
-              <p style={{ fontFamily: "Cinzel, serif", fontSize: "0.75rem", color: FORGE_COLORS.emberCore }}>
+              <p className="forge-caption"  style={{color: forgeTextColor(FORGE_COLORS.emberCore)}}>
                 Forge offline — no commissions until repairs are complete.
               </p>
             </div>
@@ -2770,7 +2399,7 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
       {/* ═══ Godric bellows reaction (floating) ═══ */}
       {godricBellowsLine && (
         <div
-          className="forge-bellows-reaction"
+          className="forge-bellows-reaction forge-lore"
           style={{
             position: "absolute",
             bottom: 80,
@@ -2781,13 +2410,10 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
             borderRadius: 6,
             backgroundColor: "rgba(13,10,8,0.9)",
             border: `1px solid ${FORGE_COLORS.emberDim}40`,
-            fontFamily: "Almendra, Crimson Text, serif",
-            fontStyle: "italic",
-            fontSize: "0.8rem",
-            color: "#c8b090",
+            color: forgeTextColor("#c8b090"),
             textAlign: "center",
             zIndex: 10,
-            pointerEvents: "none",
+            pointerEvents: "none"
           }}
         >
           Godric: &ldquo;{godricBellowsLine}&rdquo;
@@ -2804,17 +2430,14 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
           marginTop: 8,
         }}
       >
-        <p
+        <p className="forge-lore forge-ambient"
           style={{
-            fontFamily: "Almendra, Crimson Text, serif",
-            fontStyle: "italic",
-            fontSize: "0.8rem",
-            color: isLit ? "rgba(255,107,26,0.7)" : "#c8b090",
+            color: forgeTextColor(isLit ? "rgba(255,107,26,0.7)" : "#c8b090"),
             textAlign: "center",
             margin: 0,
             minHeight: "1.2em",
             opacity: ambientVisible ? 1 : 0,
-            transition: "opacity 500ms ease",
+            transition: "opacity 500ms ease"
           }}
         >
           {FORGE_AMBIENT_TEXTS[ambientIndex]}

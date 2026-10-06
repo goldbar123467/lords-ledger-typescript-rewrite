@@ -1773,3 +1773,64 @@ input[type="range"].labor-slider::-moz-range-thumb {
 
 /* Timing geometry must reflect the current logical position, including reduced motion. */
 .forge-hit-zone, .forge-target-line, .forge-rhythm-indicator { transition: none !important; }
+/* The parent Forge shares readable coal, parchment and ember presentation across its views. */
+.forge-ui {
+  --forge-text: #f4e2c5; --forge-muted: #dbc7a8; --forge-ember: #ffb562; --forge-gold: #f4d77f;
+  --forge-steel: #d0d9df; --forge-success: #c5dba7; --forge-danger: #f5bba5;
+  width: 100%; max-width: 960px; color: var(--forge-text); font-family: "Crimson Text", serif;
+  font-size: 1rem; line-height: 1.55; overflow-wrap: anywhere;
+}
+.forge-ui .forge-caption { font-family: "Cinzel", serif; font-size: .95rem; line-height: 1.55; letter-spacing: .025em; }
+.forge-ui .forge-lore { font-family: "Almendra", "Crimson Text", serif; font-size: 1.05rem; line-height: 1.55; font-style: italic; }
+.forge-ui .forge-heading { font-family: "Cinzel Decorative", "Cinzel", serif; font-size: 1.25rem; line-height: 1.45; }
+.forge-ui .forge-value { font-family: "Cinzel", serif; font-size: 1.1rem; line-height: 1.5; }
+.forge-ui h3.forge-caption, .forge-ui h4.forge-caption { font-size: 1.1rem; }
+.forge-ui .forge-section-label { font-family: "Cinzel", serif; font-size: 1.1rem; color: var(--forge-gold); margin: 1rem 0 .75rem; }
+.forge-ui .forge-success { color: var(--forge-success); }
+.forge-ui .forge-danger { color: var(--forge-danger); }
+.forge-ui .forge-gold { color: var(--forge-gold); }
+.forge-ui :focus-visible { outline: 3px solid var(--forge-ember); outline-offset: 3px; }
+.forge-ui button { min-height: 44px; min-width: 44px; }
+.forge-ui .forge-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-height: 44px;
+  border: 1px solid #a97841; border-radius: 5px; padding: .5rem .9rem; font: 1rem "Cinzel", serif;
+  color: var(--forge-ember); background: #25180e; line-height: 1.45; white-space: normal; cursor: pointer;
+}
+.forge-ui .forge-button:hover:not(:disabled) { background: #3a2719; border-color: var(--forge-ember); }
+.forge-ui .forge-button:disabled { color: var(--forge-muted); background: #191510; border-style: dashed; cursor: not-allowed; }
+.forge-ui .forge-button-gold { color: var(--forge-gold); }
+.forge-ui .forge-button-green { color: var(--forge-success); }
+.forge-ui .forge-button-danger { color: var(--forge-danger); }
+.forge-ui .forge-navigation { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: .35rem; padding: .65rem 0; margin-top: .75rem; border-block: 1px solid #645039; }
+.forge-ui .forge-navigation button { display: flex; align-items: center; justify-content: center; gap: .4rem; padding: .4rem; border: 1px solid transparent; border-radius: 4px; color: var(--forge-muted); background: transparent; font: .95rem "Cinzel",serif; }
+.forge-ui .forge-navigation button[aria-current="page"] { color: var(--forge-ember); background: #2b1c10; border-color: #a97841; }
+.forge-ui .forge-navigation button:hover { color: var(--forge-text); background: #302217; }
+.forge-ui .forge-garrison { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1rem; min-width: 180px; font-size: 1rem; }
+.forge-ui .forge-meter { grid-column: 1/-1; height: 8px; background: #100d0a; border: 1px solid #7a6247; border-radius: 4px; overflow: hidden; }
+.forge-ui .forge-meter > div { height: 100%; background: var(--forge-ember); }
+.forge-ui .forge-stat-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: .75rem; text-align: center; }
+.forge-ui [data-testid^="forge-resource-"] { display: grid !important; grid-template-columns: minmax(0,1fr) auto auto; gap: .75rem !important; }
+.forge-ui [data-testid^="forge-resource-"] .flex { flex-wrap: wrap; }
+.forge-ui .forge-confirmation { color: var(--forge-text); background: #1a1510; border: 2px solid #a97841; border-radius: 8px; padding: 1.25rem; width: min(520px,calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; margin: auto; font: 1.05rem/1.55 "Crimson Text",serif; }
+.forge-ui .forge-confirmation::backdrop { background: rgb(0 0 0 / .8); }
+.forge-ui .forge-confirmation h3 { font: 1.2rem/1.5 "Cinzel",serif; color: var(--forge-gold); margin: 0 0 .8rem; }
+.forge-ui .forge-confirmation p { margin: .5rem 0; }
+.forge-ui .forge-confirm-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; margin-top: 1rem; }
+@media(max-width:740px) {
+  .forge-ui .forge-navigation { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .forge-ui .forge-navigation button { flex-direction: column; gap: .2rem; }
+  .forge-ui .forge-stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .forge-ui [data-testid^="forge-resource-"] { grid-template-columns: minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .forge-ui .forge-fire-pulse, .forge-ui .forge-ember { animation: none; }
+  .forge-ui .forge-container, .forge-ui .forge-quality-overshoot { transition: none; }
+}
+
+.forge-ui .flex { min-width: 0; flex-wrap: wrap; }
+@media(prefers-reduced-motion:reduce) { .forge-ui { transition: none !important; } .forge-ui .forge-ambient { opacity: 1 !important; transition: none !important; } }
+
+.forge-ui .forge-body { font-family: "Crimson Text",serif; font-size: 1rem; line-height: 1.55; }
+.forge-ui .forge-button { min-width: min-content; overflow-wrap: normal; }
+.forge-ui .forge-navigation button { overflow-wrap: normal; }
+@media(max-width:480px) { .forge-ui .forge-navigation { grid-template-columns: repeat(2,minmax(0,1fr)); } .forge-ui .forge-navigation button { flex-direction: row; } }
