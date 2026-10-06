@@ -53,3 +53,7 @@ Use coal surfaces, parchment body text, ember strike cues and water-blue quench 
 Main Forge UI checkpoint: native dialog and shared typography preserve React/DOM and authored content. Fixed column counts fail enlarged captions (G-BUI01); narrow absolute chart labels split digits (R-BUI02). Next correction must use content-aware columns and normal-flow numeric labels. Scope remains IN PROGRESS; see verification.md.
 
 Forge responsive correction uses rem-aware auto-fit columns for named navigation, categories and dialog actions. Normal-flow numeric labels and separate bar wells keep quality history readable without absolute label collisions. Three findings closed within reviewed scope; enlarged grade distribution and wider interface/lifecycle gates remain pending. See verification.md.
+
+## Estate reading surfaces (2026-10-06)
+
+Retain medieval parchment, Cinzel headings and Crimson body text, with opaque light secondary labels and readable disabled explanations. Use rem-aware auto-fit stat/card grids, wrapping headers and shared minimum44px actions. Native history/chain disclosures preserve authored content, expose expanded state/IDs and share the existing keyboard-only pinned-chrome reading helper. Avoid text glow and critical pulse on Estate; scoped reduced-motion rules retain focus cues. Seven original callbacks and all economic rules stay exact. The reviewed phone/enlarged/native200% matrix supports these changes; G-EL01 Condition border overflow needs a wrapping row. Full assistive-technology and all-glyph acceptance remains pending.

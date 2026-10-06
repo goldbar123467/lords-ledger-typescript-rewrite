@@ -407,3 +407,7 @@ R-EV01 CLOSED: category order derives from the exhaustive checked style table an
 ## 2026-10-06 Estate upkeep display: VERIFIED within scope
 
 R-EV02 CLOSED: Overview passes the typed roster to existing getTotalUpkeep; owned cards show actual engine charges and preserve waived base rates. Root14 browsers PASS41.5s/static/build; tester6 PASS12.7s/grader6 PASS12.1s verify manual levy/mixed/farm/dismissal arithmetic, waivers and complete saves. Detailed identities/limits in migration-ledger/verification; reports artifacts/v2/{tester,grader}-estate-upkeep/{report,review}.md. R-EV01 also closed. Next Estate readability/interaction, then remaining eight sourceJS/JSX and whole save/RNG/UI/campaign gates. Net retains passive-income-minus-upkeep semantics, not a complete seasonal cashflow forecast. Full rewrite IN PROGRESS; original protected, commit/push each section, README Run locally removed.
+
+## Current: Estate presentation verified within scope, G-EL01 next
+
+Root31 browsers/static/build PASS; tester17/grader14 independently pass including native200% zoom. Shared typography/actions/grids/disclosures preserve all seven click handlers and exact saves. G-EL01 P3 enlarged Condition value crosses its card border; fix and commit separately next. Details/identity/limits in migration-ledger.md and verification.md; artifacts/v2/{tester,grader}-estate-layout. Production44,164 (-1,183 original), eight sourceJS remain; full migration/save/RNG/UI/campaign gates remain IN PROGRESS. Commit/push each section; original protected; README Run locally remains removed.

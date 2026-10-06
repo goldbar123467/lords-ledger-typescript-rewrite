@@ -16,7 +16,8 @@ import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
  * - Production chain / synergy display
  */
 
-import { useState,type CSSProperties } from "react";
+import { useState,useId,type CSSProperties } from "react";
+import {useHallReadingFocus} from '../hooks/useHallReadingFocus.ts';
 import BUILDINGS, { BUILDING_LIST,type BuildingDefinition,type BuildingId } from "../data/buildings.ts";
 import type {GameSnapshot} from '../save/saveGame.ts';
 import type {ResourceId} from '../data/economy.ts';
@@ -92,13 +93,14 @@ const CATEGORY_STYLES = {
   raw:     { color: "#7eb8d4", bg: "rgba(126, 184, 212, 0.08)", border: "rgba(126, 184, 212, 0.25)", label: "Materials", icon: "\u2692" },
   forge:   { color: "#b8a0d4", bg: "rgba(184, 160, 212, 0.08)", border: "rgba(184, 160, 212, 0.25)", label: "Forge", icon: "\u2694" },
   trade:   { color: "#c9a84c", bg: "rgba(201, 168, 76, 0.08)",  border: "rgba(201, 168, 76, 0.25)",  label: "Trade Goods", icon: "\u2696" },
-  buyOnly: { color: "#a89070", bg: "rgba(168, 144, 112, 0.06)", border: "rgba(168, 144, 112, 0.2)",  label: "Special", icon: "\u2726" },
+  buyOnly: { color: "#d8c6a8", bg: "rgba(168, 144, 112, 0.06)", border: "rgba(168, 144, 112, 0.2)",  label: "Special", icon: "\u2726" },
 } satisfies Readonly<Record<ResourceCategory,{color:string;bg:string;border:string;label:string;icon:string}>>;
 function isResourceCategory(value:string):value is ResourceCategory{return Object.hasOwn(CATEGORY_STYLES,value);}
 
 const PLOT_COLORS:Readonly<Partial<Record<BuildingDefinition['category'],string>>> = {
   food: "#8dba6e",
   material: "#7eb8d4",
+  forge: "#b8a0d4",
   processing: "#c9a84c",
 };
 
@@ -120,7 +122,7 @@ function SectionHeader({ title }:{readonly title:string}) {
         {title}
       </h3>
       <div className="decorative-rule">
-        <span style={{ color: "#8a7a3a" }}>{"\u25C6"}</span>
+        <span style={{ color: "var(--estate-muted)" }}>{"\u25C6"}</span>
       </div>
     </>
   );
@@ -173,7 +175,7 @@ function TipBar({ state }:StateProps) {
       style={{
         backgroundColor: "rgba(196, 162, 74, 0.06)",
         border: "1px solid rgba(196, 162, 74, 0.2)",
-        color: "#a89070",
+        color: "#d8c6a8",
         fontFamily: '"Crimson Text", serif',
         fontStyle: "italic",
       }}
@@ -242,7 +244,7 @@ function EconomyOverview({ state }:StateProps) {
       </div>
 
       {/* Stat cards grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <div className="estate-stat-grid">
         <StatCard
           label="Food Supply"
           value={food}
@@ -303,18 +305,17 @@ function StatCard({ label, value, sub, accent, glowClass, warn, warnColor, warnG
         }}
       />
       <div
-        className="text-[10px] font-semibold uppercase pl-2"
-        style={{ fontFamily: '"Cinzel", serif', color: `${displayAccent}dd`, letterSpacing: "1px" }}
+        className="estate-stat-label"
       >
         {label}
       </div>
       <div
-        className="text-xl font-bold pl-2 stat-value-glow"
-        style={{ fontFamily: '"Cinzel", serif', color: displayAccent }}
+        className="estate-stat-value"
+        style={{color:displayAccent}}
       >
         {value}
       </div>
-      <div className="text-[11px] pl-2" style={{ color: `${displayAccent}99` }}>
+      <div className="estate-stat-caption">
         {sub}
       </div>
     </div>
@@ -381,14 +382,14 @@ function LandAndInventory({ state }:StateProps) {
       {/* Plot bar */}
       <div className="mb-3">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-sm" style={{ color: "#a89070", fontFamily: '"Cinzel", serif' }}>
+          <span className="text-sm" style={{ color: "#d8c6a8", fontFamily: '"Cinzel", serif' }}>
             Plots:
           </span>
           <span className="text-sm font-bold stat-value-glow" style={{ color: plotFull ? "#d4726a" : "#e8c44a" }}>
             {usedPlots}/{totalPlots} used
           </span>
           {plotFull && (
-            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full estate-glow-red"
+            <span className="text-sm uppercase tracking-wider px-1.5 py-0.5 rounded-full estate-glow-red"
               style={{ backgroundColor: "rgba(212, 114, 106, 0.15)", color: "#d4726a", border: "1px solid rgba(212, 114, 106, 0.4)" }}>
               Full
             </span>
@@ -413,9 +414,10 @@ function LandAndInventory({ state }:StateProps) {
             />
           ))}
         </div>
-        <div className="flex gap-3 mt-1.5 text-[10px]" style={{ color: "#8a7a5a" }}>
+        <div className="flex flex-wrap gap-3 mt-1.5 text-sm" style={{ color: "var(--estate-muted)" }}>
           <span><span style={{ color: PLOT_COLORS.food, textShadow: `0 0 6px ${PLOT_COLORS.food}80` }}>{"\u25A0"}</span> Food</span>
           <span><span style={{ color: PLOT_COLORS.material, textShadow: `0 0 6px ${PLOT_COLORS.material}80` }}>{"\u25A0"}</span> Materials</span>
+          <span><span style={{color:PLOT_COLORS.forge}}>{"\u25A0"}</span> Forge</span>
           <span><span style={{ color: PLOT_COLORS.processing, textShadow: `0 0 6px ${PLOT_COLORS.processing}80` }}>{"\u25A0"}</span> Processing</span>
           <span><span style={{ color: "rgba(106, 90, 66, 0.4)" }}>{"\u25A1"}</span> Empty</span>
         </div>
@@ -445,13 +447,13 @@ function LandAndInventory({ state }:StateProps) {
               <div className="flex items-center gap-1.5 mb-2">
                 <span style={{
                   color: catStyle.color,
-                  fontSize: "0.85rem",
+                  fontSize: "1rem",
                   textShadow: hasAny ? `0 0 8px ${catStyle.color}80` : "none",
                 }}>
                   {catStyle.icon}
                 </span>
                 <span
-                  className="text-[10px] font-bold uppercase tracking-wider"
+                  className="text-sm font-bold uppercase tracking-wider"
                   style={{
                     color: catStyle.color,
                     fontFamily: '"Cinzel", serif',
@@ -481,7 +483,6 @@ function LandAndInventory({ state }:StateProps) {
                           ? "transparent"
                           : `linear-gradient(135deg, ${catStyle.color}12 0%, ${catStyle.color}06 100%)`,
                         border: `1px solid ${dimmed ? `${catStyle.color}10` : `${catStyle.color}35`}`,
-                        opacity: dimmed ? 0.3 : 1,
                         boxShadow: highlight ? `0 0 8px ${catStyle.color}25, inset 0 0 6px ${catStyle.color}10` : "none",
                       }}
                     >
@@ -492,13 +493,13 @@ function LandAndInventory({ state }:StateProps) {
                       }}>
                         {cfg.icon}
                       </span>
-                      <span style={{ color: dimmed ? "#4a4030" : "#b8a888", fontSize: "0.8rem" }}>
+                      <span style={{ color: dimmed ? "var(--estate-muted)" : "#ecdcc0", fontSize: "1rem" }}>
                         {cfg.label}
                       </span>
                       <span style={{
-                        color: dimmed ? "#4a4030" : highlight ? catStyle.color : "#e8c44a",
+                        color: dimmed ? "var(--estate-muted)" : highlight ? catStyle.color : "#e8c44a",
                         fontWeight: 700,
-                        fontSize: "0.85rem",
+                        fontSize: "1rem",
                         fontFamily: '"Cinzel", serif',
                         textShadow: highlight ? `0 0 8px ${catStyle.color}60` : (!dimmed ? "0 0 6px rgba(232, 196, 74, 0.3)" : "none"),
                       }}>
@@ -522,6 +523,7 @@ function LandAndInventory({ state }:StateProps) {
 
 function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade, onDemolish }:Pick<EstateProps,'state'|'onRepair'|'onUpgrade'|'onDemolish'> & {readonly building:GameSnapshot['buildings'][number];readonly buildingIndex:number}) {
   const [showInfo, setShowInfo] = useState(false);
+  const historyId=useId();
   const typeId = getBuildingType(building);
   const def:BuildingDefinition = BUILDINGS[typeId];
   if (!def) return null;
@@ -552,15 +554,15 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
   return (
     <div
       data-testid={`built-building-${typeof building === "string" ? `${building}-${buildingIndex}` : building.instanceId}`}
-      className="rounded-lg p-3 flex flex-col"
+      className="estate-card rounded-lg p-3 flex flex-col"
       style={{
         backgroundColor: "#231e16",
         border: `1px solid ${condition <= 24 ? "#d4726a" : condition <= 49 ? "#c97a4c" : "#c4a24a"}`,
         animation: "card-enter 300ms ease backwards",
       }}
-    >
+     role="article" aria-label={def.name}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-1.5">
+      <div className="estate-building-header">
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-full shrink-0"
@@ -581,13 +583,13 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
             >
               {def.name}
             </h4>
-            <p className="text-[11px] italic" style={{ color: "#6a5a42" }}>
+            <p className="text-sm italic" style={{ color: "var(--estate-muted)" }}>
               {def.latin}
             </p>
           </div>
         </div>
         <span
-          className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full shrink-0"
+          className="text-sm font-semibold uppercase px-1.5 py-0.5 rounded-full shrink-0"
           style={{ backgroundColor: `${rarity.border}`, color: "#fff" }}
         >
           {def.rarity}
@@ -596,8 +598,8 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
 
       {/* Condition bar */}
       <div className="mb-2">
-        <div className="flex items-center justify-between text-[11px] mb-0.5">
-          <span style={{ color: "#a89070", fontFamily: '"Cinzel", serif' }}>Condition:</span>
+        <div className="flex items-center justify-between text-sm mb-0.5">
+          <span style={{ color: "#d8c6a8", fontFamily: '"Cinzel", serif' }}>Condition:</span>
           <span style={{ color: condLevel.color, fontWeight: 600 }}>
             {condLevel.label} ({displayBuildingCondition(condition)}%)
           </span>
@@ -617,7 +619,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
       {/* Stats */}
       <div className="text-sm space-y-0.5 mb-2">
         <div>
-          <span title="Before storage limits and input availability" style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Potential output:</span>{" "}
+          <span title="Before storage limits and input availability" style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Potential output:</span>{" "}
           {resourceEntries(def.produces).map(([res], i) => {
             const effective = output[res] ?? 0;
             const cfg = RESOURCE_CONFIG[res];
@@ -632,31 +634,31 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
             );
           })}
           {def.isFarm && seasonMult !== 1.0 && (
-            <span className="text-[11px] ml-1" style={{ color: SEASON_INFO[state.season]?.color || "#6a5a42" }}>
+            <span className="text-sm ml-1" style={{ color: SEASON_INFO[state.season]?.color || "var(--estate-muted)" }}>
               ({"\u00D7"}{seasonMult} {state.season})
             </span>
           )}
           {condMod < 1.0 && condMod > 0 && (
-            <span className="text-[11px] ml-1" style={{ color: "#c97a4c" }}>
+            <span className="text-sm ml-1" style={{ color: "#c97a4c" }}>
               ({Math.round(condMod * 100)}% condition)
             </span>
           )}
           {condMod === 0 && (
-            <span className="text-[11px] ml-1" style={{ color: "#d4726a" }}>(ruined)</span>
+            <span className="text-sm ml-1" style={{ color: "#d4726a" }}>(ruined)</span>
           )}
-          <span className="text-[11px]" style={{ color: "#6a5a42" }}>/season</span>
+          <span className="text-sm" style={{ color: "var(--estate-muted)" }}>/season</span>
         </div>
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Upkeep:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Upkeep:</span>{" "}
           <span style={{ color: "#c4a24a" }}>{upkeep}d/season</span>
           {upkeep!==def.upkeep&&<span className="text-sm ml-1" style={{color:"#c8b090"}}>(waived; base {def.upkeep}d/season)</span>}
         </div>
         {activeSyns.length > 0 && activeSyns.map((syn, i) => (
-          <div key={i} className="text-[11px]">
-            <span style={{ color: syn.active ? "#c4a24a" : "#4a4030" }}>
+          <div key={i} className="text-sm">
+            <span style={{ color: syn.active ? "#c4a24a" : "var(--estate-muted)" }}>
               {syn.active ? "\u2713" : "\u2014"} {syn.desc}
               {!syn.active && (
-                <span style={{ color: "#4a4030" }}> (not built)</span>
+                <span style={{ color: "var(--estate-muted)" }}> (not built)</span>
               )}
             </span>
           </div>
@@ -669,14 +671,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
           <button
             onClick={() => onRepair(buildingIndex)}
             disabled={!canRepair}
-            className="py-1.5 px-3 rounded text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-            style={{
-              fontFamily: '"Cinzel", serif',
-              fontWeight: 600,
-              backgroundColor: canRepair ? "rgba(141, 186, 110, 0.15)" : "transparent",
-              border: `1px solid ${canRepair ? "#8dba6e" : "#4a4030"}`,
-              color: canRepair ? "#8dba6e" : "#4a4030",
-            }}
+            className="estate-action estate-action-green"
             title={!canRepair ? `Not enough denarii (need ${repairCost}d, have ${state.denarii}d)` : `Repair this building for ${repairCost}d`}
           >
             Repair {repairCost}d
@@ -686,14 +681,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
           <button
             onClick={() => onUpgrade(buildingIndex)}
             disabled={!canUpgrade}
-            className="py-1.5 px-3 rounded text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-            style={{
-              fontFamily: '"Cinzel", serif',
-              fontWeight: 600,
-              backgroundColor: canUpgrade ? "rgba(196, 162, 74, 0.15)" : "transparent",
-              border: `1px solid ${canUpgrade ? "#c4a24a" : "#4a4030"}`,
-              color: canUpgrade ? "#c4a24a" : "#4a4030",
-            }}
+            className="estate-action estate-action-gold"
             title={!canUpgrade ? upgradeEligibility.reason??undefined : `Upgrade to ${upgradeDef.name}`}
           >
             {"\u25B2"} {upgradeDef.name} ({upgradeEligibility.cost}d)
@@ -701,29 +689,13 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
         )}
         <button
           onClick={() => setShowInfo(!showInfo)}
-          className="py-1.5 px-3 rounded text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer"
-          style={{
-            fontFamily: '"Cinzel", serif',
-            fontWeight: 600,
-            backgroundColor: "transparent",
-            border: "1px solid #4a4030",
-            color: "#6a5a42",
-          }}
-        >
+          className="estate-action"
+         aria-expanded={showInfo} aria-controls={historyId}>
           {showInfo ? "Hide" : "Info"}
         </button>
         <button
           onClick={() => onDemolish(buildingIndex)}
-          className="py-1.5 px-3 rounded text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer"
-          style={{
-            fontFamily: '"Cinzel", serif',
-            fontWeight: 600,
-            backgroundColor: "transparent",
-            border: "1px solid rgba(139, 26, 26, 0.4)",
-            color: "#c62828",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(139, 26, 26, 0.1)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+          className="estate-action estate-action-danger"
         >
           Demolish
         </button>
@@ -736,10 +708,10 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
           style={{
             backgroundColor: "rgba(196, 162, 74, 0.06)",
             border: "1px solid rgba(196, 162, 74, 0.15)",
-            color: "#a89070",
+            color: "#d8c6a8",
             fontFamily: '"Crimson Text", serif',
           }}
-        >
+         id={historyId}>
           {def.historicalNote}
         </div>
       )}
@@ -753,6 +725,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
 
 function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<EstateProps,'state'|'onBuild'> & {readonly building:BuildingDefinition;readonly isSynergyBuilding:boolean;readonly index:number}) {
   const [showInfo, setShowInfo] = useState(false);
+  const historyId=useId();
   const builtCount = state.buildings.filter((b) => getBuildingType(b) === building.id).length;
   const check = canBuildBuilding(building.id, state);
   const constructionCost = getConstructionCost(building.cost, state.blacksmith);
@@ -768,30 +741,17 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
   return (
     <div
       data-testid={`build-card-${building.id}`}
-      className="rounded-lg p-3 flex flex-col"
+      className="estate-card rounded-lg p-3 flex flex-col"
       style={{
         backgroundColor: locked ? "#1a1612" : "#231e16",
         border: `1px solid ${locked ? "rgba(106, 90, 66, 0.5)" : rarity.border}`,
-        opacity: locked ? 0.92 : 1,
         transition: "all 200ms ease",
         animation: `card-enter 300ms ease backwards`,
         animationDelay: `${index * 40}ms`,
       }}
-      onMouseEnter={(e) => {
-        if (!locked) {
-          e.currentTarget.style.borderColor = rarity.border;
-          e.currentTarget.style.boxShadow = `0 0 16px ${rarity.glow}`;
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = locked ? "rgba(106, 90, 66, 0.2)" : rarity.border;
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-    >
+     role="article" aria-label={building.name}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="estate-building-header">
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center rounded-full shrink-0"
@@ -817,13 +777,13 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
                 </span>
               )}
             </h4>
-            <p className="text-[11px] italic" style={{ color: "#6a5a42" }}>
+            <p className="text-sm italic" style={{ color: "var(--estate-muted)" }}>
               {building.latin}
             </p>
           </div>
         </div>
         <span
-          className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full shrink-0"
+          className="text-sm font-semibold uppercase px-1.5 py-0.5 rounded-full shrink-0"
           style={{ backgroundColor: `${rarity.border}`, color: "#fff" }}
         >
           {building.rarity}
@@ -831,29 +791,29 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
       </div>
 
       {/* Description */}
-      <p className="text-sm leading-snug mb-2" style={{ color: "#a89070" }}>
+      <p className="text-sm leading-snug mb-2" style={{ color: "#d8c6a8" }}>
         {building.description}
       </p>
 
       {/* Stats */}
       <div className="text-sm space-y-0.5 mb-2">
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Cost:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Cost:</span>{" "}
           <span style={{ color: "#c4a24a" }}>{constructionCost}d</span>
         </div>
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Plots:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Plots:</span>{" "}
           <span style={{ color: "#c4a24a" }}>{building.plots ?? 1}</span>
           {(building.plots ?? 1) > 1 && (
-            <span className="text-[11px] ml-1" style={{ color: "#6a5a42" }}>(requires more land)</span>
+            <span className="text-sm ml-1" style={{ color: "var(--estate-muted)" }}>(requires more land)</span>
           )}
         </div>
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Workers:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Workers:</span>{" "}
           <span style={{ color: "#c4a24a" }}>{building.workersNeeded ?? 1} {(building.workersNeeded ?? 1) === 1 ? "family" : "families"}</span>
         </div>
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Base production:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Base production:</span>{" "}
           {resourceEntries(building.produces).map(([res, amt], i) => {
             const cfg = RESOURCE_CONFIG[res];
             const color = PRODUCTION_COLORS[res] || "#c4a24a";
@@ -866,11 +826,11 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
               </span>
             );
           })}
-          <span style={{ color: "#8a7a3a" }}>/season</span>
+          <span style={{ color: "var(--estate-muted)" }}>/season</span>
         </div>
         {building.consumes && (
           <div>
-            <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Consumes:</span>{" "}
+            <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Consumes:</span>{" "}
             {resourceEntries(building.consumes).map(([res, amt], i) => {
               const cfg = RESOURCE_CONFIG[res];
               return (
@@ -882,24 +842,24 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
                 </span>
               );
             })}
-            <span style={{ color: "#8a7a3a" }}>/season</span>
+            <span style={{ color: "var(--estate-muted)" }}>/season</span>
           </div>
         )}
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Upkeep:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Upkeep:</span>{" "}
           <span style={{ color: "#c4a24a" }}>{building.upkeep}d/season</span>
         </div>
         {building.requires && (
           <div>
-            <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Requires:</span>{" "}
+            <span style={{ fontFamily: '"Cinzel", serif', color: "var(--estate-muted)" }}>Requires:</span>{" "}
             <span style={{ color: "#c4a24a" }}>
               {BUILDINGS[building.requires]?.name || building.requires}
             </span>
           </div>
         )}
         {activeSyns.length > 0 && activeSyns.map((syn, i) => (
-          <div key={i} className="text-[11px]">
-            <span style={{ color: syn.active ? "#c4a24a" : "#4a4030" }}>
+          <div key={i} className="text-sm">
+            <span style={{ color: syn.active ? "#c4a24a" : "var(--estate-muted)" }}>
               {syn.active ? "\u2713" : "\u2192"} {syn.desc}
             </span>
           </div>
@@ -918,30 +878,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
         <button
           onClick={() => onBuild(building.id)}
           disabled={locked}
-          className="flex-1 py-2 rounded-md text-sm uppercase tracking-wider transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
-          style={{
-            fontFamily: '"Cinzel Decorative", "Cinzel", serif',
-            fontWeight: 700,
-            letterSpacing: "2px",
-            background: !locked
-              ? "linear-gradient(135deg, #8b1a1a, #c62828)"
-              : "#3a3228",
-            color: !locked ? "#e8c44a" : "#6a5a42",
-            border: "none",
-            boxShadow: !locked ? "0 2px 8px rgba(198, 40, 40, 0.2)" : "none",
-          }}
-          onMouseEnter={(e) => {
-            if (!locked) {
-              e.currentTarget.style.filter = "brightness(1.15)";
-              e.currentTarget.style.boxShadow = "0 4px 16px rgba(198, 40, 40, 0.3)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!locked) {
-              e.currentTarget.style.filter = "brightness(1)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(198, 40, 40, 0.2)";
-            }
-          }}
+          className="estate-action estate-buy"
           title={locked ? (check.reason || "Cannot build") : `Build ${building.name} for ${constructionCost}d`}
         >
           {!locked ? `Build (${constructionCost}d)` : (check.reason || "Cannot Build")}
@@ -953,15 +890,8 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
         <>
           <button
             onClick={() => setShowInfo(!showInfo)}
-            className="mt-1.5 text-[11px] uppercase tracking-wider cursor-pointer"
-            style={{
-              color: "#6a5a42",
-              background: "none",
-              border: "none",
-              fontFamily: '"Cinzel", serif',
-              textAlign: "left",
-            }}
-          >
+            className="estate-action"
+           aria-expanded={showInfo} aria-controls={historyId}>
             {showInfo ? "\u25BC Hide history" : "\u25B6 Historical context"}
           </button>
           {showInfo && (
@@ -970,10 +900,10 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
               style={{
                 backgroundColor: "rgba(196, 162, 74, 0.06)",
                 border: "1px solid rgba(196, 162, 74, 0.15)",
-                color: "#a89070",
+                color: "#d8c6a8",
                 fontFamily: '"Crimson Text", serif',
               }}
-            >
+             id={historyId}>
               {building.historicalNote}
             </div>
           )}
@@ -989,6 +919,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<E
 
 function ProductionChains({ state }:StateProps) {
   const [expanded, setExpanded] = useState(false);
+  const chainsId=useId();
   const synergies = getActiveBuildingSynergies(state.buildings);
 
   if (synergies.length === 0 && state.buildings.length < 2) return null;
@@ -1036,9 +967,8 @@ function ProductionChains({ state }:StateProps) {
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between cursor-pointer"
-        style={{ background: "none", border: "none" }}
-      >
+        className="estate-chains-toggle w-full flex items-center justify-between cursor-pointer"
+       aria-expanded={expanded} aria-controls={chainsId}>
         <h3
           className="text-base font-bold uppercase"
           style={{
@@ -1049,16 +979,16 @@ function ProductionChains({ state }:StateProps) {
         >
           {"\u2692"} Production Chains
         </h3>
-        <span style={{ color: "#6a5a42", fontSize: "0.8rem" }}>
+        <span style={{ color: "var(--estate-muted)", fontSize: "1rem" }}>
           {expanded ? "\u25BC" : "\u25B6"} {active.length > 0 && `${active.length} active`}
         </span>
       </button>
 
       {expanded && (
-        <div className="mt-2 space-y-1.5">
+        <div id={chainsId} className="mt-2 space-y-1.5">
           {active.length > 0 && (
             <div>
-              <div className="text-[10px] font-semibold uppercase mb-1" style={{ color: "#8dba6e", letterSpacing: "1px" }}>
+              <div className="text-sm font-semibold uppercase mb-1" style={{ color: "#8dba6e", letterSpacing: "1px" }}>
                 Active Chains
               </div>
               {active.map((s, i) => (
@@ -1075,25 +1005,25 @@ function ProductionChains({ state }:StateProps) {
 
           {(potential.length > 0 || knownChains.length > 0) && (
             <div>
-              <div className="text-[10px] font-semibold uppercase mb-1" style={{ color: "#6a5a42", letterSpacing: "1px" }}>
+              <div className="text-sm font-semibold uppercase mb-1" style={{ color: "var(--estate-muted)", letterSpacing: "1px" }}>
                 Potential Chains
               </div>
               {potential.map((s, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm py-0.5" style={{ opacity: 0.5 }}>
-                  <span style={{ color: "#4a4030" }}>{"\u2014"}</span>
-                  <span style={{ color: "#6a5a42" }}>
+                <div key={i} className="flex items-center gap-2 text-sm py-0.5" >
+                  <span style={{ color: "var(--estate-muted)" }}>{"\u2014"}</span>
+                  <span style={{ color: "var(--estate-muted)" }}>
                     {buildingDefinition(s.buildingType)?.name} + {buildingDefinition(s.partnerType)?.name}
                   </span>
-                  <span style={{ color: "#4a4030" }}>{s.desc}</span>
+                  <span style={{ color: "var(--estate-muted)" }}>{s.desc}</span>
                 </div>
               ))}
               {knownChains.map((chain, i) => (
-                <div key={`kc-${i}`} className="flex items-center gap-2 text-sm py-0.5" style={{ opacity: 0.5 }}>
-                  <span style={{ color: "#4a4030" }}>{"\u2014"}</span>
-                  <span style={{ color: "#6a5a42" }}>
+                <div key={`kc-${i}`} className="flex items-center gap-2 text-sm py-0.5" >
+                  <span style={{ color: "var(--estate-muted)" }}>{"\u2014"}</span>
+                  <span style={{ color: "var(--estate-muted)" }}>
                     {chain.from} {"\u2192"} {chain.to}
                   </span>
-                  <span style={{ color: "#4a4030" }}>{chain.desc}</span>
+                  <span style={{ color: "var(--estate-muted)" }}>{chain.desc}</span>
                 </div>
               ))}
             </div>
@@ -1109,6 +1039,7 @@ function ProductionChains({ state }:StateProps) {
 // ---------------------------------------------------------------------------
 
 export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgrade, activatedSynergies }:EstateProps) {
+  const handleReadingFocus=useHallReadingFocus();
   const synergyBuildingIds = getSynergyBuildings(activatedSynergies ?? [], state.buildings);
 
   // Group built buildings by type for display
@@ -1121,7 +1052,7 @@ export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgr
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="estate-ui w-full max-w-4xl mx-auto" onFocus={handleReadingFocus}>
       {/* Tip Bar */}
       <TipBar state={state} />
 
@@ -1140,7 +1071,7 @@ export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgr
             style={{ backgroundColor: "#231e16", border: "1px solid #6a5a42" }}
           >
             <SectionHeader title="Your Buildings" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="estate-card-grid">
               {builtBuildings.map(({ building, index }) => (
                 <BuiltBuildingCard
                   key={typeof building === "string" ? `${building}-${index}` : building.instanceId}
@@ -1166,7 +1097,7 @@ export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgr
         style={{ backgroundColor: "#231e16", border: "1px solid #6a5a42" }}
       >
         <SectionHeader title="Build New" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="estate-card-grid">
           {availableBuildings.map((building, index) => (
             <BuildCard
               key={building.id}
