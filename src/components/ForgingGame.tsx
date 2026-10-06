@@ -1,5 +1,5 @@
 /**
- * ForgingGame.jsx
+ * ForgingGame.tsx
  *
  * Phase 2 — The Forging Mini-Game (Anvil Rhythm System)
  *
@@ -20,7 +20,37 @@ import {
   GODRIC_FORGING,
   GODRIC_RESULTS,
   calculateGrade,
+  FORGE_RESOURCES,
+  type ForgeDifficulty,
+  type ForgeItemId,
+  type ForgeResourceId,
 } from "../data/blacksmith";
+
+type ForgeRecipe = typeof FORGEABLE_ITEMS[ForgeItemId];
+type ForgeResources = Readonly<Record<ForgeResourceId, number>>;
+type Accuracy = 'perfect' | 'good' | 'miss';
+type Grade = ReturnType<typeof calculateGrade>;
+interface Strike {readonly accuracy: Accuracy; readonly distance: number; readonly beat: number}
+interface StrikeStats {
+  readonly perfectCount: number; readonly goodCount: number; readonly missCount: number;
+  readonly bestStreak: number; readonly streakBonus: number; readonly qualityScore: number;
+  readonly strikes: readonly Strike[];
+}
+interface FinishedStats extends StrikeStats {readonly quenchResult: Accuracy; readonly quenchBonus: number}
+export interface ForgingResult {
+  readonly completionUid: number; readonly item: ForgeRecipe; readonly grade: Grade;
+  readonly qualityScore: number; readonly stats: FinishedStats;
+}
+interface ForgingGameProps {
+  readonly resources: ForgeResources; readonly denarii: number; readonly completionUid: number;
+  readonly commissionItem?: ForgeRecipe | null;
+  readonly onComplete: (result: ForgingResult) => void; readonly onCancel: () => void;
+}
+type ForgePhase =
+  | {readonly phase: 'select'; readonly attemptUid: number}
+  | {readonly phase: 'heating' | 'striking'; readonly attemptUid: number; readonly item: ForgeRecipe}
+  | {readonly phase: 'quenching'; readonly attemptUid: number; readonly item: ForgeRecipe; readonly strikes: StrikeStats}
+  | {readonly phase: 'result'; readonly result: ForgingResult};
 
 // ─── Constants ──────────────────────────────────────────────────
 const TRACK_WIDTH = 500;         // logical track width in px
@@ -30,13 +60,13 @@ const QUENCH_INDICATOR_SPEED = 0.45; // px per ms for quench
 const BEAT_PAUSE = 400;          // ms pause between beats
 
 // ─── Deterministic pick from array by index ─────────────────────
-function pickLine(arr, index) {
+function pickLine(arr: readonly string[], index: number) {
   if (!arr || arr.length === 0) return "";
-  return arr[index % arr.length];
+  return arr[index % arr.length] ?? "";
 }
 
 // ─── Quality score calculation ──────────────────────────────────
-function computeQuality(perfectCount, goodCount, missCount, totalStrikes, streakBonus, quenchBonus) {
+function computeQuality(perfectCount: number, goodCount: number, totalStrikes: number, streakBonus: number, quenchBonus: number) {
   if (totalStrikes === 0) return 0;
   const baseScore = ((perfectCount * 12 + goodCount * 6) / totalStrikes) * (100 / 12);
   return Math.min(100, Math.round(baseScore + streakBonus + quenchBonus));
@@ -44,7 +74,7 @@ function computeQuality(perfectCount, goodCount, missCount, totalStrikes, streak
 
 // ─── Strike History Display ─────────────────────────────────────
 
-function StrikeHistory({ strikes, totalRequired }) {
+function StrikeHistory({ strikes, totalRequired }: {strikes: readonly Strike[]; totalRequired: number}) {
   const slots = Array.from({ length: totalRequired }, (_, i) => {
     const strike = strikes[i];
     if (!strike) return { type: "pending", key: i };
@@ -95,7 +125,7 @@ function StrikeHistory({ strikes, totalRequired }) {
 
 // ─── Quality Gauge ──────────────────────────────────────────────
 
-function QualityGauge({ score, overshoot }) {
+function QualityGauge({ score, overshoot }: {score: number; overshoot: boolean}) {
   const gradeColor =
     score >= 90 ? "#ffd700" :
     score >= 70 ? "#c0c0c0" :
@@ -168,7 +198,7 @@ function QualityGauge({ score, overshoot }) {
 
 // ─── Item Preview (evolving shape during forging) ───────────────
 
-function ItemPreview({ item, progress, qualityScore }) {
+function ItemPreview({ item, progress, qualityScore }: {item: ForgeRecipe; progress: number; qualityScore: number}) {
   // Progress: 0 to 1 (strikes completed / total)
   const stage = Math.floor(progress * 5);
   const isGood = qualityScore >= 50;
@@ -230,13 +260,13 @@ function ItemPreview({ item, progress, qualityScore }) {
 
 // ─── Heating Phase ──────────────────────────────────────────────
 
-function HeatingPhase({ item, onComplete }) {
+function HeatingPhase({ item, onComplete }: {item: ForgeRecipe; onComplete: () => void}) {
   const [progress, setProgress] = useState(0);
-  const startRef = useRef(null);
+  const startRef = useRef<number | null>(null);
 
   useEffect(() => {
-    let rafId;
-    const animate = (timestamp) => {
+    let rafId = 0;
+    const animate = (timestamp: number) => {
       if (!startRef.current) startRef.current = timestamp;
       const elapsed = timestamp - startRef.current;
       const pct = Math.min(elapsed / HEAT_DURATION, 1);
@@ -326,16 +356,15 @@ function HeatingPhase({ item, onComplete }) {
 function StrikeTrack({
   difficulty,
   item,
-  onStrikeResult,
   onAllStrikesComplete,
-}) {
+}: {difficulty: ForgeDifficulty; item: ForgeRecipe; onAllStrikesComplete: (stats: StrikeStats) => void}) {
   const config = FORGING_DIFFICULTY[difficulty];
   const { strikes: totalStrikes, tempo, perfectWindow, goodWindow } = config;
 
   const [currentBeat, setCurrentBeat] = useState(0);
   const [indicatorPos, setIndicatorPos] = useState(0);
-  const [phase, setPhase] = useState("moving"); // 'moving' | 'struck' | 'pausing' | 'done'
-  const [strikeResults, setStrikeResults] = useState([]);
+  const [phase, setPhase] = useState<'moving' | 'struck' | 'pausing' | 'done'>("moving");
+  const [strikeResults, setStrikeResults] = useState<readonly Strike[]>([]);
   const [perfectCount, setPerfectCount] = useState(0);
   const [goodCount, setGoodCount] = useState(0);
   const [missCount, setMissCount] = useState(0);
@@ -344,14 +373,14 @@ function StrikeTrack({
   const [streakBonus, setStreakBonus] = useState(0);
   const [qualityScore, setQualityScore] = useState(50);
   const [overshoot, setOvershoot] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
+  const [lastResult, setLastResult] = useState<Accuracy | null>(null);
   const [godricLine, setGodricLine] = useState(() => pickLine(GODRIC_FORGING.start, 0));
   const [flashClass, setFlashClass] = useState("");
 
-  const rafRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const trackRef = useRef(null);
-  const handleStrikeResultRef = useRef(null);
+  const rafRef = useRef(0);
+  const startTimeRef = useRef<number | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const handleStrikeResultRef = useRef<((accuracy: Accuracy, distance: number) => void) | null>(null);
 
   const targetPx = TRACK_WIDTH * TARGET_CENTER;
   const speed = TRACK_WIDTH / tempo; // px per ms
@@ -361,7 +390,7 @@ function StrikeTrack({
     const next = currentBeat + 1;
     if (next >= totalStrikes) {
       setPhase("done");
-      const q = computeQuality(perfectCount, goodCount, missCount, totalStrikes, streakBonus, 0);
+      const q = computeQuality(perfectCount, goodCount, totalStrikes, streakBonus, 0);
       setQualityScore(q);
       onAllStrikesComplete({
         perfectCount,
@@ -390,7 +419,7 @@ function StrikeTrack({
   }, [phase, nextBeat]);
 
   // Handle strike result
-  const handleStrikeResult = useCallback((accuracy, distance) => {
+  const handleStrikeResult = useCallback((accuracy: Accuracy, distance: number) => {
     if (phase !== "moving") return;
     cancelAnimationFrame(rafRef.current);
     setPhase("struck");
@@ -398,7 +427,6 @@ function StrikeTrack({
     const result = { accuracy, distance, beat: currentBeat };
     setStrikeResults((prev) => [...prev, result]);
     setLastResult(accuracy);
-    onStrikeResult(accuracy);
 
     // Update counts
     let newPerfect = perfectCount;
@@ -407,7 +435,7 @@ function StrikeTrack({
     let newStreak = currentStreak;
     let newBest = bestStreak;
     let newStreakBonus = streakBonus;
-    let lineIndex = currentBeat;
+    const lineIndex = currentBeat;
 
     if (accuracy === "perfect") {
       newPerfect++;
@@ -450,7 +478,7 @@ function StrikeTrack({
 
     // Quality
     const totalDone = newPerfect + newGood + newMiss;
-    const q = computeQuality(newPerfect, newGood, newMiss, totalDone, newStreakBonus, 0);
+    const q = computeQuality(newPerfect, newGood, totalDone, newStreakBonus, 0);
     setQualityScore(q);
 
     // Overshoot animation on perfect
@@ -463,9 +491,8 @@ function StrikeTrack({
     setTimeout(() => setFlashClass(""), 400);
     setTimeout(() => {
       setPhase("pausing");
-
     }, 200);
-  }, [phase, currentBeat, perfectCount, goodCount, missCount, currentStreak, bestStreak, streakBonus, onStrikeResult]);
+  }, [phase, currentBeat, perfectCount, goodCount, missCount, currentStreak, bestStreak, streakBonus]);
 
   // Keep ref in sync for animation loop
   useEffect(() => { handleStrikeResultRef.current = handleStrikeResult; }, [handleStrikeResult]);
@@ -474,7 +501,7 @@ function StrikeTrack({
   useEffect(() => {
     if (phase !== "moving") return;
 
-    const animate = (timestamp) => {
+    const animate = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
       const elapsed = timestamp - startTimeRef.current;
       const newPos = elapsed * speed;
@@ -500,7 +527,7 @@ function StrikeTrack({
     if (phase !== "moving") return;
     const distance = Math.abs(indicatorPos - targetPx);
 
-    let accuracy;
+    let accuracy: Accuracy;
     // Convert pixel distance to ms-equivalent for comparison with windows
     const msDistance = distance / speed;
     if (msDistance <= perfectWindow) {
@@ -516,7 +543,7 @@ function StrikeTrack({
 
   // Keyboard support
   useEffect(() => {
-    const handleKey = (e) => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.key === " ") {
         e.preventDefault();
         handlePlayerStrike();
@@ -737,20 +764,20 @@ function StrikeTrack({
 
 // ─── Quenching Phase ────────────────────────────────────────────
 
-function QuenchPhase({ onComplete }) {
+function QuenchPhase({ onComplete }: {onComplete: (bonus: number, accuracy: Accuracy) => void}) {
   const [indicatorPos, setIndicatorPos] = useState(0);
-  const [phase, setPhase] = useState("moving"); // 'moving' | 'struck' | 'done'
-  const [result, setResult] = useState(null);
+  const [phase, setPhase] = useState<'moving' | 'struck' | 'done'>("moving");
+  const [result, setResult] = useState<Accuracy | null>(null);
   const [steamActive, setSteamActive] = useState(false);
-  const rafRef = useRef(null);
-  const startRef = useRef(null);
-  const handleQuenchRef = useRef(null);
+  const rafRef = useRef(0);
+  const startRef = useRef<number | null>(null);
+  const handleQuenchRef = useRef<((accuracy: Accuracy) => void) | null>(null);
 
   const targetPx = TRACK_WIDTH * 0.5; // center for quench
   const perfectHalf = 80;
   const goodHalf = 140;
 
-  const handleQuench = useCallback((accuracy) => {
+  const handleQuench = useCallback((accuracy: Accuracy) => {
     if (phase !== "moving") return;
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     setPhase("struck");
@@ -772,7 +799,7 @@ function QuenchPhase({ onComplete }) {
 
   useEffect(() => {
     if (phase !== "moving") return;
-    const animate = (timestamp) => {
+    const animate = (timestamp: number) => {
       if (!startRef.current) startRef.current = timestamp;
       const elapsed = timestamp - startRef.current;
       const pos = elapsed * QUENCH_INDICATOR_SPEED;
@@ -798,7 +825,7 @@ function QuenchPhase({ onComplete }) {
   }, [phase, indicatorPos, targetPx, handleQuench]);
 
   useEffect(() => {
-    const handleKey = (e) => {
+    const handleKey = (e: KeyboardEvent) => {
       if (e.code === "Space" || e.key === " ") {
         e.preventDefault();
         handleClick();
@@ -961,7 +988,7 @@ function QuenchPhase({ onComplete }) {
 
 // ─── Result Screen ──────────────────────────────────────────────
 
-function ResultScreen({ item, grade, qualityScore, stats, onFinish }) {
+function ResultScreen({ item, grade, qualityScore, stats, onFinish }: {item: ForgeRecipe; grade: Grade; qualityScore: number; stats: FinishedStats; onFinish: () => void}) {
   const godricLine = useMemo(
     () => pickLine(GODRIC_RESULTS[grade.grade] || GODRIC_RESULTS.Standard, stats.bestStreak),
     [grade.grade, stats.bestStreak]
@@ -1105,7 +1132,7 @@ function ResultScreen({ item, grade, qualityScore, stats, onFinish }) {
   );
 }
 
-function StatBox({ label, value, color }) {
+function StatBox({ label, value, color }: {label: string; value: string | number; color: string}) {
   return (
     <div
       style={{
@@ -1141,16 +1168,21 @@ function StatBox({ label, value, color }) {
   );
 }
 
+function materialAmount(resources: ForgeResources, id: string): number {
+  const material = FORGE_RESOURCES.find(entry => entry.key === id);
+  return material ? resources[material.key] : 0;
+}
+
 // ─── Item Selector (simple, expanded in Phase 3) ────────────────
 
-function ItemSelector({ resources, denarii, onSelect, onCancel }) {
+function ItemSelector({ resources, denarii, onSelect, onCancel }: {resources: ForgeResources; denarii: number; onSelect: (item: ForgeRecipe) => void; onCancel: () => void}) {
   const items = Object.values(FORGEABLE_ITEMS);
 
-  function canAfford(item) {
+  function canAfford(item: ForgeRecipe) {
     const cost = item.cost;
     return Object.entries(cost).every(([res, amount]) => {
       if (res === "gold") return Number.isFinite(denarii) && denarii >= amount;
-      return (resources[res] || 0) >= amount;
+      return materialAmount(resources, res) >= amount;
     });
   }
 
@@ -1284,7 +1316,7 @@ function ItemSelector({ resources, denarii, onSelect, onCancel }) {
               <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {Object.entries(item.cost).map(([res, amount]) => {
                   if (amount === 0) return null;
-                  const has = res === "gold" || (resources[res] || 0) >= amount;
+                  const has = res === "gold" || materialAmount(resources, res) >= amount;
                   return (
                     <span
                       key={res}
@@ -1312,96 +1344,48 @@ function ItemSelector({ resources, denarii, onSelect, onCancel }) {
 // Main ForgingGame Component
 // ═══════════════════════════════════════════════════════════════
 
-export default function ForgingGame({ resources, onComplete, onCancel, commissionItem, completionUid, denarii }) {
-  // Game phases: 'select' | 'heating' | 'striking' | 'quenching' | 'result'
-  const [gamePhase, setGamePhase] = useState(commissionItem ? "heating" : "select");
-  const [attemptUid] = useState(completionUid);
-  const [selectedItem, setSelectedItem] = useState(commissionItem || null);
-  const [strikeData, setStrikeData] = useState(null);
-  const [finalQuality, setFinalQuality] = useState(0);
-  const [finalGrade, setFinalGrade] = useState(null);
+export default function ForgingGame({ resources, onComplete, onCancel, commissionItem, completionUid, denarii }: ForgingGameProps) {
+  // Capture the completion UID at mount. Each phase owns exactly the data it needs.
+  const [view, setView] = useState<ForgePhase>(() => commissionItem
+    ? {phase: 'heating', item: commissionItem, attemptUid: completionUid}
+    : {phase: 'select', attemptUid: completionUid});
 
-  const handleSelectItem = useCallback((item) => {
-    setSelectedItem(item);
-    setGamePhase("heating");
+  const handleSelectItem = useCallback((item: ForgeRecipe) => {
+    setView(previous => previous.phase === 'select'
+      ? {phase: 'heating', item, attemptUid: previous.attemptUid} : previous);
   }, []);
-
   const handleHeatingComplete = useCallback(() => {
-    setGamePhase("striking");
+    setView(previous => previous.phase === 'heating' ? {...previous, phase: 'striking'} : previous);
   }, []);
-
-  const handleStrikeResult = useCallback(() => {
-    // Individual strike feedback (used for screen effects)
+  const handleAllStrikesComplete = useCallback((strikes: StrikeStats) => {
+    setView(previous => previous.phase === 'striking' ? {...previous, phase: 'quenching', strikes} : previous);
   }, []);
-
-  const handleAllStrikesComplete = useCallback((data) => {
-    setStrikeData(data);
-    setGamePhase("quenching");
-  }, []);
-
-  const handleQuenchComplete = useCallback((quenchBonus, quenchResult) => {
-    const totalQ = computeQuality(
-      strikeData.perfectCount,
-      strikeData.goodCount,
-      strikeData.missCount,
-      strikeData.perfectCount + strikeData.goodCount + strikeData.missCount,
-      strikeData.streakBonus,
-      quenchBonus
-    );
-    const grade = calculateGrade(totalQ);
-    setFinalQuality(totalQ);
-    setFinalGrade(grade);
-    setStrikeData((prev) => ({ ...prev, quenchResult, quenchBonus }));
-    setGamePhase("result");
-  }, [strikeData]);
-
-  const handleFinish = useCallback(() => {
-    onComplete({
-      completionUid: attemptUid,
-      item: selectedItem,
-      grade: finalGrade,
-      qualityScore: finalQuality,
-      stats: strikeData,
+  const handleQuenchComplete = useCallback((quenchBonus: number, quenchResult: Accuracy) => {
+    setView(previous => {
+      if (previous.phase !== 'quenching') return previous;
+      const stats = previous.strikes;
+      const qualityScore = computeQuality(stats.perfectCount, stats.goodCount,
+        stats.perfectCount + stats.goodCount + stats.missCount, stats.streakBonus, quenchBonus);
+      return {phase: 'result', result: {
+        completionUid: previous.attemptUid, item: previous.item, qualityScore,
+        grade: calculateGrade(qualityScore), stats: {...stats, quenchResult, quenchBonus},
+      }};
     });
-  }, [selectedItem, finalGrade, finalQuality, strikeData, attemptUid, onComplete]);
+  }, []);
+  const handleFinish = useCallback(() => {
+    if (view.phase === 'result') onComplete(view.result);
+  }, [view, onComplete]);
 
   return (
     <div>
-      {gamePhase === "select" && (
-        <ItemSelector
-          resources={resources}
-          denarii={denarii}
-          onSelect={handleSelectItem}
-          onCancel={onCancel}
-        />
-      )}
-
-      {gamePhase === "heating" && selectedItem && (
-        <HeatingPhase item={selectedItem} onComplete={handleHeatingComplete} />
-      )}
-
-      {gamePhase === "striking" && selectedItem && (
-        <StrikeTrack
-          difficulty={selectedItem.difficulty}
-          item={selectedItem}
-          onStrikeResult={handleStrikeResult}
-          onAllStrikesComplete={handleAllStrikesComplete}
-        />
-      )}
-
-      {gamePhase === "quenching" && (
-        <QuenchPhase onComplete={handleQuenchComplete} />
-      )}
-
-      {gamePhase === "result" && selectedItem && finalGrade && (
-        <ResultScreen
-          item={selectedItem}
-          grade={finalGrade}
-          qualityScore={finalQuality}
-          stats={strikeData}
-          onFinish={handleFinish}
-        />
-      )}
+      {view.phase === 'select' && <ItemSelector resources={resources} denarii={denarii}
+        onSelect={handleSelectItem} onCancel={onCancel} />}
+      {view.phase === 'heating' && <HeatingPhase item={view.item} onComplete={handleHeatingComplete} />}
+      {view.phase === 'striking' && <StrikeTrack difficulty={view.item.difficulty} item={view.item}
+        onAllStrikesComplete={handleAllStrikesComplete} />}
+      {view.phase === 'quenching' && <QuenchPhase onComplete={handleQuenchComplete} />}
+      {view.phase === 'result' && <ResultScreen item={view.result.item} grade={view.result.grade}
+        qualityScore={view.result.qualityScore} stats={view.result.stats} onFinish={handleFinish} />}
     </div>
   );
 }
