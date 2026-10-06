@@ -15,7 +15,7 @@ export type BuildingEntry = BuildingInstance | string;
 
 const buildingRegistry: Record<string, BuildingDefinition> = BUILDINGS;
 
-export function getBuildingType(building: string | { type: string }): string {
+export function getBuildingType<T extends string>(building: T | { type: T }): T {
   return typeof building === 'string' ? building : building.type;
 }
 

@@ -4,7 +4,7 @@ import {getConstructionCost} from '../engine/forgeTools.ts';
 import {getBuildingOutput} from '../engine/economyEngine.ts';
 import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
 /**
- * EstateTab.jsx
+ * EstateTab.tsx
  *
  * Rebuilt estate management tab with:
  * - Contextual tip bar
@@ -16,16 +16,17 @@ import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
  * - Production chain / synergy display
  */
 
-import { useState } from "react";
-import BUILDINGS, { BUILDING_LIST } from "../data/buildings.ts";
+import { useState,type CSSProperties } from "react";
+import BUILDINGS, { BUILDING_LIST,type BuildingDefinition,type BuildingId } from "../data/buildings.ts";
+import type {GameSnapshot} from '../save/saveGame.ts';
+import type {ResourceId} from '../data/economy.ts';
+import type {SynergyTierId} from '../data/synergies.ts';
 import { getUpgradeEligibility } from "../engine/buildingActions.ts";
 import {
   RESOURCE_CONFIG,
-  FOOD_RESOURCES,
   SEASON_INFO,
   SEASON_FARM_MULTIPLIERS,
   STARTING_TOTAL_PLOTS,
-  REPAIR_COST_PER_POINT,
 } from "../data/economy.ts";
 import {
   canBuildBuilding,
@@ -42,6 +43,31 @@ import { getSeasonFoodRequirement } from "../engine/foodRequirement.ts";
 import { getSynergyBuildings } from "../engine/synergyEngine.ts";
 import { getConditionLevel } from "../data/economy.ts";
 
+interface EstateState extends Readonly<Pick<GameSnapshot,'buildings'|'food'|'population'|'season'|'castleLevel'|'garrison'|'military'|'turn'|'difficulty'|'denarii'|'inventory'|'blacksmith'>> {
+  readonly totalPlots?:number;
+}
+interface EstateProps {
+  readonly state:EstateState;
+  readonly onBuild:(buildingId:BuildingId)=>void;
+  readonly onDemolish:(index:number)=>void;
+  readonly onRepair:(index:number)=>void;
+  readonly onUpgrade:(index:number)=>void;
+  readonly activatedSynergies?:readonly SynergyTierId[];
+}
+type StateProps=Pick<EstateProps,'state'>;
+type ResourceCategory=typeof RESOURCE_CONFIG[ResourceId]['category'];
+interface InventoryItem {resource:ResourceId;qty:number;cfg:typeof RESOURCE_CONFIG[ResourceId]}
+function isResourceId(value:string):value is ResourceId{return Object.hasOwn(RESOURCE_CONFIG,value);}
+function resourceEntries(values:Readonly<Partial<Record<ResourceId,number>>>):Array<[ResourceId,number]>{
+  const entries:Array<[ResourceId,number]>=[];
+  for(const [id,quantity] of Object.entries(values))if(isResourceId(id)&&typeof quantity==='number')entries.push([id,quantity]);
+  return entries;
+}
+function buildingDefinition(id:string):BuildingDefinition|undefined {
+  return isBuildingId(id)?BUILDINGS[id]:undefined;
+}
+function isBuildingId(value:string):value is BuildingId{return Object.hasOwn(BUILDINGS,value);}
+
 // ---------------------------------------------------------------------------
 // Color constants
 // ---------------------------------------------------------------------------
@@ -52,7 +78,7 @@ const RARITY_COLORS = {
   rare:     { border: "rgba(180, 100, 60, 0.6)", glow: "rgba(180, 100, 60, 0.1)", bg: "rgba(180, 100, 60, 0.05)" },
 };
 
-const PRODUCTION_COLORS = {
+const PRODUCTION_COLORS:Readonly<Partial<Record<ResourceId,string>>> = {
   grain: "#8dba6e", livestock: "#8dba6e", fish: "#8dba6e", flour: "#8dba6e",
   timber: "#7eb8d4", clay: "#7eb8d4", iron: "#7eb8d4", stone: "#7eb8d4",
   steel: "#b8a0d4", coal: "#b8a0d4", leather: "#b8a0d4", wood: "#b8a0d4",
@@ -68,7 +94,7 @@ const CATEGORY_STYLES = {
   buyOnly: { color: "#a89070", bg: "rgba(168, 144, 112, 0.06)", border: "rgba(168, 144, 112, 0.2)",  label: "Special", icon: "\u2726" },
 };
 
-const PLOT_COLORS = {
+const PLOT_COLORS:Readonly<Partial<Record<BuildingDefinition['category'],string>>> = {
   food: "#8dba6e",
   material: "#7eb8d4",
   processing: "#c9a84c",
@@ -78,7 +104,7 @@ const PLOT_COLORS = {
 // Section header component
 // ---------------------------------------------------------------------------
 
-function SectionHeader({ title }) {
+function SectionHeader({ title }:{readonly title:string}) {
   return (
     <>
       <h3
@@ -102,7 +128,7 @@ function SectionHeader({ title }) {
 // Tip Bar
 // ---------------------------------------------------------------------------
 
-function TipBar({ state }) {
+function TipBar({ state }:StateProps) {
   const { buildings, food, population, season } = state;
   const usedPlots = getUsedPlots(buildings);
   const totalPlots = state.totalPlots ?? STARTING_TOTAL_PLOTS;
@@ -160,7 +186,7 @@ function TipBar({ state }) {
 // Economy Overview (Enhanced)
 // ---------------------------------------------------------------------------
 
-function EconomyOverview({ state }) {
+function EconomyOverview({ state }:StateProps) {
   const {
     food, population,
     buildings, garrison, castleLevel, season,
@@ -174,6 +200,12 @@ function EconomyOverview({ state }) {
   const netIncome = passiveIncome - totalUpkeep;
   const seasonInfo = SEASON_INFO[season] || SEASON_INFO.spring;
   const foodDanger = food < consumption * 2;
+  const seasonBadgeStyle:CSSProperties & Record<'--season-glow-color'|'--season-glow-color-inner',string>={
+    background: `linear-gradient(135deg, ${seasonInfo.color}18 0%, ${seasonInfo.color}08 50%, ${seasonInfo.color}14 100%)`,
+    border: `2px solid ${seasonInfo.color}50`,
+    "--season-glow-color": `${seasonInfo.color}40`,
+    "--season-glow-color-inner": `${seasonInfo.color}10`,
+  };
 
   return (
     <div
@@ -188,12 +220,7 @@ function EconomyOverview({ state }) {
       {/* Season badge — full glow treatment */}
       <div
         className="mb-3 p-2.5 rounded-md flex items-center gap-2.5 season-glow"
-        style={{
-          background: `linear-gradient(135deg, ${seasonInfo.color}18 0%, ${seasonInfo.color}08 50%, ${seasonInfo.color}14 100%)`,
-          border: `2px solid ${seasonInfo.color}50`,
-          "--season-glow-color": `${seasonInfo.color}40`,
-          "--season-glow-color-inner": `${seasonInfo.color}10`,
-        }}
+        style={seasonBadgeStyle}
       >
         <span
           className="text-2xl stat-value-glow"
@@ -253,7 +280,10 @@ function EconomyOverview({ state }) {
   );
 }
 
-function StatCard({ label, value, sub, accent, glowClass, warn, warnColor, warnGlowClass, pulse }) {
+function StatCard({ label, value, sub, accent, glowClass, warn, warnColor, warnGlowClass, pulse }:{
+ readonly label:string;readonly value:number|string;readonly sub:string;readonly accent:string;
+ readonly glowClass:string;readonly warn?:boolean;readonly warnColor?:string;readonly warnGlowClass?:string;readonly pulse?:boolean;
+}) {
   const displayAccent = warn ? (warnColor || "#c97a4c") : accent;
   const activeGlow = warn ? (warnGlowClass || glowClass) : glowClass;
   return (
@@ -295,7 +325,7 @@ function StatCard({ label, value, sub, accent, glowClass, warn, warnColor, warnG
 // Land & Inventory
 // ---------------------------------------------------------------------------
 
-function LandAndInventory({ state }) {
+function LandAndInventory({ state }:StateProps) {
   const { buildings, inventory, totalPlots: tp } = state;
   const totalPlots = tp ?? STARTING_TOTAL_PLOTS;
   const usedPlots = getUsedPlots(buildings);
@@ -319,10 +349,10 @@ function LandAndInventory({ state }) {
   }
 
   // Group inventory by category
-  const categoryOrder = ["food", "raw", "forge", "trade"];
-  const grouped = {};
+  const categoryOrder = ["food", "raw", "forge", "trade"] as const;
+  const grouped:Partial<Record<ResourceCategory,InventoryItem[]>> = {};
   for (const cat of categoryOrder) grouped[cat] = [];
-  for (const [resource, qty] of Object.entries(inventory)) {
+  for (const [resource, qty] of resourceEntries(inventory)) {
     const cfg = RESOURCE_CONFIG[resource];
     if (!cfg) continue;
     const cat = cfg.category || "trade";
@@ -490,10 +520,10 @@ function LandAndInventory({ state }) {
 // Built Building Management Card
 // ---------------------------------------------------------------------------
 
-function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade, onDemolish }) {
+function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade, onDemolish }:Pick<EstateProps,'state'|'onRepair'|'onUpgrade'|'onDemolish'> & {readonly building:GameSnapshot['buildings'][number];readonly buildingIndex:number}) {
   const [showInfo, setShowInfo] = useState(false);
   const typeId = getBuildingType(building);
-  const def = BUILDINGS[typeId];
+  const def:BuildingDefinition = BUILDINGS[typeId];
   if (!def) return null;
 
   const condition = typeof building === "string" ? 100 : (building.condition ?? 100);
@@ -587,7 +617,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
       <div className="text-sm space-y-0.5 mb-2">
         <div>
           <span title="Before storage limits and input availability" style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Potential output:</span>{" "}
-          {Object.entries(def.produces).map(([res], i) => {
+          {resourceEntries(def.produces).map(([res], i) => {
             const effective = output[res] ?? 0;
             const cfg = RESOURCE_CONFIG[res];
             const color = PRODUCTION_COLORS[res] || "#c4a24a";
@@ -662,7 +692,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
               border: `1px solid ${canUpgrade ? "#c4a24a" : "#4a4030"}`,
               color: canUpgrade ? "#c4a24a" : "#4a4030",
             }}
-            title={!canUpgrade ? upgradeEligibility.reason : `Upgrade to ${upgradeDef.name}`}
+            title={!canUpgrade ? upgradeEligibility.reason??undefined : `Upgrade to ${upgradeDef.name}`}
           >
             {"\u25B2"} {upgradeDef.name} ({upgradeEligibility.cost}d)
           </button>
@@ -719,7 +749,7 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
 // Available Building Card (for building new)
 // ---------------------------------------------------------------------------
 
-function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
+function BuildCard({ building, state, onBuild, isSynergyBuilding, index }:Pick<EstateProps,'state'|'onBuild'> & {readonly building:BuildingDefinition;readonly isSynergyBuilding:boolean;readonly index:number}) {
   const [showInfo, setShowInfo] = useState(false);
   const builtCount = state.buildings.filter((b) => getBuildingType(b) === building.id).length;
   const check = canBuildBuilding(building.id, state);
@@ -822,7 +852,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
         </div>
         <div>
           <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Base production:</span>{" "}
-          {Object.entries(building.produces).map(([res, amt], i) => {
+          {resourceEntries(building.produces).map(([res, amt], i) => {
             const cfg = RESOURCE_CONFIG[res];
             const color = PRODUCTION_COLORS[res] || "#c4a24a";
             return (
@@ -839,7 +869,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
         {building.consumes && (
           <div>
             <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Consumes:</span>{" "}
-            {Object.entries(building.consumes).map(([res, amt], i) => {
+            {resourceEntries(building.consumes).map(([res, amt], i) => {
               const cfg = RESOURCE_CONFIG[res];
               return (
                 <span key={res}>
@@ -955,7 +985,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
 // Production Chains (collapsible synergy display)
 // ---------------------------------------------------------------------------
 
-function ProductionChains({ state }) {
+function ProductionChains({ state }:StateProps) {
   const [expanded, setExpanded] = useState(false);
   const synergies = getActiveBuildingSynergies(state.buildings);
 
@@ -1033,7 +1063,7 @@ function ProductionChains({ state }) {
                 <div key={i} className="flex items-center gap-2 text-sm py-0.5">
                   <span style={{ color: "#c4a24a" }}>{"\u2713"}</span>
                   <span style={{ color: "#c8b090" }}>
-                    {BUILDINGS[s.buildingType]?.name} + {BUILDINGS[s.partnerType]?.name}
+                    {buildingDefinition(s.buildingType)?.name} + {buildingDefinition(s.partnerType)?.name}
                   </span>
                   <span style={{ color: "#8dba6e" }}>{s.desc}</span>
                 </div>
@@ -1050,7 +1080,7 @@ function ProductionChains({ state }) {
                 <div key={i} className="flex items-center gap-2 text-sm py-0.5" style={{ opacity: 0.5 }}>
                   <span style={{ color: "#4a4030" }}>{"\u2014"}</span>
                   <span style={{ color: "#6a5a42" }}>
-                    {BUILDINGS[s.buildingType]?.name} + {BUILDINGS[s.partnerType]?.name}
+                    {buildingDefinition(s.buildingType)?.name} + {buildingDefinition(s.partnerType)?.name}
                   </span>
                   <span style={{ color: "#4a4030" }}>{s.desc}</span>
                 </div>
@@ -1076,7 +1106,7 @@ function ProductionChains({ state }) {
 // Main EstateTab
 // ---------------------------------------------------------------------------
 
-export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgrade, activatedSynergies }) {
+export default function EstateTab({ state, onBuild, onDemolish, onRepair, onUpgrade, activatedSynergies }:EstateProps) {
   const synergyBuildingIds = getSynergyBuildings(activatedSynergies ?? [], state.buildings);
 
   // Group built buildings by type for display

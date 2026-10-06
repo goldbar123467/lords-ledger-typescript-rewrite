@@ -35,11 +35,13 @@ Forge data preserves all 35 items, 20 facts, five buyers and seven supply events
 
 Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The first working Church Bell deployment adds 8 Chapel faith, capped at 100; additional bells and reloads grant no extra faith. Deployed Lock & Key reduces raid coin losses by 5%, rounded up to whole denarii. A deployed Cauldron adds 3 Great Hall People approval per feast; shared previews and validated saved history record the bonus. Horseshoes adds 5% trade-good proceeds. A new balance rule limits Market and Forge purchases to a shared 100 units per good each season, persisted through Save/reload, to bound repeatable resale loops. A deployed Weather Vane shows conditional next-season farm potential, food needs and seasonal factors; it predicts no random events. A deployed Chandelier adds 3 prestige toward titles on the reputation path earned by rulings; moral scores stay unchanged. The scoped sections pass 332 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. All ten tool effects have consumers. Combined integration passes for three seeds using paid commands and prescribed quality-50 crafting results, with browser trade and seasonal continuation. A final-strike counting defect is fixed, with native six-strike Dagger results, paid collection and store/equip/scrap verified, including independent wall-clock play. Native acquisition of all tools, longer minigames and broader Forge interface review remain unfinished.
 
-Nine source JavaScript/JSX files remain. Production has 44,173 lines versus the original 45,347, a reduction of 1,174 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Eight source JavaScript/JSX files remain. Production has 44,203 lines versus the original 45,347, a reduction of 1,144 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
 Map uses checked saved-state, building, seasonal and callback contracts while preserving authored artwork. The inherited missing Mill is corrected, with exhaustive slot coverage and eighteen passing browser cases including normal paid construction and exact saves. Crowded labels and wider Map interface checks remain unfinished.
+
+Estate uses checked view, building, resource and command contracts. Its six content/management cases and 337 unit tests pass. Twelve older Forge integration tests retain stale keyboard-dialog expectations and need repair; Estate inventory grouping and upkeep-display omissions remain open.
 
 ## Code map
 
@@ -71,7 +73,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate Estate with building, resource and seasonal contracts; continue the remaining views and app entry points.
+1. Repair stale Forge keyboard tests, then correct Estate inventory grouping and upkeep display; continue the remaining views and app entry points.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
