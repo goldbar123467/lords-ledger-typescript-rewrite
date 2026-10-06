@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Scale } from 'lucide-react';
 import type { HallMeterEffects } from '../data/decrees.ts';
 import { hallMeterKeys } from '../engine/hallMeters.ts';
@@ -9,7 +9,7 @@ export function CivicSurface({ children }: { children: ReactNode }) {
   return <div className="civic-view" onFocusCapture={revealFocusedControl}>{children}</div>;
 }
 
-export function HallButton({ children, className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+export function HallButton({ children, className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { ref?: Ref<HTMLButtonElement> }) {
   return <button type="button" className={'civic-button ' + className} {...props}>{children}</button>;
 }
 
