@@ -27,7 +27,13 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People, Audience, Dispute, Council, decree, Feast and Great Hall views, guarded domain commands and consumed save validation. The Hall shell preserves authored content and saved state with typed actions, readable meter labels and responsive navigation. Independent desktop and phone review verifies complete focused controls, enlarged ruling labels, sampled contrast, and exact Save/Load. The correction passes 235 unit tests, strict checks, lint, build and 10 affected browser cases; the migration's earlier broader matrix passed 35 cases. Forge authored data and helper contracts are now checked, preserving all 35 items, 20 facts, five buyers and seven supply events. Thirteen source JavaScript/JSX files remain. Production has 44,663 lines versus the original 45,347, a reduction of 684 lines; tests and documentation increase the repository total. Forge completion and owned-item actions now validate commands, derive authored costs/buyer effects, reject duplicate settlement and preserve zero values. Buyer eligibility reads the saved compound flag. Forge visits now preserve zero respect and award respect once per saved turn, including across navigation and Load. Forge supply commands now consume acknowledgements once, preserve elapsed countdowns and apply the same adjusted quotes in the shop and reducer. Godric now reads the actual material inventory, military advice follows weighted readiness, and the ledger preserves zero-quality results. Forge Talk now selects banter through saved RNG, including quiet outcomes, with matching transient dialogue previews. Forge saved items, logs, prices, supply events and counters now have runtime contracts that preserve legal older metadata and defaults. Broken equipment now gives no functional arming credit, and ineffective equip controls explain why they are disabled. Positive legacy equipment and flat defense remain preserved. The latest section passes 271 unit tests, typecheck, lint and build; four final focused browser cases and an earlier broader 22-case matrix pass with independent review. Remaining Forge work includes tool effects and view/minigame migration. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for evidence and limits.
+The rewrite includes checked Outcome, Military, Watchtower, Chapel, People and Great Hall views, guarded domain commands and consumed save validation. The Hall shell preserves authored content with typed actions, readable meter labels and responsive navigation.
+
+Forge data preserves all 35 items, 20 facts, five buyers and seven supply events. Completion, owned-item actions, visits, Talk and known saved fields have checked contracts. Functional equipment counts exclude zero-bonus military items while preserving historical records and flat defense.
+
+Plowshare and Scythe now affect seasonal production through deployed ownership. Estate output shares the simulation calculation. Item selection and deployment confirmation support keyboard use. The scoped section passes 278 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload, seasonal transitions and broken-tool crafting results. Eight tool effects, successful crafting-result destination play and broader Forge interface review remain unfinished.
+
+Thirteen source JavaScript/JSX files remain. Production has 44,738 lines versus the original 45,347, a reduction of 609 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 ## Code map
 
@@ -59,7 +65,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the ten Forge tool effects and deployment and the remaining view/minigame migration.
+1. Complete the remaining eight Forge tool effects, starting with shared construction quotes, then the view/minigame migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

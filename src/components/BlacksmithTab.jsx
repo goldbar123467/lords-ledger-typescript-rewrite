@@ -1196,6 +1196,24 @@ function CommissionDesk({ resources, denarii, onCommission, godricRec }) {
 function ArmoryView({ inventory, equipped, dispatch, garrison }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const armoryRef = useRef(null), dialogRef = useRef(null);
+  useEffect(() => {
+    if (!confirmAction) return;
+    const trigger = document.activeElement, armory = armoryRef.current;
+    dialogRef.current?.querySelector('button')?.focus();
+    return () => {
+      if (trigger?.isConnected) trigger.focus();
+      else armory?.querySelector('[data-forge-item-uid="' + confirmAction.item.uid + '"]')?.focus();
+    };
+  }, [confirmAction]);
+  function handleDialogKey(event) {
+    if (event.key === 'Escape') {event.preventDefault(); setConfirmAction(null); return;}
+    if (event.key !== 'Tab') return;
+    const buttons = event.currentTarget.querySelectorAll('button:not([disabled])');
+    const first = buttons[0], last = buttons[buttons.length - 1];
+    if (event.shiftKey && document.activeElement === first) {event.preventDefault(); last?.focus();}
+    else if (!event.shiftKey && document.activeElement === last) {event.preventDefault(); first?.focus();}
+  }
 
   const totalMilitary = equipped.reduce((sum, i) => sum + (i.militaryBonus || 0), 0);
   const {weapon: weaponCount, armor: armorCount} = countFunctionalEquipment(equipped);
@@ -1225,24 +1243,22 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
     return (
       <div
         key={item.uid}
-        onClick={() => setSelectedItem(isSelected ? null : item)}
         style={{
           border: `1px solid ${isSelected ? gradeData.color + "80" : "rgba(90,85,80,0.2)"}`,
           borderRadius: 6,
           backgroundColor: isSelected ? "rgba(255,107,26,0.06)" : "rgba(26,21,16,0.5)",
           padding: 8,
-          cursor: "pointer",
           transition: "all 200ms ease",
         }}
       >
-        <div className="flex items-center justify-between" style={{ marginBottom: 2 }}>
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.7rem", color: FORGE_COLORS.parchment }}>
+        <button type="button" className="flex items-center justify-between" data-forge-item-uid={item.uid} aria-label={`Select ${item.grade} ${item.name}`} aria-expanded={isSelected} onClick={() => setSelectedItem(isSelected ? null : item)} style={{width: "100%", minHeight: 44, gap: 8, marginBottom: 2, padding: 0, border: 0, background: "transparent", textAlign: "left", cursor: "pointer"}}>
+          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.875rem", color: FORGE_COLORS.parchment }}>
             {item.name}
           </span>
-          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.55rem", color: gradeData.color }}>
+          <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.75rem", color: gradeData.color }}>
             {item.grade}
           </span>
-        </div>
+        </button>
         <div className="flex gap-3" style={{ marginTop: 2 }}>
           {item.militaryBonus > 0 && (
             <span style={{ fontFamily: "Cinzel, serif", fontSize: "0.5rem", color: "#8a9098" }}>
@@ -1288,7 +1304,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
   }
 
   return (
-    <div>
+    <div ref={armoryRef}>
       {/* Confirmation dialog */}
       {confirmAction && (
         <div
@@ -1303,7 +1319,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
           }}
           onClick={() => setConfirmAction(null)}
         >
-          <div
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="forge-item-confirmation-title" onKeyDown={handleDialogKey}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#1a1510",
@@ -1314,7 +1330,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
               width: "90%",
             }}
           >
-            <h3 style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: FORGE_COLORS.parchment, margin: "0 0 8px" }}>
+            <h3 id="forge-item-confirmation-title" style={{ fontFamily: "Cinzel, serif", fontSize: "0.85rem", color: FORGE_COLORS.parchment, margin: "0 0 8px" }}>
               {confirmAction.action === "equip" ? (getAgriculturalTool(confirmAction.item.itemId) ? "Deploy on the Estate?" : "Equip to Garrison?") :
                confirmAction.action === "sell" ? "Sell Item?" : "Scrap Item?"}
             </h3>
