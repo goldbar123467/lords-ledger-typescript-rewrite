@@ -3074,7 +3074,7 @@ function reduceGame(state, action, random) {
           feastHistory.some(entry => entry.season === state.season && entry.year === state.year)) {
         return state;
       }
-      const outcome = resolveFeast(action.payload, state.rngState);
+      const outcome = resolveFeast(action.payload, state.rngState, state.blacksmith);
       if (!outcome) return state;
       const { totalEffects } = outcome;
       const prevMeters = prevHall.meters;
@@ -3118,6 +3118,7 @@ function reduceGame(state, action, random) {
             entertainmentId: outcome.selection.entertainmentId,
             courseId: outcome.selection.courseId,
             eventId: outcome.event.id,
+            ...(outcome.cauldronBonus ? {cauldronBonus: outcome.cauldronBonus} : {}),
           }],
           stewardTrust: fstTrust,
           hallLog: [...(prevHall.hallLog || []), feastLogEntry],

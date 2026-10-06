@@ -1,4 +1,5 @@
 /** Canonical feast outcome. UI previews and reducer settlement use one saved draw. */
+import {getDeployedToolIds, CAULDRON_FEAST_BONUS} from './forgeTools.ts';
 import { FEAST_DATA, type HallMeterEffects, type FeastGuestId, type FeastEntertainmentId, type FeastCourseId, type FeastEventId } from '../data/decrees.ts';
 import { SEASON_INFO } from '../data/economy.ts';
 import { createRandomCursor, isRandomState } from './random.ts';
@@ -18,9 +19,9 @@ interface FeastHistoryBase {
 /** Preserve accepted effect-only records without inventing an old selection or draw. */
 export type FeastHistoryEntry = FeastHistoryBase & (
   { readonly guestId: FeastGuestId; readonly entertainmentId: FeastEntertainmentId;
-    readonly courseId: FeastCourseId; readonly eventId: FeastEventId } |
+    readonly courseId: FeastCourseId; readonly eventId: FeastEventId; readonly cauldronBonus?: typeof CAULDRON_FEAST_BONUS } |
   { readonly guestId?: never; readonly entertainmentId?: never;
-    readonly courseId?: never; readonly eventId?: never }
+    readonly courseId?: never; readonly eventId?: never; readonly cauldronBonus?: never }
 );
 export interface HallFeastSaveState {
   readonly hasFeastedThisSeason?: boolean;
@@ -34,7 +35,12 @@ export function hasFeastedInSeason(hall: HallFeastSaveState, season: keyof typeo
 
 type FeastEvent = (typeof FEAST_DATA.randomEvents)[number];
 
+export function getCauldronFeastBonus(blacksmith: unknown): 0 | typeof CAULDRON_FEAST_BONUS {
+  return getDeployedToolIds(blacksmith).has('cauldron') ? CAULDRON_FEAST_BONUS : 0;
+}
+
 export interface FeastOutcome {
+  readonly cauldronBonus?: typeof CAULDRON_FEAST_BONUS;
   readonly selection: FeastSelection;
   readonly event: FeastEvent;
   readonly totalEffects: Readonly<HallMeterEffects>;
@@ -76,26 +82,28 @@ function isFeastSelection(value: unknown): value is FeastSelection {
     FEAST_DATA.courseOptions.some(option => option.id === value.courseId) && isRandomState(value.seed);
 }
 
-function sumEffects(effects: readonly Readonly<HallMeterEffects>[]): HallMeterEffects {
+function sumEffects(effects: readonly Readonly<HallMeterEffects>[], cauldronBonus = 0): HallMeterEffects {
   return {
-    people: effects.reduce((sum, item) => sum + item.people, 0),
+    people: effects.reduce((sum, item) => sum + item.people, cauldronBonus),
     treasury: effects.reduce((sum, item) => sum + item.treasury, 0),
     church: effects.reduce((sum, item) => sum + item.church, 0),
     military: effects.reduce((sum, item) => sum + item.military, 0),
   };
 }
 
-export function resolveFeast(value: unknown, stateSeed: number): FeastOutcome | null {
+export function resolveFeast(value: unknown, stateSeed: number, blacksmith?: unknown): FeastOutcome | null {
   if (!isFeastSelection(value) || value.seed !== stateSeed) return null;
   const guest = FEAST_DATA.guestOptions.find(option => option.id === value.guestId);
   const entertainment = FEAST_DATA.entertainmentOptions.find(option => option.id === value.entertainmentId);
   const course = FEAST_DATA.courseOptions.find(option => option.id === value.courseId);
   const preview = previewFeastEvent(stateSeed);
   if (!guest || !entertainment || !course || !preview) return null;
+  const cauldronBonus = getCauldronFeastBonus(blacksmith);
   return {
+    ...(cauldronBonus ? {cauldronBonus} : {}),
     selection: { guestId: guest.id, entertainmentId: entertainment.id, courseId: course.id, seed: stateSeed },
     event: preview.event,
-    totalEffects: sumEffects([guest.effects, entertainment.effects, course.effects, preview.event.effects]),
+    totalEffects: sumEffects([guest.effects, entertainment.effects, course.effects, preview.event.effects], cauldronBonus),
     nextRandomState: preview.nextRandomState,
   };
 }
@@ -106,7 +114,8 @@ export function isFeastHistory(value: unknown): value is readonly FeastHistoryEn
   const seenSeasons = new Set<string>();
   for (const entry of value) {
     if (!isRecord(entry) || !['season', 'year', 'totalEffects'].every(key => serializedField(entry, key)) ||
-        ['guestId', 'entertainmentId', 'courseId', 'eventId'].some(key => key in entry && !serializedField(entry, key)) ||
+        ['guestId', 'entertainmentId', 'courseId', 'eventId', 'cauldronBonus'].some(key => key in entry && !serializedField(entry, key)) ||
+        (entry.cauldronBonus !== undefined && entry.cauldronBonus !== CAULDRON_FEAST_BONUS) ||
         !isMeterEffects(entry.totalEffects) ||
         !Number.isSafeInteger(entry.year) || typeof entry.year !== 'number' ||
         entry.year < 1 || entry.year > 10 ||
@@ -117,6 +126,7 @@ export function isFeastHistory(value: unknown): value is readonly FeastHistoryEn
     seenSeasons.add(seasonKey);
     const detailed = ['guestId', 'entertainmentId', 'courseId', 'eventId']
       .some(key => entry[key] !== undefined);
+    if (entry.cauldronBonus !== undefined && !detailed) return false;
     const guests = detailed
       ? FEAST_DATA.guestOptions.filter(option => option.id === entry.guestId)
       : FEAST_DATA.guestOptions;
@@ -133,7 +143,7 @@ export function isFeastHistory(value: unknown): value is readonly FeastHistoryEn
     for (const guest of guests) for (const entertainment of entertainments) {
       for (const course of courses) for (const event of events) {
         if (sameEffects(entry.totalEffects,
-          sumEffects([guest.effects, entertainment.effects, course.effects, event.effects]))) matched = true;
+          sumEffects([guest.effects, entertainment.effects, course.effects, event.effects], entry.cauldronBonus === CAULDRON_FEAST_BONUS ? CAULDRON_FEAST_BONUS : 0))) matched = true;
       }
     }
     if (!matched) return false;

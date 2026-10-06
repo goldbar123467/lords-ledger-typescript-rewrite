@@ -85,3 +85,5 @@ Bulky browser and reviewer artifacts are kept in ignored local evidence director
 ## License
 
 [MIT](LICENSE), preserving the original contributor and rewrite copyright notices.
+
+Cauldron feast-quality implementation is checkpointed; Hall navigation width correction and independent acceptance are pending. See the migration ledger for current evidence.

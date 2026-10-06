@@ -1,3 +1,4 @@
+import type {ForgeSaveState} from '../engine/forgeState.ts';
 import { useEffect, useLayoutEffect, useRef, useState, type Dispatch } from 'react';
 import { Scale, Users, ScrollText, Landmark, Utensils, Shield, AlertTriangle, Star, BookOpen } from 'lucide-react';
 import { AMBIENT_TEXTS, DEFAULT_METERS, selectEdmundLine, getTrustTier, getEdmundMood, REPUTATION_TRACKS, COMPOUND_RULES } from '../data/greatHall.ts';
@@ -22,6 +23,7 @@ import CouncilChamber from './CouncilChamber.tsx';
 import FeastHall from './FeastHall.tsx';
 
 export interface GreatHallState {
+  readonly blacksmith?: Readonly<ForgeSaveState>;
   readonly season: keyof typeof SEASON_INFO;
   readonly turn: number;
   readonly year: number;
@@ -177,7 +179,7 @@ export default function GreatHall({ state, dispatch }: GreatHallProps) {
       {screen.kind === 'audience' && <AudienceChamber encounters={availableAudience} resolvedIds={resolvedAudience} onRespond={(encounterId,responseIndex) => dispatch({type:'HALL_AUDIENCE_RESPOND',payload:{encounterId,responseIndex}})} onReturn={toThrone} />}
       {screen.kind === 'decrees' && <DecreeDesk decrees={DECREE_OPTIONS} activeDecreeIds={hall.activeDecrees ?? []} decreeSlots={2-(hall.decreeSlotsUsed ?? 0)} onIssue={decreeId => dispatch({type:'HALL_ISSUE_DECREE',payload:{decreeId}})} onRevoke={decreeId => dispatch({type:'HALL_REVOKE_DECREE',payload:{decreeId}})} onReturn={toThrone} />}
       {screen.kind === 'council' && <CouncilChamber topic={getAvailableCouncilTopic(hall.councilResolved)} isLocked={!isCouncilUnlocked(state.turn,hall.meters.people)} onVote={(topicId,optionId) => dispatch({type:'HALL_COUNCIL_VOTE',payload:{topicId,optionId}})} onReturn={toThrone} />}
-      {screen.kind === 'feast' && <FeastHall feastData={FEAST_DATA} rngState={state.rngState} hasFeastedThisSeason={hasFeastedInSeason(hall,state.season,state.year)} onComplete={payload => dispatch({type:'HALL_FEAST_COMPLETE',payload})} onReturn={toThrone} />}
+      {screen.kind === 'feast' && <FeastHall feastData={FEAST_DATA} rngState={state.rngState} blacksmith={state.blacksmith} hasFeastedThisSeason={hasFeastedInSeason(hall,state.season,state.year)} onComplete={payload => dispatch({type:'HALL_FEAST_COMPLETE',payload})} onReturn={toThrone} />}
       {screen.kind === 'summary' && <SeasonSummary state={state} onReturn={toThrone} />}
     </div>
     <nav className="hall-navigation" aria-label="Great Hall" ref={nav} onFocusCapture={event => {

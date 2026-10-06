@@ -1,7 +1,7 @@
 import { useId, useLayoutEffect, useState } from 'react';
 import { ArrowLeft, ChevronRight, Sparkles, Utensils } from 'lucide-react';
 import type { FEAST_DATA, HallMeterEffects } from '../data/decrees.ts';
-import { resolveFeast, type FeastSelection } from '../engine/feast.ts';
+import { resolveFeast, getCauldronFeastBonus, type FeastSelection } from '../engine/feast.ts';
 import { hallMeterKeys } from '../engine/hallMeters.ts';
 import { CivicSurface, HallButton, HallEffects } from './HallUi.tsx';
 
@@ -24,6 +24,7 @@ type FeastView = Selections & (
 interface FeastHallProps {
   feastData: FeastData | null;
   rngState: number;
+  blacksmith?: unknown;
   hasFeastedThisSeason: boolean;
   onComplete: (selection: FeastSelection) => void;
   onReturn: () => void;
@@ -48,8 +49,8 @@ function FeastChoices<T extends OptionView>({ options, selected, onSelect }: {
     </article>)}
   </div>;
 }
-function runningEffects(selections: Selections): HallMeterEffects {
-  const total = { people: 0, treasury: 0, church: 0, military: 0 };
+function runningEffects(selections: Selections, cauldronBonus: ReturnType<typeof getCauldronFeastBonus>): HallMeterEffects {
+  const total = { people: cauldronBonus, treasury: 0, church: 0, military: 0 };
   for (const option of [selections.guest, selections.entertainment, selections.course]) {
     if (option) for (const key of hallMeterKeys) total[key] += option.effects[key];
   }
@@ -58,13 +59,14 @@ function runningEffects(selections: Selections): HallMeterEffects {
 const STEP_SUBTITLES = ['Select your honored guests for the evening', 'How shall the hall be entertained?', "What fare shall grace the lord's table?"] as const;
 const STEP_TITLES = ['Who Shall Attend?', 'Choose Entertainment', 'The Main Course', 'The Feast Begins'] as const;
 
-export default function FeastHall({ feastData, rngState, hasFeastedThisSeason, onComplete, onReturn }: FeastHallProps) {
+export default function FeastHall({ feastData, rngState, blacksmith, hasFeastedThisSeason, onComplete, onReturn }: FeastHallProps) {
+  const cauldronBonus = getCauldronFeastBonus(blacksmith);
   const [view, setView] = useState<FeastView>({ step: 0, guest: null, entertainment: null, course: null });
   // Keep the new step's heading beneath the game navigation, as before.
   useLayoutEffect(() => { window.scrollTo(0, 0); }, [view.step, hasFeastedThisSeason]);
   // Preview is recomputed from the live saved cursor; rendering never spends it.
   const outcome = view.step === 3 ? resolveFeast({ guestId: view.guest.id,
-    entertainmentId: view.entertainment.id, courseId: view.course.id, seed: rngState }, rngState) : null;
+    entertainmentId: view.entertainment.id, courseId: view.course.id, seed: rngState }, rngState, blacksmith) : null;
   const canAdvance = view.step === 0 ? view.guest !== null : view.step === 1 ? view.entertainment !== null : view.step === 2 && view.course !== null;
   function next() {
     if (view.step === 0 && view.guest) setView({ ...view, step: 1, guest: view.guest });
@@ -80,6 +82,7 @@ export default function FeastHall({ feastData, rngState, hasFeastedThisSeason, o
       <h2>{view.step === 3 && !hasFeastedThisSeason ? 'The Feast Begins' : 'The Feast Hall'}</h2>
       {!hasFeastedThisSeason && view.step < 3 && <p>Prepare a grand celebration</p>}
     </header>
+    {!hasFeastedThisSeason && cauldronBonus > 0 && <p className="civic-panel">Deployed Cauldron: +{cauldronBonus} People approval for this feast. One cauldron applies.</p>}
     {hasFeastedThisSeason ? <>
       <section className="civic-panel">
         <p>The tables have been cleared and the revelers have gone home. The hall still smells of roast meat and spilled ale.</p>
@@ -98,7 +101,7 @@ export default function FeastHall({ feastData, rngState, hasFeastedThisSeason, o
         view.step === 1 ? <FeastChoices options={feastData.entertainmentOptions} selected={view.entertainment} onSelect={entertainment => setView({ ...view, entertainment })} /> :
           <FeastChoices options={feastData.courseOptions} selected={view.course} onSelect={course => setView({ ...view, course })} />}
       {(view.guest || view.entertainment || view.course) && <section className="civic-panel" aria-label="Running Total">
-        <h3>Running Total</h3><HallEffects effects={runningEffects(view)} />
+        <h3>Running Total</h3><HallEffects effects={runningEffects(view, cauldronBonus)} />
       </section>}
       <div className="civic-actions">
         {view.step > 0 ? <HallButton onClick={back}><ArrowLeft aria-hidden="true" size={18} />Back</HallButton> :
