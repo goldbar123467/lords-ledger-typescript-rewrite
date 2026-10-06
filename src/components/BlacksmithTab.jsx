@@ -48,7 +48,9 @@ import {
 } from "../data/blacksmith";
 import ForgingGame from "./ForgingGame";
 import { planForgeCompletion } from "../engine/forgeCompletion.ts";
-import {getForgeResourceQuote, getForgeSupplyStatus} from "../engine/forgeAncillaryActions.ts";
+import {getForgeResourceQuote, getForgeSupplyStatus, planForgeTalk} from "../engine/forgeAncillaryActions.ts";
+
+import {createRandomCursor, isRandomState, seedLegacySnapshot} from '../engine/random.ts';
 
 // ─── View icon mapping ──────────────────────────────────────────
 const VIEW_ICONS = {
@@ -2281,6 +2283,8 @@ export default function BlacksmithTab({ state, dispatch }) {
 
   // Dispatch visit tracking on mount
   const visitDispatched = useRef(false);
+  const talkQueued = useRef(false);
+  useEffect(() => { talkQueued.current = false; }, [state.rngState]);
   useEffect(() => {
     if (!visitDispatched.current) {
       visitDispatched.current = true;
@@ -2418,18 +2422,17 @@ export default function BlacksmithTab({ state, dispatch }) {
 
   // NPC interaction handlers
   const handleGodricTalk = useCallback(() => {
+    if (talkQueued.current) return;
+    const seed = state.rngState === undefined ? seedLegacySnapshot(state) : state.rngState;
+    if (!isRandomState(seed)) return;
+    const outcome = planForgeTalk(state, createRandomCursor(seed).next);
+    if (!outcome) return;
     const mood = deriveGodricMood(state);
     const lines = GODRIC_GREETINGS[mood] || GODRIC_GREETINGS.working;
     setGodricLine(lines[Math.floor(Math.random() * lines.length)]);
-
-    // 30% chance of triggering banter
-    if (Math.random() < 0.3) {
-      const bIdx = (state.blacksmith?.banterIndex || 0) % GODRIC_WAT_BANTER.length;
-      setActiveBanter(GODRIC_WAT_BANTER[bIdx]);
-      dispatch({ type: "BLACKSMITH_ADVANCE_BANTER" });
-    } else {
-      setActiveBanter(null);
-    }
+    setActiveBanter(outcome.banterIndex === null ? null : GODRIC_WAT_BANTER[outcome.banterIndex % GODRIC_WAT_BANTER.length]);
+    talkQueued.current = true;
+    dispatch({ type: "BLACKSMITH_TALK" });
   }, [state, dispatch]);
 
   const handleWatTalk = useCallback(() => {

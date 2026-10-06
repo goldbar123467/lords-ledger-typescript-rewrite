@@ -1,4 +1,4 @@
-import { planForgeAncillary, getForgeSupplyStatus } from './forgeAncillaryActions.ts';
+import { planForgeAncillary, planForgeTalk, getForgeSupplyStatus } from './forgeAncillaryActions.ts';
 import { planForgeVisit } from './forgeVisits.ts';
 import { planForgeItemAction } from './forgeItemActions.ts';
 import { planForgeCompletion } from './forgeCompletion.ts';
@@ -3280,6 +3280,12 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
     // BLACKSMITH_BUY_RESOURCE — Purchase forge materials from market
     // -----------------------------------------------------------------------
+    case "BLACKSMITH_TALK": {
+      const plan = planForgeTalk(state, random);
+      // A quiet Talk still advances the saved stream through the reducer wrapper.
+      return plan ? {...state, ...plan.patch} : state;
+    }
+
     case "BLACKSMITH_BUY_RESOURCE":
     case "BLACKSMITH_ADVANCE_WAT":
     case "BLACKSMITH_ADVANCE_BANTER":

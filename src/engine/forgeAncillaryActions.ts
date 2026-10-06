@@ -82,3 +82,12 @@ export function planForgeAncillary(state:AncillaryContext,type:ForgeAncillaryCom
  }
  return {patch:{denarii,inventory,blacksmith:{...bs,activeSupplyEvent:supply.remaining>0?bs.activeSupplyEvent:null,supplyEventTurnsLeft:supply.remaining,usedSupplyEventIds}},message,chronicleKind:'event' as const};
 }
+
+/** Talk consumes one saved draw even when no banter starts; existing direct counter actions stay pure. */
+export function planForgeTalk(state:AncillaryContext,random:()=>number) {
+ const advance=planForgeAncillary(state,'BLACKSMITH_ADVANCE_BANTER',undefined);
+ const index=record(state.blacksmith)?state.blacksmith.banterIndex ?? 0:0;
+ if(!advance||!amount(index)) return null;
+ const draw=random();if(!Number.isFinite(draw)||draw<0||draw>=1) return null;
+ return {patch:draw<0.3?advance.patch:{},banterIndex:draw<0.3?index:null};
+}
