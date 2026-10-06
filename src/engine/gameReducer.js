@@ -33,6 +33,7 @@ import {
 import { createRandomCursor, DEFAULT_SEED, seedLegacySnapshot } from "./random.ts";
 import { createScanPlan, summarizeScan } from "./watchtowerScan.ts";
 import { isGambitWager, resolveGambitRound } from "./tavernGambit.ts";
+import { addTavernLedgerInteger } from "./tavernLedger.ts";
 import { planRatRun, scoreRatRun } from "./ratsInCellar.ts";
 import { rollStrangerEncounter, strangerTradeTerms } from "./tavernEncounter.ts";
 import { isBardContent, isBardSolvedIds, nextBardContent } from "./tavernBard.ts";
@@ -2343,13 +2344,15 @@ function reduceGame(state, action, random) {
     case "TAVERN_VISIT": {
       if (state.phase !== "management") return state;
       const prevTavern = state.tavern ?? {};
+      const totalVisits = addTavernLedgerInteger(prevTavern.totalVisits, 1, true);
+      if (totalVisits === null) return state;
       const pendingStrangerEncounter = prevTavern.pendingStrangerEncounter ??
         (prevTavern.strangerAppearedThisSeason ? null : rollStrangerEncounter(random));
       return {
         ...state,
         tavern: {
           ...prevTavern,
-          totalVisits: (prevTavern.totalVisits ?? 0) + 1,
+          totalVisits,
           pendingStrangerEncounter,
         },
         chronicle: addChronicle(state.chronicle, "You visited the Boar\u2019s Head Tavern.", state.season, state.year, state.turn, "action"),
@@ -2367,6 +2370,10 @@ function reduceGame(state, action, random) {
       if (!round) return state;
       const result = round.outcome;
       const net = result === "win" ? wager : result === "lose" ? -wager : 0;
+      const gambitTotalWins = addTavernLedgerInteger(prevT.gambitTotalWins, result === "win" ? 1 : 0, true);
+      const gambitTotalLosses = addTavernLedgerInteger(prevT.gambitTotalLosses, result === "lose" ? 1 : 0, true);
+      const gambitNetEarnings = addTavernLedgerInteger(prevT.gambitNetEarnings, net);
+      if (gambitTotalWins === null || gambitTotalLosses === null || gambitNetEarnings === null) return state;
       const newDenarii = state.denarii + net;
 
       const label = result === "win" ? "won" : result === "lose" ? "lost" : "drew at";
@@ -2379,9 +2386,9 @@ function reduceGame(state, action, random) {
           ...prevT,
           gambitRoundsThisSeason: rounds + 1,
           gambitLastChoice: round.player,
-          gambitTotalWins: (prevT.gambitTotalWins ?? 0) + (result === "win" ? 1 : 0),
-          gambitTotalLosses: (prevT.gambitTotalLosses ?? 0) + (result === "lose" ? 1 : 0),
-          gambitNetEarnings: (prevT.gambitNetEarnings ?? 0) + net,
+          gambitTotalWins,
+          gambitTotalLosses,
+          gambitNetEarnings,
         },
         chronicle: addChronicle(
           state.chronicle,

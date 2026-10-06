@@ -6,6 +6,7 @@
  */
 
 import { getRecruitmentCapacity } from "./militaryRules.ts";
+import { tavernLedgerAtLeast, type TavernLedgerInteger } from '../engine/tavernLedger.ts';
 import type {BuildingId} from './buildings.ts';
 import type {Garrison} from './military.ts';
 import type {Inventory} from './economy.ts';
@@ -18,7 +19,7 @@ export interface TavernNarrativeState {
  readonly denarii:number; readonly food:number; readonly population:number; readonly garrison:number; readonly turn:number;
  // Authored comments retain two historical names absent from the live building registry.
  readonly buildings?:readonly (BuildingId | 'school' | 'market' | {readonly type:BuildingId | 'school' | 'market'})[] | null;
- readonly tavern?:{readonly gambitTotalWins?:number} | null;
+ readonly tavern?:{readonly gambitTotalWins?:TavernLedgerInteger} | null;
 }
 export interface TavernAdviceState {
  readonly garrison?:number | null; readonly turn?:number | null;
@@ -214,7 +215,7 @@ export const WALL_STATIC_GRAFFITI = [
 ] as const satisfies readonly StaticGraffiti[];
 
 export const WALL_DYNAMIC_CONDITIONS = [
-  { condition: (s) => (s.tavern?.gambitTotalWins ?? 0) >= 3, text: "BEWARE THE LORD\u2019S BLADE \u2014 a worthy gambler" },
+  { condition: (s) => tavernLedgerAtLeast(s.tavern?.gambitTotalWins, 3), text: "BEWARE THE LORD\u2019S BLADE \u2014 a worthy gambler" },
   { condition: (s) => s.food < 30, text: "BY ORDER: Food rationing in effect" },
   { condition: (s) => s.garrison > 12, text: "SOLDIERS WANTED \u2014 see the garrison captain" },
   { condition: (s) => s.denarii > 800, text: "The lord drinks well tonight" },

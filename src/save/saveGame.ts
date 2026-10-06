@@ -16,6 +16,7 @@ import type { CompatiblePeopleState } from '../data/people.ts';
 import type { GameOverReason } from '../engine/meterUtils.ts';
 import { isGambitWeapon, type GambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
+import { isTavernLedgerInteger, type TavernLedgerInteger } from '../engine/tavernLedger.ts';
 import { isStrangerEncounterType, type StrangerEncounterType } from '../engine/tavernEncounter.ts';
 import { isBardContent, isBardSolvedIds, isBardTaleQueue, type BardContent } from '../engine/tavernBard.ts';
 import { isCompanionContent, isCompanionOfferIds, isCompanionQueue, type CompanionContent } from '../engine/tavernCompanion.ts';
@@ -79,10 +80,10 @@ export interface GameSnapshot {
     gambitScribesNoteSeen?: boolean;
     ratsScribesNoteSeen?: boolean;
     wallStashFound?: boolean;
-    totalVisits?: number;
-    gambitTotalWins?: number;
-    gambitTotalLosses?: number;
-    gambitNetEarnings?: number;
+    totalVisits?: TavernLedgerInteger;
+    gambitTotalWins?: TavernLedgerInteger;
+    gambitTotalLosses?: TavernLedgerInteger;
+    gambitNetEarnings?: TavernLedgerInteger;
     gambitRoundsThisSeason?: number;
     gambitLastChoice?: GambitWeapon | null;
     martaStoragePurchased?: boolean;
@@ -163,8 +164,7 @@ function validateTavernScalars(tavern: Record<string, unknown>): string | null {
     const scalar: unknown = field.value;
     if (scalar === undefined) continue;
     const isFlag = key === 'gambitScribesNoteSeen' || key === 'ratsScribesNoteSeen' || key === 'wallStashFound';
-    if (isFlag ? typeof scalar !== 'boolean' :
-      typeof scalar !== 'number' || !Number.isSafeInteger(scalar) || (key !== 'gambitNetEarnings' && scalar < 0)) {
+    if (isFlag ? typeof scalar !== 'boolean' : !isTavernLedgerInteger(scalar, key !== 'gambitNetEarnings')) {
       return `Save Tavern ${key} is invalid.`;
     }
   }

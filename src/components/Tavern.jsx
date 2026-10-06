@@ -13,6 +13,7 @@ import KnightsGambit from "./KnightsGambit";
 import RatsInCellar from "./RatsInCellar";
 import BardsCorner from "./BardsCorner";
 import TavernCompanion from "./TavernCompanion.tsx";
+import { addTavernLedgerInteger, tavernLedgerAtLeast } from "../engine/tavernLedger.ts";
 import {
   TAVERN_SUBTITLES,
   WALL_STATIC_GRAFFITI,
@@ -143,7 +144,7 @@ function TavernWall({ state, onStashClick }) {
   const milestoneGraffiti = useMemo(() => {
     const msgs = [];
     for (const m of VISIT_MILESTONES) {
-      if (m.graffiti && (tavern.totalVisits ?? 0) >= m.visits) {
+      if (m.graffiti && tavernLedgerAtLeast(tavern.totalVisits, m.visits)) {
         msgs.push(m.graffiti);
       }
     }
@@ -351,7 +352,7 @@ export default function Tavern({ state, dispatch, onClose }) {
 
   // Compute visit milestone message at mount time
   const [visitMessage] = useState(() => {
-    const visits = (tavern.totalVisits ?? 0) + 1;
+    const visits = addTavernLedgerInteger(tavern.totalVisits, 1, true);
     for (const m of VISIT_MILESTONES) {
       if (m.message && visits === m.visits) return m.message;
     }

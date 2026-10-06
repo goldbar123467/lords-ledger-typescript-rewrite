@@ -5,13 +5,21 @@ import {createHash} from 'node:crypto';
 import ts from 'typescript';
 import {BARD_STATE_COMMENTS,MARTA_MARKET_TIPS,MARTA_OFFERS,ALDRIC_TRAINING_OFFERS} from '../../src/data/tavern.ts';
 
-test('all 28 Tavern runtime initializers preserve the authored rewrite baseline',()=>{
+test('all 28 Tavern initializers preserve baseline content with the exact-ledger predicate extension',()=>{
  const source=readFileSync(new URL('../../src/data/tavern.ts',import.meta.url),'utf8');
  const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
  const file=ts.createSourceFile('tavern.js',js,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS),printer=ts.createPrinter();
  const entries:Array<[string,string]>=[];
  for(const node of file.statements)if(ts.isVariableStatement(node))for(const declaration of node.declarationList.declarations){
-  if(declaration.initializer)entries.push([declaration.name.getText(file),printer.printNode(ts.EmitHint.Expression,declaration.initializer,file)]);
+  if(declaration.initializer){
+   const name=declaration.name.getText(file);let initializer=printer.printNode(ts.EmitHint.Expression,declaration.initializer,file);
+   if(name==='WALL_DYNAMIC_CONDITIONS'){
+    // Only this predicate gains exact large-integer support; compare all remaining content verbatim.
+    const extended='tavernLedgerAtLeast(s.tavern?.gambitTotalWins, 3)';assert.equal(initializer.split(extended).length-1,1);
+    initializer=initializer.replace(extended,'(s.tavern?.gambitTotalWins ?? 0) >= 3');
+   }
+   entries.push([name,initializer]);
+  }
  }
  assert.equal(entries.length,28);
  // Captured from e867a37 before conversion, including prose and callback bodies.
