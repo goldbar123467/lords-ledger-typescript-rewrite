@@ -1,3 +1,4 @@
+import { hasFeastedInSeason } from '../engine/feast.ts';
 import { getAvailableCouncilTopic, isCouncilUnlocked } from '../engine/hallCivic.ts';
 /**
  * GreatHall.jsx
@@ -867,7 +868,7 @@ export default function GreatHall({ state, dispatch }) {
   const activeDecreeIds = hall.activeDecrees || [];
   const decreeSlotsUsed = hall.decreeSlotsUsed || 0;
   const councilResolvedIds = useMemo(() => hall.councilResolved || [], [hall.councilResolved]);
-  const hasFeastedThisSeason = hall.hasFeastedThisSeason || false;
+  const hasFeastedThisSeason = hasFeastedInSeason(hall, state.season, state.year);
   const pendingHallEvent = hall.pendingHallEvent || null;
 
   // Phase 4: Edmund mood derived from treasury meter

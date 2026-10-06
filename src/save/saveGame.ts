@@ -16,7 +16,7 @@ import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
 import { isStrangerEncounterType, type StrangerEncounterType } from '../engine/tavernEncounter.ts';
 import { isBardContent, isBardSolvedIds, isBardTaleQueue, type BardContent } from '../engine/tavernBard.ts';
 import { isCompanionContent, isCompanionOfferIds, isCompanionQueue, type CompanionContent } from '../engine/tavernCompanion.ts';
-import { isFeastHistory } from '../engine/feast.ts';
+import { validateHallFeastState } from '../engine/feast.ts';
 import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarketReputation } from '../engine/marketHaggle.ts';
 import { GAMBIT_MAX_ROUNDS } from '../data/tavern.js';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
@@ -333,19 +333,8 @@ function validateSnapshot(value: unknown): string | null {
   const civicIssue = validateHallCivicState(value.greatHall);
   if (civicIssue) return civicIssue;
 
-  const hall = value.greatHall;
-  if (!isRecord(hall)) return 'Save Great Hall state is invalid.';
-  if (hall.hasFeastedThisSeason !== undefined && typeof hall.hasFeastedThisSeason !== 'boolean') {
-    return 'Save feast limit is invalid.';
-  }
-  if (hall.feastHistory !== undefined && !isFeastHistory(hall.feastHistory)) {
-    return 'Save feast history is invalid.';
-  }
-  if (hall.hasFeastedThisSeason === false && Array.isArray(hall.feastHistory) &&
-      hall.feastHistory.some(entry => isRecord(entry) &&
-        entry.season === value.season && entry.year === value.year)) {
-    return 'Save feast limit and history disagree.';
-  }
+  const feastIssue = validateHallFeastState(value.greatHall, value.season, value.year);
+  if (feastIssue) return feastIssue;
 
   const phases: readonly string[] = [
     'title', 'management', 'seasonal_action', 'seasonal_resolve',

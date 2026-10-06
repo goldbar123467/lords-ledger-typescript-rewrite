@@ -49,23 +49,23 @@ export interface CouncilTopic {
 }
 
 interface FeastOption {
-  id: string;
-  label: string;
-  description?: string;
-  effects: HallMeterEffects;
+  readonly id: string;
+  readonly label: string;
+  readonly description?: string;
+  readonly effects: Readonly<HallMeterEffects>;
 }
 
 interface FeastEvent {
-  id: string;
-  text: string;
-  effects: HallMeterEffects;
+  readonly id: string;
+  readonly text: string;
+  readonly effects: Readonly<HallMeterEffects>;
 }
 
 export interface FeastData {
-  guestOptions: readonly FeastOption[];
-  entertainmentOptions: readonly FeastOption[];
-  courseOptions: readonly FeastOption[];
-  randomEvents: readonly FeastEvent[];
+  readonly guestOptions: readonly FeastOption[];
+  readonly entertainmentOptions: readonly FeastOption[];
+  readonly courseOptions: readonly FeastOption[];
+  readonly randomEvents: readonly FeastEvent[];
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -729,3 +729,8 @@ export const FEAST_DATA = {
 export type DecreeId = typeof DECREE_OPTIONS[number]['id'];
 export type CouncilTopicId = typeof COUNCIL_TOPICS[number]['id'];
 export type CouncilChoiceId = typeof COUNCIL_TOPICS[number]['options'][number]['id'];
+
+export type FeastGuestId = typeof FEAST_DATA.guestOptions[number]['id'];
+export type FeastEntertainmentId = typeof FEAST_DATA.entertainmentOptions[number]['id'];
+export type FeastCourseId = typeof FEAST_DATA.courseOptions[number]['id'];
+export type FeastEventId = typeof FEAST_DATA.randomEvents[number]['id'];
