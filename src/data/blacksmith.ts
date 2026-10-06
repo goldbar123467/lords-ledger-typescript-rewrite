@@ -1,5 +1,5 @@
 import type { SEASON_INFO } from './economy.ts';
-import { calculateForgeReadiness, type EquippedItem } from '../engine/forgeReadiness.ts';
+import { calculateForgeReadiness, countFunctionalEquipment, type EquippedItem } from '../engine/forgeReadiness.ts';
 import type { HallRuling } from './greatHall.ts';
 export type ForgeSeason = keyof typeof SEASON_INFO;
 export type ForgeResourceId = 'iron' | 'steel' | 'coal' | 'leather' | 'wood';
@@ -643,8 +643,7 @@ export function getGodricRecommendation(state: ForgeCommentaryState) {
   const inventory = bs.inventory || [];
   const equipped = bs.equipped || [];
 
-  const weaponCount = equipped.filter(i => i.category === "weapon").length;
-  const armorCount = equipped.filter(i => i.category === "armor").length;
+  const {weapon: weaponCount, armor: armorCount} = countFunctionalEquipment(equipped);
 
   if (garrison > 5 && weaponCount < garrison * 0.5) {
     return "My lord, the garrison needs swords. We're underarmed.";
@@ -696,7 +695,7 @@ export function deriveGodricMood(state: ForgeCommentaryState) {
   if (respect >= 70 && (bs.masterworksCreated || 0) > 0) return "proud";
 
   // Worried: garrison exists but poorly armed
-  const weaponCount = equipped.filter(i => i.category === "weapon").length;
+  const {weapon: weaponCount} = countFunctionalEquipment(equipped);
   if (garrison > 3 && weaponCount < garrison * 0.3) return "worried";
 
   // Frustrated: low resources

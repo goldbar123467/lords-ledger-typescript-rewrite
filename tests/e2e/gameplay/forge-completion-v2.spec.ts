@@ -11,7 +11,7 @@ for(const width of [390,1366])test('Forge zero-quality minigame collects one can
  await expect(page.getByRole('button',{name:'Collect Item',exact:true})).toBeVisible({timeout:35000});
  await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:info.outputPath('minigame-zero.png'),fullPage:true,animations:'disabled'});
  await page.getByRole('button',{name:'Collect Item',exact:true}).click();await expect(page.getByText('Quality: 0% | Broken',{exact:true})).toBeVisible();
- await expect(page.getByText('MILITARY',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('destination-zero.png'),fullPage:true,animations:'disabled'});
+ await expect(page.getByText('MILITARY',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Equip Garrison',exact:true})).toBeDisabled();await expect(page.getByRole('status').filter({hasText:'Provides no defense bonus.'})).toBeVisible();await page.screenshot({path:info.outputPath('destination-zero.png'),fullPage:true,animations:'disabled'});
  await page.getByRole('button',{name:'Store in Armory',exact:true}).click();
  expected=gameReducer(expected,{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId:'dagger',qualityScore:0,completionUid:1}});
  await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(writeV2Save(expected));

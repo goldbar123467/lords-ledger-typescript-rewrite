@@ -1,3 +1,4 @@
+import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadiness.ts';
 /**
  * BlacksmithTab.jsx
  *
@@ -1196,8 +1197,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
   const [confirmAction, setConfirmAction] = useState(null);
 
   const totalMilitary = equipped.reduce((sum, i) => sum + (i.militaryBonus || 0), 0);
-  const weaponCount = equipped.filter(i => i.category === "weapon").length;
-  const armorCount = equipped.filter(i => i.category === "armor").length;
+  const {weapon: weaponCount, armor: armorCount} = countFunctionalEquipment(equipped);
 
   function handleAction(action, item) {
     setConfirmAction({ action, item });
@@ -1260,7 +1260,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
         {isSelected && !isEquipped && (
           <div className="flex gap-2" style={{ marginTop: 8 }}>
             {(item.category === "weapon" || item.category === "armor") && (
-              <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("equip", item); }} variant="green"
+              <ForgeButton onClick={(e) => { e.stopPropagation(); handleAction("equip", item); }} variant="green" disabled={!hasDefenseBonus(item.militaryBonus)}
                 style={{ flex: 1, fontSize: "0.55rem", padding: "4px 6px" }}>
                 <Shield size={10} /> Equip
               </ForgeButton>
@@ -1274,6 +1274,9 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
               <Trash2 size={10} /> Scrap
             </ForgeButton>
           </div>
+        )}
+        {isSelected && (item.category === "weapon" || item.category === "armor") && !hasDefenseBonus(item.militaryBonus) && (
+          <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", marginTop: 8}}>Provides no defense bonus.</p>
         )}
       </div>
     );
@@ -1351,7 +1354,7 @@ function ArmoryView({ inventory, equipped, dispatch, garrison }) {
           backgroundColor: "rgba(26,21,16,0.5)",
         }}
       >
-        <SectionLabel>Garrison Equipment</SectionLabel>
+        <SectionLabel>Usable Garrison Equipment</SectionLabel>
         <div className="flex justify-center gap-6">
           <div className="text-center">
             <div style={{ fontFamily: "Cinzel, serif", fontSize: "1.1rem", color: "#8a9098" }}>{totalMilitary}</div>
@@ -1613,9 +1616,10 @@ function ForgeResultView({ result, dispatch, onDone }) {
 
       {/* Destination buttons */}
       <SectionLabel>What shall we do with it?</SectionLabel>
+      {isWeaponOrArmor && !hasDefenseBonus(militaryBonus) && <p role="status" style={{color: FORGE_COLORS.parchment, fontSize: "0.75rem", textAlign: "center", marginBottom: 8}}>Provides no defense bonus.</p>}
       <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(2, 1fr)", maxWidth: 400, margin: "0 auto" }}>
         {isWeaponOrArmor && (
-          <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken}
+          <ForgeButton onClick={() => handleDestination("equip")} variant="green" disabled={actionTaken || !hasDefenseBonus(militaryBonus)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 8px" }}>
             <Shield size={14} /> Equip Garrison
           </ForgeButton>

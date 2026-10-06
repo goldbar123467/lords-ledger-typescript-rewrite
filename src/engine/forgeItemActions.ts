@@ -1,3 +1,4 @@
+import {hasDefenseBonus} from './forgeReadiness.ts';
 import {FORGE_RESOURCES, SCRAP_RECOVERY_RATE, getAvailableBuyers, getBuyerPrice, type ForgeBuyerDefinition, type ForgeBuyerId, type ForgeSeason, type ForgeResourceId} from '../data/blacksmith.ts';
 export type ForgeItemCommand =
  | {type:'BLACKSMITH_EQUIP_ITEM';payload:{itemUid:number}}
@@ -36,7 +37,7 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
  const remaining=inventory.filter(candidate=>candidate!==item);
  if(type==='BLACKSMITH_EQUIP_ITEM') {
   const militaryBonus=item.militaryBonus ?? 0;
-  if(!amount(militaryBonus)) return null;
+  if(!amount(militaryBonus) || ((item.category==='weapon'||item.category==='armor')&&!hasDefenseBonus(militaryBonus))) return null;
   return {patch:{blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
    message:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
  }
