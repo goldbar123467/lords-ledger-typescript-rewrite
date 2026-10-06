@@ -1,3 +1,4 @@
+import type { HallConsequenceSaveState } from './hallConsequenceState.ts';
 import type { HallFeastSaveState } from './feast.ts';
 import type { HallCivicSaveState } from './hallCivic.ts';
 import encounters from '../data/audience.ts';
@@ -35,7 +36,7 @@ export interface HallDisputeEntry {
   season: keyof typeof SEASON_INFO;
   year: number;
 }
-export interface HallSaveState extends HallAudienceSaveState, HallCivicSaveState, HallFeastSaveState {
+export interface HallSaveState extends HallAudienceSaveState, HallCivicSaveState, HallFeastSaveState, HallConsequenceSaveState {
   rulingHistory?: HallDisputeEntry[] | null;
   disputesResolved?: number | null;
 }

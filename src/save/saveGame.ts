@@ -16,6 +16,7 @@ import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
 import { isStrangerEncounterType, type StrangerEncounterType } from '../engine/tavernEncounter.ts';
 import { isBardContent, isBardSolvedIds, isBardTaleQueue, type BardContent } from '../engine/tavernBard.ts';
 import { isCompanionContent, isCompanionOfferIds, isCompanionQueue, type CompanionContent } from '../engine/tavernCompanion.ts';
+import { validateHallConsequenceState } from '../engine/hallConsequenceState.ts';
 import { validateHallFeastState } from '../engine/feast.ts';
 import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarketReputation } from '../engine/marketHaggle.ts';
 import { GAMBIT_MAX_ROUNDS } from '../data/tavern.js';
@@ -335,6 +336,9 @@ function validateSnapshot(value: unknown): string | null {
 
   const feastIssue = validateHallFeastState(value.greatHall, value.season, value.year);
   if (feastIssue) return feastIssue;
+
+  const consequenceIssue = validateHallConsequenceState(value.greatHall);
+  if (consequenceIssue) return consequenceIssue;
 
   const phases: readonly string[] = [
     'title', 'management', 'seasonal_action', 'seasonal_resolve',
