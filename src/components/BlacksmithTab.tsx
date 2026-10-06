@@ -69,7 +69,7 @@ type ForgeAction = ForgeAncillaryCommand | ForgeItemCommand |
 type ForgeDispatch = Dispatch<ForgeAction>;
 type Destination = 'equip' | 'sell' | 'scrap' | 'store';
 interface LocalForgeState {
-  temperature:ForgeTemperature; bellowsCharge:number; bellowsCooldown:boolean; fuelLevel:number; isLit:boolean;
+  temperature:ForgeTemperature; bellowsCharge:number; bellowsCooldown:boolean;
 }
 interface BlacksmithViewState extends ForgeBuyerState {
   readonly phase:string; readonly turn:number; readonly year:number; readonly season:ForgeSeason;
@@ -1962,13 +1962,11 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
   const [ambientIndex, setAmbientIndex] = useState(0);
   const [ambientVisible, setAmbientVisible] = useState(true);
 
-  // Local forge state (Phase 1 — local only; Phase 2+ will move to reducer)
+  // Transient hearth presentation; crafting costs and results belong to the reducer.
   const [forgeState, setForgeState] = useState<LocalForgeState>({
     temperature: "cold",
     bellowsCharge: 0,
     bellowsCooldown: false,
-    fuelLevel: 100,
-    isLit: false,
   });
 
   // NPC state
@@ -1994,18 +1992,23 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
 
   // Bellows cooldown ref
   const bellowsTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const bellowsLineTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 
   // Cycle ambient text every 8 seconds
   useEffect(() => {
+    let fadeTimer:ReturnType<typeof setTimeout>|undefined;
     const interval = setInterval(() => {
       setAmbientVisible(false);
-      const fadeTimer = setTimeout(() => {
+      fadeTimer = setTimeout(() => {
+        fadeTimer = undefined;
         setAmbientIndex((prev) => (prev + 1) % FORGE_AMBIENT_TEXTS.length);
         setAmbientVisible(true);
       }, 500);
-      return () => clearTimeout(fadeTimer);
     }, 8000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (fadeTimer !== undefined) clearTimeout(fadeTimer);
+    };
   }, []);
 
   // Bellows charge decay
@@ -2051,7 +2054,6 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
         ...prev,
         bellowsCharge: newCharge,
         temperature: newTemp,
-        isLit: newTemp !== "cold",
         bellowsCooldown: true,
       };
     });
@@ -2059,17 +2061,23 @@ export default function BlacksmithTab({ state, dispatch }: {state:BlacksmithView
     // Cooldown
     if (bellowsTimerRef.current) clearTimeout(bellowsTimerRef.current);
     bellowsTimerRef.current = setTimeout(() => {
+      bellowsTimerRef.current = null;
       setForgeState((prev) => ({ ...prev, bellowsCooldown: false }));
     }, BELLOWS_CONFIG.cooldownMs);
 
     // Clear Godric bellows line after 3 seconds
-    setTimeout(() => setGodricBellowsLine(null), 3000);
+    if (bellowsLineTimerRef.current !== null) clearTimeout(bellowsLineTimerRef.current);
+    bellowsLineTimerRef.current = setTimeout(() => {
+      bellowsLineTimerRef.current = null;
+      setGodricBellowsLine(null);
+    }, 3000);
   }, [forgeState.bellowsCooldown]);
 
   // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (bellowsTimerRef.current) clearTimeout(bellowsTimerRef.current);
+      if (bellowsLineTimerRef.current !== null) clearTimeout(bellowsLineTimerRef.current);
     };
   }, []);
 
