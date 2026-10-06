@@ -27,7 +27,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
 
-The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People, Audience and Dispute views; People and Chapel transitions; Hall authored audience/dispute registries and shared helpers; authoritative audience/dispute commands; and consumed audience/dispute save validation. The latest view section passes all 211 unit tests, typecheck, lint, build and 50 focused browser cases across recorded runs. Independent review found two remaining dispute decision focus/reading defects, so this is a partial checkpoint. Eighteen source JavaScript/JSX files remain. Production has 47,417 lines versus the original 45,347, so the reduction goal remains unmet. See [verification notes](docs/v2/verification.md) for build-specific evidence and limits.
+The rewrite now includes checked Outcome, Military, Watchtower, Chapel, People, Audience and Dispute views; People and Chapel transitions; Hall authored audience/dispute registries and shared helpers; authoritative audience/dispute commands; and consumed audience/dispute save validation. The latest focus correction passes typecheck, lint, build and 17 focused browser tests. Independent reviewers closed both dispute decision focus/reading defects. The preceding view checkpoint passed 211 unit tests and 50 focused browser cases across recorded runs; full interface verification remains incomplete. Eighteen source JavaScript/JSX files remain. Production has 47,429 lines versus the original 45,347, so the reduction goal remains unmet. See [verification notes](docs/v2/verification.md) for build-specific evidence and limits.
 
 ## Code map
 
@@ -59,7 +59,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct hidden desktop ruling focus and enlarged-phone decision reading in DisputeScreen, then rerun independent reproductions.
+1. Complete Council/decree authored contracts and guard their commands against invalid, ineligible and repeated choices.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

@@ -7,7 +7,7 @@
  * with consequence previews, decree announcement, and aftermath.
  */
 
-import { useState, useEffect, useRef, useCallback, useId } from "react";
+import { useState, useEffect, useRef, useCallback, useId, type FocusEvent } from "react";
 import { Scale, BookOpen } from "lucide-react";
 
 import type { Dispute, DisputeId, DisputePetitioner, DisputeRuling } from '../data/disputes.ts';
@@ -182,6 +182,28 @@ export default function DisputeScreen(props: DisputeScreenProps) {
 
 function JudgmentSeat({ dispute, onRule, onReturn }: DisputeScreenProps) {
   // Steps: 0=herald, 1=presenting, 2=ruling, 3=aftermath, 4=done
+  const focusFrame = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (focusFrame.current !== null) window.cancelAnimationFrame(focusFrame.current);
+  }, []);
+  const revealFocusedControl = (event: FocusEvent<HTMLDivElement>) => {
+    const control = event.target;
+    if (!(control instanceof HTMLElement) || !control.matches('button:focus-visible')) return;
+    if (focusFrame.current !== null) window.cancelAnimationFrame(focusFrame.current);
+    // Run after native focus scrolling so pinned chrome cannot cover the action.
+    focusFrame.current = window.requestAnimationFrame(() => {
+      if (document.activeElement === control) {
+        const header = document.querySelector<HTMLElement>('.game-header[data-pinned="true"]');
+        const footer = document.querySelector<HTMLElement>('.sticky.bottom-0');
+        const top = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+        const bottom = footer ? Math.min(window.innerHeight, footer.getBoundingClientRect().top) : window.innerHeight;
+        const rect = control.getBoundingClientRect();
+        if (bottom > top) window.scrollBy({ top: rect.top + rect.height / 2 - (top + bottom) / 2, behavior: 'instant' });
+      }
+      focusFrame.current = null;
+    });
+  };
+
   const [view, setView] = useState<JudgmentView>({ step: 0 });
   const step = view.step;
   const selectedRuling = view.step === 3 ? view.ruling : null;
@@ -211,7 +233,7 @@ function JudgmentSeat({ dispute, onRule, onReturn }: DisputeScreenProps) {
   };
 
   return (
-    <div className="dispute-screen">
+    <div className="dispute-screen" onFocusCapture={revealFocusedControl}>
       {/* ═══ STEP 0: Herald Announcement ═══ */}
       {step === 0 && (
         <div className="herald-fade" style={{ textAlign: "center", padding: "20px 0" }}>
@@ -587,34 +609,18 @@ function JudgmentSeat({ dispute, onRule, onReturn }: DisputeScreenProps) {
           </h4>
 
           <div className="flex flex-col gap-3">
-            {dispute.rulings.map((ruling) => (
-              <button
-                key={ruling.id}
-                className="ruling-card"
-                onClick={() => handleSelectRuling(ruling)}
-                style={{
-                  textAlign: "left",
-                  padding: 12, borderRadius: 6,
-                  border: "1px solid #3d3630",
-                  backgroundColor: "rgba(42,37,32,0.4)",
-                  cursor: "pointer",
-                  transition: "all 200ms ease",
-                }}
-              >
-                <h5 style={{
-                  fontFamily: "Cinzel, serif", fontSize: "1rem",
-                  color: "#d4a44c", margin: "0 0 4px",
-                }}>
-                  {ruling.label}
-                </h5>
-                <p style={{
-                  fontFamily: "Crimson Text, serif", fontSize: "1rem",
-                  color: "#c1b49b", lineHeight: 1.3, margin: 0,
-                }}>
+            {dispute.rulings.map(ruling => (
+              <div key={ruling.id} className="dispute-ruling">
+                <button type="button" className="ruling-card"
+                  aria-describedby={`ruling-decree-${dispute.id}-${ruling.id}`}
+                  onClick={() => handleSelectRuling(ruling)}>
+                  <span className="dispute-ruling-label">{ruling.label}</span>
+                  <ConsequencePreview consequences={ruling.consequences} />
+                </button>
+                <p id={`ruling-decree-${dispute.id}-${ruling.id}`} className="dispute-ruling-decree">
                   {ruling.decree}
                 </p>
-                <ConsequencePreview consequences={ruling.consequences} />
-              </button>
+              </div>
             ))}
           </div>
         </div>

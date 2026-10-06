@@ -1492,3 +1492,9 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .dispute-screen .ruling-card:hover, .dispute-screen .ruling-card:focus-visible { border-color: #d4a44c !important; background-color: #2a2520 !important; }
 .dispute-screen .evidence-reveal { animation: audience-reveal 400ms ease both; overflow: visible; }
 @media (prefers-reduced-motion: reduce) { .dispute-screen *, .dispute-screen .evidence-reveal { animation: none !important; transition: none !important; } }
+
+/* Keep decision controls short; full decree prose remains in the reading flow. */
+.dispute-ruling { padding: .75rem; border: 1px solid #3d3630; border-radius: 6px; background: rgba(42,37,32,.4); }
+.dispute-ruling .ruling-card { width: 100%; padding: .5rem .75rem; border: 1px solid #b8a78a; border-radius: 4px; background: #211d18; text-align: left; cursor: pointer; }
+.dispute-ruling-label { color: #d4a44c; font: 1rem 'Cinzel', serif; }
+.dispute-ruling-decree { color: #c1b49b; font: 1rem/1.5 'Crimson Text', serif; margin: .75rem 0 0; }
