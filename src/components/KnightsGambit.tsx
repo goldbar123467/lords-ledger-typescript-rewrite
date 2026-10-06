@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, type CSSProperties } from "react";
 import {
   GAMBIT_WEAPONS,
   GAMBIT_WAGERS,
@@ -7,11 +7,11 @@ import {
   GAMBIT_LOSE_LINES,
   GAMBIT_DRAW_LINES,
   GAMBIT_SCRIBES_NOTE,
-} from "../data/tavern";
+} from "../data/tavern.ts";
 import { createRandomCursor } from "../engine/random.ts";
-import { resolveGambitRound } from "../engine/tavernGambit.ts";
+import { resolveGambitRound, isGambitWeapon, type GambitWeapon, type GambitOutcome } from "../engine/tavernGambit.ts";
 
-const WEAPON_KEYS = Object.keys(GAMBIT_WEAPONS);
+const WEAPON_KEYS = Object.keys(GAMBIT_WEAPONS).filter(isGambitWeapon);
 
 const PHASE_WAGER = "wager";
 const PHASE_CHOICE = "choice";
@@ -19,13 +19,35 @@ const PHASE_REVEAL = "reveal";
 const PHASE_RESULT = "result";
 const PHASE_MAXED = "maxed";
 
-function pickLine(lines) {
-  return lines[Math.floor(Math.random() * lines.length)];
+export type GambitStage =
+  | Readonly<{ phase: typeof PHASE_WAGER }>
+  | Readonly<{ phase: typeof PHASE_CHOICE; wager: number }>
+  | Readonly<{ phase: typeof PHASE_REVEAL; wager: number; playerChoice: GambitWeapon }>
+  | Readonly<{ phase: typeof PHASE_RESULT; wager: number; playerChoice: GambitWeapon; opponentChoice: GambitWeapon; outcome: GambitOutcome }>
+  | Readonly<{ phase: typeof PHASE_MAXED }>;
+
+export interface KnightsGambitProps {
+  readonly denarii: number;
+  readonly gambitRoundsThisSeason: number;
+  readonly gambitLastChoice?: GambitWeapon | null;
+  readonly rngState: number;
+  readonly gambitScribesNoteSeen: boolean;
+  readonly onResult: (choice: GambitWeapon, wager: number, seed: number) => void;
+  readonly onScribesNoteSeen: () => void;
+  readonly onBack: () => void;
+}
+interface GoldParticle { readonly id: number; readonly tx: number; readonly ty: number; readonly size: number }
+type GoldParticleStyle = CSSProperties & { '--tx': string; '--ty': string };
+
+function pickLine(lines: readonly string[]): string {
+  const line = lines[Math.floor(Math.random() * lines.length)];
+  if (line === undefined) throw new Error("Gambit flavor registry is empty.");
+  return line;
 }
 
 /** Generate gold particle burst positions. */
-function makeParticles(count) {
-  const particles = [];
+function makeParticles(count: number): GoldParticle[] {
+  const particles: GoldParticle[] = [];
   for (let i = 0; i < count; i++) {
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
     const dist = 40 + Math.random() * 50;
@@ -48,28 +70,29 @@ export default function KnightsGambit({
   onResult,
   onScribesNoteSeen,
   onBack,
-}) {
-  const [phase, setPhase] = useState(
-    gambitRoundsThisSeason >= GAMBIT_MAX_ROUNDS ? PHASE_MAXED : PHASE_WAGER
+}: KnightsGambitProps) {
+  const [stage, setStage] = useState<GambitStage>(() =>
+    gambitRoundsThisSeason >= GAMBIT_MAX_ROUNDS ? { phase: PHASE_MAXED } : { phase: PHASE_WAGER }
   );
-  const [wager, setWager] = useState(0);
-  const [playerChoice, setPlayerChoice] = useState(null);
-  const [opponentChoice, setOpponentChoice] = useState(null);
-  const [outcome, setOutcome] = useState(null);
+  const phase = stage.phase;
+  const wager = stage.phase === PHASE_CHOICE || stage.phase === PHASE_REVEAL || stage.phase === PHASE_RESULT ? stage.wager : 0;
+  const playerChoice = stage.phase === PHASE_REVEAL || stage.phase === PHASE_RESULT ? stage.playerChoice : null;
+  const opponentChoice = stage.phase === PHASE_RESULT ? stage.opponentChoice : null;
+  const outcome = stage.phase === PHASE_RESULT ? stage.outcome : null;
   const [flavorText, setFlavorText] = useState("");
   const [reasonText, setReasonText] = useState("");
   const [showScribesNote, setShowScribesNote] = useState(
     !gambitScribesNoteSeen
   );
-  const [particles, setParticles] = useState([]);
+  const [particles, setParticles] = useState<readonly GoldParticle[]>([]);
   const [shaking, setShaking] = useState(false);
   const [showVignette, setShowVignette] = useState(false);
   const [goldFlash, setGoldFlash] = useState(false);
   const [revealText, setRevealText] = useState("");
-  const revealTimerRef = useRef(null);
+  const revealTimerRef = useRef<number | null>(null);
 
   useEffect(() => () => {
-    if (revealTimerRef.current !== null) clearTimeout(revealTimerRef.current);
+    if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
   }, []);
 
   const handleDismissScribesNote = useCallback(() => {
@@ -77,16 +100,15 @@ export default function KnightsGambit({
     onScribesNoteSeen();
   }, [onScribesNoteSeen]);
 
-  const handleWager = useCallback((amount) => {
-    setWager(amount);
-    setPhase(PHASE_CHOICE);
+  const handleWager = useCallback((amount: number) => {
+    setStage({ phase: PHASE_CHOICE, wager: amount });
   }, []);
 
   const handleChoice = useCallback(
-    (weaponKey) => {
+    (weaponKey: GambitWeapon) => {
+      if (stage.phase !== PHASE_CHOICE) return;
       const round = resolveGambitRound(gambitLastChoice ?? null, weaponKey, createRandomCursor(rngState).next);
       if (!round) return;
-      setPlayerChoice(weaponKey);
 
       // Gold border flash on selection
       setGoldFlash(true);
@@ -94,15 +116,13 @@ export default function KnightsGambit({
 
       // Dramatic pause
       setRevealText("The stranger reaches for...");
-      setPhase(PHASE_REVEAL);
+      setStage({ phase: PHASE_REVEAL, wager, playerChoice: weaponKey });
 
       const opponent = round.opponent;
 
-      revealTimerRef.current = setTimeout(() => {
+      revealTimerRef.current = window.setTimeout(() => {
         revealTimerRef.current = null;
-        setOpponentChoice(opponent);
         const result = round.outcome;
-        setOutcome(result);
 
         if (result === "win") {
           setFlavorText(pickLine(GAMBIT_WIN_LINES));
@@ -121,28 +141,24 @@ export default function KnightsGambit({
         }
 
         setRevealText("");
-        setPhase(PHASE_RESULT);
+        setStage({ phase: PHASE_RESULT, wager, playerChoice: weaponKey, opponentChoice: opponent, outcome: result });
 
         // Dispatch result to parent
         onResult(weaponKey, wager, rngState);
       }, 800);
     },
-    [gambitLastChoice, rngState, wager, onResult]
+    [stage, gambitLastChoice, rngState, wager, onResult]
   );
 
   const handlePlayAgain = useCallback(() => {
-    setPlayerChoice(null);
-    setOpponentChoice(null);
-    setOutcome(null);
     setFlavorText("");
     setReasonText("");
     setParticles([]);
-    setWager(0);
 
     if (gambitRoundsThisSeason >= GAMBIT_MAX_ROUNDS) {
-      setPhase(PHASE_MAXED);
+      setStage({ phase: PHASE_MAXED });
     } else {
-      setPhase(PHASE_WAGER);
+      setStage({ phase: PHASE_WAGER });
     }
   }, [gambitRoundsThisSeason]);
 
@@ -545,24 +561,27 @@ export default function KnightsGambit({
 
             {/* Gold particles on win */}
             {outcome === "win" &&
-              particles.map((p) => (
+              particles.map((p) => {
+                const particleStyle: GoldParticleStyle = {
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  backgroundColor: "#e8c44a",
+                  borderRadius: "1px",
+                  pointerEvents: "none",
+                  animation: "gold-burst 800ms ease forwards",
+                  "--tx": `${p.tx}px`,
+                  "--ty": `${p.ty}px`,
+                };
+                return (
                 <div
                   key={p.id}
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    width: `${p.size}px`,
-                    height: `${p.size}px`,
-                    backgroundColor: "#e8c44a",
-                    borderRadius: "1px",
-                    pointerEvents: "none",
-                    animation: "gold-burst 800ms ease forwards",
-                    "--tx": `${p.tx}px`,
-                    "--ty": `${p.ty}px`,
-                  }}
+                  style={particleStyle}
                 />
-              ))}
+                );
+              })}
           </div>
 
           {/* Win/lose amount float */}

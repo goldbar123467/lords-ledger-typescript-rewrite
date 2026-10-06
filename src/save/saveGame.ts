@@ -14,7 +14,7 @@ import { validatePeopleState } from '../engine/peopleState.ts';
 import { validateHallAudienceState, validateHallDisputeState, type HallSaveState } from '../engine/hallAudienceState.ts';
 import type { CompatiblePeopleState } from '../data/people.ts';
 import type { GameOverReason } from '../engine/meterUtils.ts';
-import { isGambitWeapon } from '../engine/tavernGambit.ts';
+import { isGambitWeapon, type GambitWeapon } from '../engine/tavernGambit.ts';
 import { MAX_RAT_SPAWNS } from '../engine/ratsInCellar.ts';
 import { isStrangerEncounterType, type StrangerEncounterType } from '../engine/tavernEncounter.ts';
 import { isBardContent, isBardSolvedIds, isBardTaleQueue, type BardContent } from '../engine/tavernBard.ts';
@@ -76,6 +76,8 @@ export interface GameSnapshot {
   activeTab: string;
   chronicle: SavedChronicleEntry[];
   tavern: {
+    gambitRoundsThisSeason?: number;
+    gambitLastChoice?: GambitWeapon | null;
     martaStoragePurchased?: boolean;
     pendingStrangerEncounter?: StrangerEncounterType | null;
     strangerAppearedThisSeason?: boolean;
