@@ -1,5 +1,5 @@
 /**
- * Tavern.jsx
+ * Tavern.tsx
  *
  * The Boar's Head Tavern — social heart of the medieval village.
  * Contains mini-games (Knight's Gambit, Rats in the Cellar),
@@ -9,6 +9,26 @@
  */
 
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react"; // useMemo used in TavernWall
+import type { GameSnapshot } from '../save/saveGame.ts';
+import type { GambitWeapon } from '../engine/tavernGambit.ts';
+import type { RatRunResult } from './RatsInCellar.tsx';
+import { isCompanionOfferId } from '../engine/tavernCompanion.ts';
+import type { MartaOfferId, AldricOfferId, StaticGraffiti } from '../data/tavern.ts';
+
+export type TavernAction =
+  | Readonly<{ type: 'TAVERN_VISIT' | 'TAVERN_GAMBIT_SCRIBES_NOTE_SEEN' | 'TAVERN_RATS_SCRIBES_NOTE_SEEN' | 'TAVERN_BARD_NEXT' | 'TAVERN_MARTA_NEXT' | 'TAVERN_MARTA_SCRIBES_NOTE_SEEN' | 'TAVERN_ALDRIC_NEXT' | 'TAVERN_ALDRIC_SCRIBES_NOTE_SEEN' | 'TAVERN_WALL_STASH' | 'TAVERN_STRANGER_TRADE' | 'TAVERN_STRANGER_DISMISS' }>
+  | Readonly<{ type: 'TAVERN_GAMBIT_PLAY'; payload: Readonly<{ choice: GambitWeapon; wager: number; seed: number }> }>
+  | Readonly<{ type: 'TAVERN_RATS_FINISH'; payload: Readonly<RatRunResult> }>
+  | Readonly<{ type: 'TAVERN_BARD_ANSWER'; payload: Readonly<{ option: string }> }>
+  | Readonly<{ type: 'TAVERN_MARTA_ACCEPT_OFFER' | 'TAVERN_MARTA_DECLINE_OFFER'; payload: Readonly<{ offerId: MartaOfferId }> }>
+  | Readonly<{ type: 'TAVERN_ALDRIC_ACCEPT_OFFER' | 'TAVERN_ALDRIC_DECLINE_OFFER'; payload: Readonly<{ offerId: AldricOfferId }> }>;
+
+export interface TavernProps {
+  readonly state: Readonly<GameSnapshot>;
+  readonly dispatch: (action: TavernAction) => void;
+  readonly onClose: () => void;
+}
+
 import KnightsGambit from "./KnightsGambit";
 import RatsInCellar from "./RatsInCellar";
 import BardsCorner from "./BardsCorner";
@@ -62,13 +82,17 @@ const STATIONS = [
     icon: "\u2694",
     borderColor: "#8b1a1a",
   },
-];
+] as const;
+
+type TavernStation = typeof STATIONS[number];
+type TavernStationId = TavernStation['id'];
+const staticGraffiti: readonly StaticGraffiti[] = WALL_STATIC_GRAFFITI;
 
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function TavernHeader({ subtitle }) {
+function TavernHeader({ subtitle }: Readonly<{ subtitle: string }>) {
   return (
     <div className="text-center mb-4">
       <h2
@@ -91,7 +115,9 @@ function TavernHeader({ subtitle }) {
   );
 }
 
-function StationCard({ station, disabled, disabledText, onClick }) {
+function StationCard({ station, disabled, disabledText, onClick }: Readonly<{
+  station: TavernStation; disabled: boolean; disabledText: string; onClick: () => void;
+}>) {
   return (
     <button
       onClick={onClick}
@@ -132,7 +158,9 @@ function StationCard({ station, disabled, disabledText, onClick }) {
   );
 }
 
-function TavernWall({ state, onStashClick }) {
+function TavernWall({ state, onStashClick }: Readonly<{
+  state: Readonly<GameSnapshot>; onStashClick: () => void;
+}>) {
   const tavern = state.tavern ?? {};
   const dynamicMessages = useMemo(() => {
     return WALL_DYNAMIC_CONDITIONS
@@ -142,9 +170,9 @@ function TavernWall({ state, onStashClick }) {
 
   // Visit milestone graffiti
   const milestoneGraffiti = useMemo(() => {
-    const msgs = [];
+    const msgs: string[] = [];
     for (const m of VISIT_MILESTONES) {
-      if (m.graffiti && tavernLedgerAtLeast(tavern.totalVisits, m.visits)) {
+      if ("graffiti" in m && m.graffiti && tavernLedgerAtLeast(tavern.totalVisits, m.visits)) {
         msgs.push(m.graffiti);
       }
     }
@@ -170,7 +198,7 @@ function TavernWall({ state, onStashClick }) {
 
       <div className="space-y-1">
         {/* Static graffiti */}
-        {WALL_STATIC_GRAFFITI.map((g, i) => (
+        {staticGraffiti.map((g, i) => (
           <p
             key={`static-${i}`}
             className={g.large ? "text-sm" : "text-xs"}
@@ -240,12 +268,16 @@ function TavernWall({ state, onStashClick }) {
   );
 }
 
-function StrangerCard({ encounter, state, onTrade, onDismiss }) {
+function StrangerCard({ encounter, state, onTrade, onDismiss }: Readonly<{
+  encounter: typeof STRANGER_ENCOUNTERS[number];
+  state: Readonly<Pick<GameSnapshot, 'denarii' | 'food' | 'population' | 'garrison'>>;
+  onTrade: () => void; onDismiss: () => void;
+}>) {
   const [interacted, setInteracted] = useState(false);
 
   if (interacted) return null;
 
-  let displayText = encounter.text;
+  let displayText: string | null = encounter.text;
   if (encounter.type === "warning") {
     // Find lowest resource
     const resources = [
@@ -255,7 +287,9 @@ function StrangerCard({ encounter, state, onTrade, onDismiss }) {
       { name: "garrison", val: state.garrison * 20 },
     ];
     resources.sort((a, b) => a.val - b.val);
-    displayText = `Your ${resources[0].name} concerns me, my lord. Neglect it at your peril.`;
+    const lowest = resources[0];
+    if (!lowest) throw new Error("Tavern warning resource registry is empty.");
+    displayText = `Your ${lowest.name} concerns me, my lord. Neglect it at your peril.`;
   }
 
   function handleClick() {
@@ -342,9 +376,9 @@ function StrangerCard({ encounter, state, onTrade, onDismiss }) {
 // Main Tavern component
 // ---------------------------------------------------------------------------
 
-export default function Tavern({ state, dispatch, onClose }) {
-  const [activeStation, setActiveStation] = useState(null);
-  const [stashMessage, setStashMessage] = useState(null);
+export default function Tavern({ state, dispatch, onClose }: TavernProps) {
+  const [activeStation, setActiveStation] = useState<TavernStationId | null>(null);
+  const [stashMessage, setStashMessage] = useState<string | null>(null);
   const [entering, setEntering] = useState(true);
   const visitLoggedRef = useRef(false);
 
@@ -354,14 +388,18 @@ export default function Tavern({ state, dispatch, onClose }) {
   const [visitMessage] = useState(() => {
     const visits = addTavernLedgerInteger(tavern.totalVisits, 1, true);
     for (const m of VISIT_MILESTONES) {
-      if (m.message && visits === m.visits) return m.message;
+      if ("message" in m && m.message && visits === m.visits) return m.message;
     }
     return null;
   });
 
   // Random subtitle picked once per mount
   const [subtitle] = useState(
-    () => TAVERN_SUBTITLES[Math.floor(Math.random() * TAVERN_SUBTITLES.length)]
+    () => {
+      const selected = TAVERN_SUBTITLES[Math.floor(Math.random() * TAVERN_SUBTITLES.length)];
+      if (selected === undefined) throw new Error("Tavern subtitle registry is empty.");
+      return selected;
+    }
   );
 
   const strangerEncounter = STRANGER_ENCOUNTERS.find(
@@ -374,10 +412,13 @@ export default function Tavern({ state, dispatch, onClose }) {
       visitLoggedRef.current = true;
       dispatch({ type: "TAVERN_VISIT" });
     }
+  }, [dispatch]);
+
+  useEffect(() => {
     // Entry animation
-    const timer = setTimeout(() => setEntering(false), 600);
-    return () => clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const timer = window.setTimeout(() => setEntering(false), 600);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Station cards can sit below the sticky navigation on narrow screens.
   // Restore the first viewport when replacing one Tavern view with another.
@@ -390,7 +431,7 @@ export default function Tavern({ state, dispatch, onClose }) {
   const ratsDisabled = tavern.ratsPlayedThisSeason === true;
 
   // Handlers for sub-games
-  function handleGambitResult(choice, wager, seed) {
+  function handleGambitResult(choice: GambitWeapon, wager: number, seed: number) {
     dispatch({ type: "TAVERN_GAMBIT_PLAY", payload: { choice, wager, seed } });
   }
 
@@ -398,7 +439,7 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_GAMBIT_SCRIBES_NOTE_SEEN" });
   }
 
-  function handleRatsResult(stats) {
+  function handleRatsResult(stats: RatRunResult) {
     dispatch({ type: "TAVERN_RATS_FINISH", payload: stats });
     setActiveStation(null);
   }
@@ -411,11 +452,12 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_BARD_NEXT" });
   }
 
-  function handleBardAnswer(option) {
+  function handleBardAnswer(option: string) {
     dispatch({ type: "TAVERN_BARD_ANSWER", payload: { option } });
   }
 
-  function handleMartaAcceptOffer(offerId) {
+  function handleMartaAcceptOffer(offerId: string) {
+    if (!isCompanionOfferId("marta", offerId)) return;
     dispatch({ type: "TAVERN_MARTA_ACCEPT_OFFER", payload: { offerId } });
   }
 
@@ -423,7 +465,8 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_MARTA_NEXT" });
   }
 
-  function handleMartaDeclineOffer(offerId) {
+  function handleMartaDeclineOffer(offerId: string) {
+    if (!isCompanionOfferId("marta", offerId)) return;
     dispatch({ type: "TAVERN_MARTA_DECLINE_OFFER", payload: { offerId } });
   }
 
@@ -431,7 +474,8 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_MARTA_SCRIBES_NOTE_SEEN" });
   }
 
-  function handleAldricAcceptOffer(offerId) {
+  function handleAldricAcceptOffer(offerId: string) {
+    if (!isCompanionOfferId("aldric", offerId)) return;
     dispatch({ type: "TAVERN_ALDRIC_ACCEPT_OFFER", payload: { offerId } });
   }
 
@@ -439,7 +483,8 @@ export default function Tavern({ state, dispatch, onClose }) {
     dispatch({ type: "TAVERN_ALDRIC_NEXT" });
   }
 
-  function handleAldricDeclineOffer(offerId) {
+  function handleAldricDeclineOffer(offerId: string) {
+    if (!isCompanionOfferId("aldric", offerId)) return;
     dispatch({ type: "TAVERN_ALDRIC_DECLINE_OFFER", payload: { offerId } });
   }
 
@@ -453,7 +498,7 @@ export default function Tavern({ state, dispatch, onClose }) {
       setStashMessage(
         "You found a coin purse hidden in a crack in the wall. Some previous lord must have forgotten it. +25d"
       );
-      setTimeout(() => setStashMessage(null), 4000);
+      window.setTimeout(() => setStashMessage(null), 4000);
     }
   }
 

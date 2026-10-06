@@ -79,6 +79,7 @@ export interface GameSnapshot {
   tavern: {
     gambitScribesNoteSeen?: boolean;
     ratsScribesNoteSeen?: boolean;
+    ratsPlayedThisSeason?: boolean;
     wallStashFound?: boolean;
     totalVisits?: TavernLedgerInteger;
     gambitTotalWins?: TavernLedgerInteger;

@@ -60,3 +60,8 @@ Retain medieval parchment, Cinzel headings and Crimson body text, with opaque li
 ## Exact Tavern ledger encoding (2026-10-06)
 
 Four historical fields (totalVisits, gambitTotalWins, gambitTotalLosses, gambitNetEarnings) use ordinary safe integer numbers in existing saves. Results outside that range use canonical decimal strings, for example9007199254740991+1 becomes "9007199254740992". Counts are nonnegative; earnings may be negative. Strings within the safe range, noncanonical strings and already-unsafe numeric inputs reject. Arithmetic/comparisons use internal BigInt, then emit a JSON primitive; BigInt itself is never stored. If a result returns into the safe range it becomes numeric again. Runtime validation establishes the opaque string type without casts. Version2 accepts this compatible extension of previous data; new large records require updated readers. Existing numeric/legacy byte parity is measured independently. This applies to Tavern metadata only, with no general resource/currency arithmetic claim.
+
+
+## Tavern shell contracts (2026-10-06)
+
+Derive five station IDs from their authored card tuple. Use a discriminated command union for child results and finite companion offers. The renderer's string callbacks narrow against the corresponding authored registry; wrong-owner IDs cannot construct paid commands. Saved-state props are shallow readonly, not recursively immutable. Entry animation ownership and once-only visit logging use separate effects, avoiding animation resets when a caller changes dispatch identity. Structural migration preserves the inherited tiny secret span and unowned stash message timer for a separate keyboard/lifecycle correction. Whole shell presentation remains IN PROGRESS.

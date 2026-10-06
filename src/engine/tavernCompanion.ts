@@ -23,6 +23,14 @@ function registry(kind: CompanionId) {
     : { advice: ALDRIC_MILITARY_COUNSEL, stories: ALDRIC_WAR_STORIES, offers: ALDRIC_TRAINING_OFFERS };
 }
 
+/** Narrow a renderer callback's string to the matching authored offer registry. */
+export function isCompanionOfferId(kind: 'marta', value: unknown): value is MartaOfferId;
+export function isCompanionOfferId(kind: 'aldric', value: unknown): value is AldricOfferId;
+export function isCompanionOfferId(kind: CompanionId, value: unknown): value is MartaOfferId | AldricOfferId;
+export function isCompanionOfferId(kind: CompanionId, value: unknown): value is MartaOfferId | AldricOfferId {
+  return typeof value === 'string' && registry(kind).offers.some(offer => offer.id === value);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

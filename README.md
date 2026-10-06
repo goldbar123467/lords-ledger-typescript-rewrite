@@ -20,7 +20,7 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military, raid, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Complete registry cross-reference and runtime audits |
-| React interface | Typed management and interaction views, including Estate, Map, Chronicle, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Migrate the Tavern shell and App; complete interface review |
+| React interface | Typed management and interaction views, including Estate, Map, Chronicle, Tavern, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Migrate App; complete interface review |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete remaining nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
@@ -53,7 +53,9 @@ Tavern content now has checked readonly state predicates and finite weapon, ridd
 
 The Bard view now has checked saved-content, answer callback and DOM-ref contracts. Twenty-one browser checks cover all five riddles, both answer outcomes, exact saves and reentry, with once-only reward coverage. Its authored content and styling are preserved; broader Bard readability and accessibility remain unfinished.
 
-Knight's Gambit now uses checked TSX props and one discriminated stage instead of five separate game-state hooks. Thirteen browser checks cover every weapon pair, all stakes, paid replay, cancellation and the fifth round. Three cosmetic timer callbacks still need teardown cleanup; broader minigame UI review remains unfinished.
+Knight's Gambit now uses checked TSX props and one discriminated stage instead of five separate game-state hooks. Thirteen browser checks cover every weapon pair, all stakes, paid replay, cancellation and the fifth round. Shared owned timeouts cancel all four Gambit callbacks on teardown; broader minigame UI review remains unfinished.
+
+The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All362unit checks and27focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The inherited hidden stash still needs keyboard access and timer cleanup in a separate section; broader interface and final campaign verification remain incomplete.
 
 ## Code map
 
@@ -85,7 +87,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate the remaining Tavern minigames and shell, then complete the app and reducer.
+1. Correct Tavern stash keyboard access and timer ownership, then complete the app and reducer.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

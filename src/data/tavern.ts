@@ -52,7 +52,7 @@ type StrangerEncounter =
  | {readonly type:'trade';readonly text:string;readonly cost:number;readonly reward:{readonly food:number}}
  | {readonly type:'warning';readonly text:null};
 type VisitMilestone = {readonly visits:number} & ({readonly message:string} | {readonly graffiti:string});
-interface StaticGraffiti {readonly text:string;readonly strikethrough?:boolean;readonly icon?:string;readonly large?:boolean;}
+export interface StaticGraffiti {readonly text:string;readonly strikethrough?:boolean;readonly icon?:string;readonly large?:boolean;}
 
 
 // ---------------------------------------------------------------------------
