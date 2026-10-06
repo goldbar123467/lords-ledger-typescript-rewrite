@@ -89,10 +89,23 @@ export default function KnightsGambit({
   const [showVignette, setShowVignette] = useState(false);
   const [goldFlash, setGoldFlash] = useState(false);
   const [revealText, setRevealText] = useState("");
-  const revealTimerRef = useRef<number | null>(null);
+  const ownedTimeouts = useRef(new Set<number>());
 
-  useEffect(() => () => {
-    if (revealTimerRef.current !== null) window.clearTimeout(revealTimerRef.current);
+  const scheduleTimeout = useCallback((callback: () => void, delay: number) => {
+    const pending = ownedTimeouts.current;
+    const handle = window.setTimeout(() => {
+      pending.delete(handle);
+      callback();
+    }, delay);
+    pending.add(handle);
+  }, []);
+
+  useEffect(() => {
+    const pending = ownedTimeouts.current;
+    return () => {
+      for (const handle of pending) window.clearTimeout(handle);
+      pending.clear();
+    };
   }, []);
 
   const handleDismissScribesNote = useCallback(() => {
@@ -112,7 +125,7 @@ export default function KnightsGambit({
 
       // Gold border flash on selection
       setGoldFlash(true);
-      setTimeout(() => setGoldFlash(false), 400);
+      scheduleTimeout(() => setGoldFlash(false), 400);
 
       // Dramatic pause
       setRevealText("The stranger reaches for...");
@@ -120,8 +133,7 @@ export default function KnightsGambit({
 
       const opponent = round.opponent;
 
-      revealTimerRef.current = window.setTimeout(() => {
-        revealTimerRef.current = null;
+      scheduleTimeout(() => {
         const result = round.outcome;
 
         if (result === "win") {
@@ -133,8 +145,8 @@ export default function KnightsGambit({
           setReasonText(GAMBIT_WEAPONS[opponent].reason);
           setShaking(true);
           setShowVignette(true);
-          setTimeout(() => setShaking(false), 300);
-          setTimeout(() => setShowVignette(false), 600);
+          scheduleTimeout(() => setShaking(false), 300);
+          scheduleTimeout(() => setShowVignette(false), 600);
         } else {
           setFlavorText(pickLine(GAMBIT_DRAW_LINES));
           setReasonText("");
@@ -147,7 +159,7 @@ export default function KnightsGambit({
         onResult(weaponKey, wager, rngState);
       }, 800);
     },
-    [stage, gambitLastChoice, rngState, wager, onResult]
+    [stage, gambitLastChoice, rngState, wager, onResult, scheduleTimeout]
   );
 
   const handlePlayAgain = useCallback(() => {
