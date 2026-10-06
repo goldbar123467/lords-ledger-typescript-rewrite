@@ -1656,7 +1656,7 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .hall-trust > p:first-child { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
 .hall-case { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; text-align: left; }
 .hall-navigation { display: flex; gap: .5rem; overflow-x: auto; padding: 8px; border-top: 1px solid var(--civic-border); background: #1a1610; }
-.hall-navigation .civic-button { flex: 1 0 max-content; min-width: max-content; display: flex; flex-direction: column; align-items: center; gap: .25rem; font-size: .95rem; padding: .5rem .75rem; white-space: nowrap; }
+.hall-navigation .civic-button { flex: 1 0 max-content; min-width: 80px; display: flex; flex-direction: column; align-items: center; gap: .25rem; font-size: .95rem; padding: .5rem .75rem; white-space: nowrap; }
 .hall-navigation [aria-current="page"] { border-color: var(--civic-gold); background: #423222; }
 .hall-ambient { padding: .75rem 1rem; border-top: 1px solid #5d4e3b; color: var(--civic-muted); font-size: 1rem; font-style: italic; text-align: center; }
 .hall-ambient p { transition: opacity 500ms ease; }
