@@ -1119,7 +1119,6 @@ export default function GreatHall({ state, dispatch }) {
               onComplete={handleFeastComplete}
               onReturn={() => switchView("throne")}
               hasFeastedThisSeason={hasFeastedThisSeason}
-              treasuryMeter={meters.treasury}
             />
           )}
           {currentView === "summary" && (
