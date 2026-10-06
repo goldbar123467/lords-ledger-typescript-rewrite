@@ -1,3 +1,5 @@
+import {getAgricultureBonuses, getAgricultureMultiplier, type AgricultureBonuses} from './forgeAgriculture.ts';
+import type {ForgeSaveState} from './forgeState.ts';
 /**
  * economyEngine.ts
  *
@@ -41,6 +43,7 @@ type TaxConfig = (typeof TAX_RATES)[TaxRate];
 type Military = { garrison?: { levy?: number; menAtArms?: number; knights?: number } };
 
 export interface EconomyState {
+  blacksmith?: Pick<ForgeSaveState, 'equipped'> | null;
   denarii: number;
   population: number;
   inventory: Inventory;
@@ -243,13 +246,27 @@ export function getActiveBuildingSynergies(buildings: BuildingEntry[]) {
  * Applies condition, seasonal, and building synergy modifiers.
  * Returns { produced, consumed, inventory, report }.
  */
-function runProduction(buildings: BuildingEntry[], inventory: Inventory, inventoryCapacity: number, season: EconomySeason) {
+/** Potential output before storage/input limits; simulation and Estate share this calculation. */
+export function getBuildingOutput(building: BuildingEntry, allBuildings: BuildingEntry[], season: EconomySeason, bonuses: AgricultureBonuses = {food: 0, harvest: 0}) {
+ const def = buildingDefinition(getBuildingType(building));
+ const output: Partial<Record<ResourceId, number>> = {};
+ if (!def) return output;
+ const condition = typeof building === 'string' ? 100 : (building.condition ?? 100);
+ const condMod = getConditionMultiplier(condition);
+ for (const [resource, base] of resourceEntries(def.produces)) {
+  let amount = base * condMod;
+  if (!def.consumes) amount = amount * (def.isFarm ? SEASON_FARM_MULTIPLIERS[season] ?? 1 : 1) * (1 + getBuildingSynergyBonus(building, allBuildings));
+  output[resource] = condMod === 0 ? 0 : Math.max(1, Math.round(amount * getAgricultureMultiplier(resource, Boolean(def.isFarm), bonuses)));
+ }
+ return output;
+}
+
+function runProduction(buildings: BuildingEntry[], inventory: Inventory, inventoryCapacity: number, season: EconomySeason, bonuses: AgricultureBonuses) {
   const produced: Partial<Record<ResourceId, number>> = {};
   const consumed: Partial<Record<ResourceId, number>> = {};
   const currentInventory = { ...inventory };
   let currentUsed = getInventoryUsed(currentInventory);
   const report: string[] = [];
-  const seasonMult = SEASON_FARM_MULTIPLIERS[season] ?? 1.0;
 
   // First pass: basic producers (no consumes)
   for (const building of buildings) {
@@ -267,14 +284,8 @@ function runProduction(buildings: BuildingEntry[], inventory: Inventory, invento
       continue;
     }
 
-    // Seasonal modifier (farms only)
-    const farmMod = def.isFarm ? seasonMult : 1.0;
-
-    // Building synergy bonus
-    const synergyBonus = getBuildingSynergyBonus(building, buildings);
-
-    for (const [resource, baseAmount] of resourceEntries(def.produces)) {
-      const amount = Math.max(1, Math.round(baseAmount * condMod * farmMod * (1 + synergyBonus)));
+    const output = getBuildingOutput(building, buildings, season, bonuses);
+    for (const [resource, amount] of resourceEntries(output)) {
       const space = inventoryCapacity - currentUsed;
       const actualAmount = Math.min(amount, space);
       if (actualAmount > 0) {
@@ -316,9 +327,9 @@ function runProduction(buildings: BuildingEntry[], inventory: Inventory, invento
         currentInventory[resource] = (currentInventory[resource] ?? 0) - amount;
         currentUsed -= amount;
       }
-      // Produce outputs (scaled by condition)
-      for (const [resource, baseAmount] of resourceEntries(def.produces)) {
-        const amount = Math.max(1, Math.round(baseAmount * condMod));
+      // Produce outputs (scaled by condition and deployed tools)
+      const output = getBuildingOutput(building, buildings, season, bonuses);
+      for (const [resource, amount] of resourceEntries(output)) {
         const space = inventoryCapacity - currentUsed;
         const actualAmount = Math.min(amount, space);
         if (actualAmount > 0) {
@@ -424,7 +435,8 @@ export function simulateEconomy(state: EconomyState, random: () => number): Econ
   let currentGarrison = garrison;
 
   // ----- 1. PRODUCTION -----
-  const production = runProduction(buildings, inventory, inventoryCapacity, season);
+  const agriculture = getAgricultureBonuses(state.blacksmith);
+  const production = runProduction(buildings, inventory, inventoryCapacity, season, agriculture);
   let currentInventory = production.inventory;
   report.push(...production.report);
 
@@ -433,7 +445,7 @@ export function simulateEconomy(state: EconomyState, random: () => number): Econ
   // before any food spiral.
   const farmMult = SEASON_FARM_MULTIPLIERS[season] ?? 1.0;
   const subsistenceScale = diffCfg.subsistenceScale ?? 0.7;
-  const subsistenceGrain = Math.max(3, Math.floor(currentPopulation * subsistenceScale * farmMult));
+  const subsistenceGrain = Math.max(3, Math.floor(currentPopulation * subsistenceScale * farmMult * (1 + agriculture.food)));
   currentInventory = { ...currentInventory, grain: (currentInventory.grain || 0) + subsistenceGrain };
 
   // Summarize production

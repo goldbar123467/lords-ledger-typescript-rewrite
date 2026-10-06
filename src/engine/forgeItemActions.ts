@@ -1,3 +1,4 @@
+import {getAgriculturalTool, isWorkingAgriculturalTool} from './forgeAgriculture.ts';
 import {hasDefenseBonus} from './forgeReadiness.ts';
 import {FORGE_RESOURCES, SCRAP_RECOVERY_RATE, getAvailableBuyers, getBuyerPrice, type ForgeBuyerDefinition, type ForgeBuyerId, type ForgeSeason, type ForgeResourceId} from '../data/blacksmith.ts';
 export type ForgeItemCommand =
@@ -37,9 +38,10 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
  const remaining=inventory.filter(candidate=>candidate!==item);
  if(type==='BLACKSMITH_EQUIP_ITEM') {
   const militaryBonus=item.militaryBonus ?? 0;
+  if(getAgriculturalTool(item.itemId)&&!isWorkingAgriculturalTool(item)) return null;
   if(!amount(militaryBonus) || ((item.category==='weapon'||item.category==='armor')&&!hasDefenseBonus(militaryBonus))) return null;
   return {patch:{blacksmith:{...bs,inventory:remaining,equipped:[...equipped,item]}},
-   message:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
+   message:getAgriculturalTool(item.itemId)?`Deployed a ${item.grade} ${item.name} on the estate.`:`Equipped a ${item.grade} ${item.name} to the garrison (+${militaryBonus} military).`};
  }
  if(type==='BLACKSMITH_SCRAP_ITEM') {
   const cost=item.cost ?? {}, materials={...state.inventory}, recovered:Partial<Record<ForgeResourceId,number>>={};

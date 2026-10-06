@@ -1091,6 +1091,7 @@ function reduceGame(state, action, random) {
         inventory: state.inventory,
         inventoryCapacity: state.inventoryCapacity,
         buildings: state.buildings,
+        blacksmith: state.blacksmith,
         garrison: state.garrison,
         castleLevel: state.castleLevel,
         taxRate: state.taxRate,

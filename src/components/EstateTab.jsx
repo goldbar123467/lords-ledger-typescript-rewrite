@@ -1,3 +1,5 @@
+import {getBuildingOutput} from '../engine/economyEngine.ts';
+import {getAgricultureBonuses} from '../engine/forgeAgriculture.ts';
 /**
  * EstateTab.jsx
  *
@@ -502,6 +504,8 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
   const upgradeEligibility = getUpgradeEligibility(state, buildingIndex);
   const canUpgrade = upgradeEligibility.allowed;
 
+  const output = getBuildingOutput(building, state.buildings, state.season, getAgricultureBonuses(state.blacksmith));
+
   // Season modifier display
   const seasonMult = def.isFarm ? SEASON_FARM_MULTIPLIERS[state.season] : 1.0;
 
@@ -578,9 +582,9 @@ function BuiltBuildingCard({ building, buildingIndex, state, onRepair, onUpgrade
       {/* Stats */}
       <div className="text-sm space-y-0.5 mb-2">
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Output:</span>{" "}
-          {Object.entries(def.produces).map(([res, amt], i) => {
-            const effective = condMod === 0 ? 0 : Math.max(1, Math.round(amt * condMod * seasonMult));
+          <span title="Before storage limits and input availability" style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Potential output:</span>{" "}
+          {Object.entries(def.produces).map(([res], i) => {
+            const effective = output[res] ?? 0;
             const cfg = RESOURCE_CONFIG[res];
             const color = PRODUCTION_COLORS[res] || "#c4a24a";
             return (
@@ -812,7 +816,7 @@ function BuildCard({ building, state, onBuild, isSynergyBuilding, index }) {
           <span style={{ color: "#c4a24a" }}>{building.workersNeeded ?? 1} {(building.workersNeeded ?? 1) === 1 ? "family" : "families"}</span>
         </div>
         <div>
-          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Produces:</span>{" "}
+          <span style={{ fontFamily: '"Cinzel", serif', color: "#8a7a3a" }}>Base production:</span>{" "}
           {Object.entries(building.produces).map(([res, amt], i) => {
             const cfg = RESOURCE_CONFIG[res];
             const color = PRODUCTION_COLORS[res] || "#c4a24a";
