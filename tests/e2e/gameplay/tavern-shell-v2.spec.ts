@@ -21,7 +21,7 @@ for(const [index,row] of warnings.entries())test(`Tavern warning ${index} identi
 for(const width of [1366,390])test(`Tavern Wall stash pays 25d once and stays empty after reload at ${width}`,async({page},info)=>{
  const loaded=await enter(page,{},width);await page.getByText('✦',{exact:true}).click();await expect(page.getByText('EMPTY',{exact:true})).toBeVisible();
  const found=snapshot(gameReducer(loaded.visited,{type:'TAVERN_WALL_STASH'}));expect(found.denarii).toBe(725);await save(page,found);await page.screenshot({path:info.outputPath('stash.png'),animations:'disabled'});
- await page.getByText('EMPTY',{exact:true}).click();await save(page,found);await page.reload();await page.getByRole('button',{name:'Load saved game',exact:true}).click();await page.locator('button[title="Enter the Boar\'s Head Tavern"]').click();await expect(page.getByText('EMPTY',{exact:true})).toBeVisible();await expect(page.getByText('✦',{exact:true})).toHaveCount(0);
+ const empty=page.getByRole('button',{name:'Empty wall crack',exact:true});await expect(empty).toHaveAttribute('aria-disabled','true');await empty.press('Enter');await save(page,found);await page.reload();await page.getByRole('button',{name:'Load saved game',exact:true}).click();await page.locator('button[title="Enter the Boar\'s Head Tavern"]').click();await expect(page.getByText('EMPTY',{exact:true})).toBeVisible();await expect(page.getByText('✦',{exact:true})).toHaveCount(0);
  const revisited=snapshot(gameReducer(found,{type:'TAVERN_VISIT'}));await save(page,revisited);expect(loaded.errors).toEqual([]);
 });
 test('Tavern tip keeps authored warning and dismisses without a payment',async({page},info)=>{

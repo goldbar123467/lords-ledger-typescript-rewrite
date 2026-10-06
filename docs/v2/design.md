@@ -65,3 +65,8 @@ Four historical fields (totalVisits, gambitTotalWins, gambitTotalLosses, gambitN
 ## Tavern shell contracts (2026-10-06)
 
 Derive five station IDs from their authored card tuple. Use a discriminated command union for child results and finite companion offers. The renderer's string callbacks narrow against the corresponding authored registry; wrong-owner IDs cannot construct paid commands. Saved-state props are shallow readonly, not recursively immutable. Entry animation ownership and once-only visit logging use separate effects, avoiding animation resets when a caller changes dispatch identity. Structural migration preserves the inherited tiny secret span and unowned stash message timer for a separate keyboard/lifecycle correction. Whole shell presentation remains IN PROGRESS.
+
+
+## Tavern secret target and feedback (2026-10-06)
+
+Keep the star/EMPTY easter egg and authored 25d reward, but expose a neutral Inspect the wall crack name and a quiet opaque 44px native control. Reuse one DOM button after collection; remove its callback and set aria-disabled while preserving focus, preventing duplicate reward actions. The existing keyboard-only reading-focus helper serves only the Wall wrapper. The existing timeout owner now owns the unchanged four-second reward message and cancels on unmount. Status semantics improve feedback structure; actual screen-reader/native-zoom and dim surrounding graffiti remain IN PROGRESS.

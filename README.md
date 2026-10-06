@@ -55,7 +55,7 @@ The Bard view now has checked saved-content, answer callback and DOM-ref contrac
 
 Knight's Gambit now uses checked TSX props and one discriminated stage instead of five separate game-state hooks. Thirteen browser checks cover every weapon pair, all stakes, paid replay, cancellation and the fifth round. Shared owned timeouts cancel all four Gambit callbacks on teardown; broader minigame UI review remains unfinished.
 
-The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All362unit checks and27focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The inherited hidden stash still needs keyboard access and timer cleanup in a separate section; broader interface and final campaign verification remain incomplete.
+The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All362unit checks and27focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
 
 ## Code map
 
@@ -87,7 +87,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct Tavern stash keyboard access and timer ownership, then complete the app and reducer.
+1. Correct App save/status and navigation callback lifecycle, then complete the app and reducer.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.

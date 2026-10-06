@@ -13,6 +13,8 @@ import type { GameSnapshot } from '../save/saveGame.ts';
 import type { GambitWeapon } from '../engine/tavernGambit.ts';
 import type { RatRunResult } from './RatsInCellar.tsx';
 import { isCompanionOfferId } from '../engine/tavernCompanion.ts';
+import { useOwnedTimeout } from '../hooks/useOwnedTimeout.ts';
+import { useHallReadingFocus } from '../hooks/useHallReadingFocus.ts';
 import type { MartaOfferId, AldricOfferId, StaticGraffiti } from '../data/tavern.ts';
 
 export type TavernAction =
@@ -161,6 +163,7 @@ function StationCard({ station, disabled, disabledText, onClick }: Readonly<{
 function TavernWall({ state, onStashClick }: Readonly<{
   state: Readonly<GameSnapshot>; onStashClick: () => void;
 }>) {
+  const keepReadingFocusVisible = useHallReadingFocus();
   const tavern = state.tavern ?? {};
   const dynamicMessages = useMemo(() => {
     return WALL_DYNAMIC_CONDITIONS
@@ -181,6 +184,7 @@ function TavernWall({ state, onStashClick }: Readonly<{
 
   return (
     <div
+      onFocus={keepReadingFocusVisible}
       className="rounded-lg border p-3 mt-3"
       style={{
         backgroundColor: "#120e08",
@@ -236,33 +240,27 @@ function TavernWall({ state, onStashClick }: Readonly<{
         ))}
 
         {/* Secret stash */}
-        {!tavern.wallStashFound ? (
-          <span
-            onClick={onStashClick}
-            className="cursor-pointer select-none inline-block mt-1"
-            style={{
-              fontSize: "9px",
-              color: "#2a2010",
-              opacity: 0.3,
-              fontFamily: "monospace",
-              letterSpacing: "1px",
-            }}
-            title=""
-          >
-            {"\u2726"}
-          </span>
-        ) : (
-          <span
-            className="inline-block mt-1"
-            style={{
-              fontSize: "8px",
-              color: "#3a3020",
-              fontFamily: "monospace",
-            }}
-          >
-            EMPTY
-          </span>
-        )}
+        <button
+          type="button"
+          onClick={tavern.wallStashFound ? undefined : onStashClick}
+          aria-label={tavern.wallStashFound ? "Empty wall crack" : "Inspect the wall crack"}
+          aria-disabled={tavern.wallStashFound === true}
+          className="select-none inline-block mt-2 rounded"
+          style={{
+            minWidth: 44,
+            minHeight: 44,
+            padding: "0.5rem",
+            fontSize: "0.9375rem",
+            color: "#c9b38d",
+            backgroundColor: "#231e16",
+            border: "1px solid #8a7a5a",
+            fontFamily: "monospace",
+            cursor: tavern.wallStashFound ? "default" : "pointer",
+          }}
+          title={tavern.wallStashFound ? "Empty wall crack" : "Inspect the wall crack"}
+        >
+          {tavern.wallStashFound ? "EMPTY" : "\u2726"}
+        </button>
       </div>
     </div>
   );
@@ -377,6 +375,7 @@ function StrangerCard({ encounter, state, onTrade, onDismiss }: Readonly<{
 // ---------------------------------------------------------------------------
 
 export default function Tavern({ state, dispatch, onClose }: TavernProps) {
+  const scheduleTimeout = useOwnedTimeout();
   const [activeStation, setActiveStation] = useState<TavernStationId | null>(null);
   const [stashMessage, setStashMessage] = useState<string | null>(null);
   const [entering, setEntering] = useState(true);
@@ -498,7 +497,7 @@ export default function Tavern({ state, dispatch, onClose }: TavernProps) {
       setStashMessage(
         "You found a coin purse hidden in a crack in the wall. Some previous lord must have forgotten it. +25d"
       );
-      window.setTimeout(() => setStashMessage(null), 4000);
+      scheduleTimeout(() => setStashMessage(null), 4000);
     }
   }
 
@@ -673,6 +672,7 @@ export default function Tavern({ state, dispatch, onClose }: TavernProps) {
         {/* Wall stash found message */}
         {stashMessage && (
           <div
+            role="status"
             className="text-center mb-2 py-2 rounded"
             style={{
               backgroundColor: "#2a2a10",
