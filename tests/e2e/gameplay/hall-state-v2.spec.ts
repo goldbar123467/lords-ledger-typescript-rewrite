@@ -27,6 +27,7 @@ for(const width of [390,1366])test('historical Hall shell values survive Summary
  await expect(page.getByText('An older campaign title',{exact:true})).toBeVisible();await expect(page.getByText('An older unrest narrative.',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Summary',exact:true}).click();
  await page.screenshot({path:info.outputPath('historical-summary.png'),fullPage:true,animations:'disabled'});
+ await expect(page.getByText('+50',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(raw);
  await page.getByRole('button',{name:'Acknowledge',exact:true}).click();
  await page.getByRole('button',{name:'Save game',exact:true}).click();

@@ -1,3 +1,4 @@
+import { planHallEventDismissal } from './hallConsequences.ts';
 import { planCouncilVote, planDecreeIssue, planDecreeRevocation } from './hallCivic.ts';
 import { planDisputeRuling } from './disputeActions.ts';
 /**
@@ -3133,20 +3134,10 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
 
     case "HALL_DISMISS_EVENT": {
+      const plan = planHallEventDismissal(state);
+      if (!plan) return state;
       const prevHall = state.greatHall;
-      const evt = prevHall.pendingHallEvent;
-      if (!evt) return state;
-
-      // Apply crisis/peak effects
-      const clamp = (v) => Math.max(0, Math.min(100, v));
-      const pMeters = prevHall.meters;
-      const eff = evt.effects || {};
-      const eMeters = {
-        people: clamp(pMeters.people + (eff.people || 0)),
-        treasury: clamp(pMeters.treasury + (eff.treasury || 0)),
-        church: clamp(pMeters.church + (eff.church || 0)),
-        military: clamp(pMeters.military + (eff.military || 0)),
-      };
+      const { event: evt, effects: eff, meters: eMeters } = plan;
 
       // Log the event
       const evtLogEntry = {

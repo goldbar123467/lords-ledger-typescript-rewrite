@@ -65,7 +65,7 @@ function flags(value: unknown, knownKeys: readonly string[]): boolean {
   return record(value) && !knownKeys.some(key => key in value && !serialized(value, key)) &&
     Object.values(value).every(flag => typeof flag === 'boolean');
 }
-function pending(value: unknown): boolean {
+export function isHallPendingEvent(value: unknown): value is HallPendingEvent {
   if (!record(value) || !['type', 'text'].every(key => serialized(value, key)) ||
       !['meter', 'chronicle', 'effects'].every(key => !(key in value) || serialized(value, key)) ||
       (value.type !== 'crisis' && value.type !== 'peak') || typeof value.text !== 'string' || value.text.trim().length === 0) return false;
@@ -87,6 +87,6 @@ export function validateHallConsequenceState(value: unknown): string | null {
   if (value.compoundFlags != null && !flags(value.compoundFlags, compoundKeys)) return 'Save Great Hall compound flags are invalid.';
   if (value.crisisTriggered != null && !flags(value.crisisTriggered, hallMeterKeys)) return 'Save Great Hall crisis flags are invalid.';
   if (value.peakTriggered != null && !flags(value.peakTriggered, hallMeterKeys)) return 'Save Great Hall peak flags are invalid.';
-  if (value.pendingHallEvent != null && !pending(value.pendingHallEvent)) return 'Save Great Hall pending event is invalid.';
+  if (value.pendingHallEvent != null && !isHallPendingEvent(value.pendingHallEvent)) return 'Save Great Hall pending event is invalid.';
   return null;
 }

@@ -1,3 +1,4 @@
+import { hallMeterDeltas } from '../engine/hallConsequences.ts';
 import { hasFeastedInSeason } from '../engine/feast.ts';
 import { getAvailableCouncilTopic, isCouncilUnlocked } from '../engine/hallCivic.ts';
 /**
@@ -356,10 +357,7 @@ function SeasonSummary({ hall, state, onReturn }) {
   const lastSnapshot = meterHistory.length >= 2
     ? meterHistory[meterHistory.length - 2].meters
     : DEFAULT_METERS;
-  const deltas = {};
-  for (const key of ["people", "treasury", "church", "military"]) {
-    deltas[key] = meters[key] - (lastSnapshot[key] || 50);
-  }
+  const deltas = hallMeterDeltas(meters, lastSnapshot);
 
   const meterLabels = { people: "People", treasury: "Treasury", church: "Church", military: "Military" };
   const meterColors = { people: "#2d5a2d", treasury: "#c4a24a", church: "#6a4a8a", military: "#8b2020" };
