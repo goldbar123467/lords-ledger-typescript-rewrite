@@ -16,7 +16,7 @@ The project retains React, Vite, Tailwind CSS, and its DOM interface. CSS, HTML,
 
 ## Current implementation
 
-The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing and Marta/Aldric companion actions have separate checked owners. Companion selection, offer resolution, receipts, and Chronicle updates now share orchestration while preserving all eight distinct authored offers. The main reducer and remaining orchestration still need decomposition.
+The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing, Marta/Aldric companion actions, and Market actions have separate checked owners. Companion selection and resolution preserve all eight authored offers. Posted and negotiated trades share payment, inventory, food, supply and spice-faith settlement while retaining distinct fill rules, labels and bargain receipts. The main reducer and remaining orchestration still need decomposition.
 
 Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
@@ -39,13 +39,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Browser driver (`13ca781`) | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
 | QA diagnostics (`fbd8c8f`) | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
 | Companion consolidation (`b9d43c5`) | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | Selecting an offer from an accepted save with omitted history could produce an unsavable state. The next checkpoint fixes that inherited defect; complete save closure remains unproved |
-| Companion history correction | 779 unit tests, typecheck, lint, and build passed; both native regressions failed before and passed after. Independent tester passed four browser cases and 46 write/read/resave cases; grader verified existing-state parity, closure and no-op behavior | G-CA01 is closed for both companions. Successful selection initializes omitted history without changing existing receipts or RNG behavior; broader runtime, interface and campaign gates remain |
+| Companion history correction (`8f866b1`) | 779 unit tests, typecheck, lint, and build passed; both native regressions failed before and passed after. Independent tester passed four browser cases and 46 write/read/resave cases; grader verified existing-state parity, closure and no-op behavior | G-CA01 is closed for both companions. Successful selection initializes omitted history without changing existing receipts or RNG behavior; broader runtime, interface and campaign gates remain |
+| Market consolidation | 781 unit tests, typecheck, lint, build and 16 browser cases passed; 40,672 old/new state results and 37,552 save outputs matched. Independent tester passed 11 browser cases; both reviewers accepted bounded preservation | G-MA01 remains open: fractional stock can create an unsavable fractional pending bargain. Posted fractional fills remain supported; full Market, runtime and interface acceptance is pending |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,877 lines**, versus 45,347 at baseline. Companion consolidation removed 126 net production lines, including its new domain module; line totals also reflect formatting. The history correction's inclusive subtotal was **80,479 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,734 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines, including its new domain module; line totals also reflect comments and formatting. Its inclusive subtotal was **80,400 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -65,7 +66,7 @@ Production text measured **44,877 lines**, versus 45,347 at baseline. Companion 
 
 ## Next rewrite sections
 
-1. Continue orchestration decomposition and state, command, save, arithmetic, and replay validation. Inspect remaining Market and haggle settlement duplication next.
+1. Repair fractional pending-haggle quantity and save closure while preserving posted fractional fills, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

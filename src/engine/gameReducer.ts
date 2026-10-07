@@ -5,7 +5,6 @@ import type {GameSnapshot} from '../save/saveGame.ts';
 import type {GameCommand} from './gameCommands.ts';
 import type {EventDefinition} from '../data/eventTypes.ts';
 import type {BuildingId, BuildingDefinition} from '../data/buildings.ts';
-import type {ResourceId} from '../data/economy.ts';
 import type {RandomSource} from './eventSelector.ts';
 import { settlePendingEvent } from './eventChoice.ts';
 import { createInitialState } from './initialGameState.ts';
@@ -50,13 +49,14 @@ import { rollStrangerEncounter, strangerTradeTerms } from "./tavernEncounter.ts"
 import { isBardContent, isBardSolvedIds, nextBardContent } from "./tavernBard.ts";
 import {reduceCompanionAction} from "./tavernCompanionActions.ts";
 import { resolveFeast } from "./feast.ts";
-import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputation, marketSaleProceeds, marketQuickSalePrice, marketTradePrice, openingHaggleOffer } from "./marketHaggle.ts";
+import {FOREIGN_TRADERS} from '../data/market.ts';
+import {reduceMarketAction} from './marketActions.ts';
 
 import { canBuildBuilding, getTotalFood, getBuildingType, getRepairCost } from "./economyEngine.ts";
 import { isBuildingIndex, nextBuildingInstanceId, getUpgradeEligibility } from "./buildingActions.ts";
 import { getMilitaryReadiness } from './militaryReadiness.ts';
 import { planMilitaryAction } from './militaryActions.ts';
-import { isPositivePrice, isPositiveQuantity } from "./transactionValidation.ts";
+import { isPositivePrice } from "./transactionValidation.ts";
 import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
 import { planAudienceResponse } from "./audienceActions.ts";
@@ -64,7 +64,6 @@ import {getConstructionCost} from './forgeTools.ts';
 import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
-  BASE_BUY_PRICES, BASE_SELL_PRICES,
   MAX_GARRISON,
 } from "../data/economy.ts";
 import { ALL_FLIPS, isFlipId, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.ts";
@@ -78,8 +77,6 @@ import {
   removeFromGarrison,
   getInitialMilitaryState, MILITARY_SCRIBES_NOTES,
 } from "../data/military.ts";
-import {remainingMarketSupply,consumeMarketSupply} from "./marketSupply.ts";
-import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS } from "../data/market.ts";
 import { BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS } from "../data/tavern.ts";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.ts";
 import { getInitialPeopleState } from "../data/people.ts";
@@ -108,34 +105,6 @@ export const initialState = createInitialState();
 
 
 
-
-
-
-/**
- * B-14 FIX: Diminishing-returns faith gain from spice purchases.
- *
- * Spices are marketed as boosting faith each season via church ceremonies.
- * Without a ceiling, spamming spice purchases drives faith near 100.
- * Gain scales down across a year (reset each new year):
- *   1st purchase: +3 faith per unit (full)
- *   2nd-3rd:      +1 faith per unit (half-ish)
- *   4th+:         +0 faith per unit (plateau)
- *
- * @param {number} prevCount  spicePurchasesThisYear BEFORE this buy
- * @param {number} unitsBought number of spice units bought in this transaction
- * @returns {number} total faith delta (integer, >= 0)
- */
-function computeSpiceFaithGain(prevCount: number, unitsBought: number) {
-  if (unitsBought <= 0) return 0;
-  let gain = 0;
-  for (let i = 0; i < unitsBought; i++) {
-    const n = prevCount + i;
-    if (n < 1) gain += 3;
-    else if (n < 3) gain += 1;
-    else gain += 0;
-  }
-  return gain;
-}
 
 
 
@@ -346,306 +315,14 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       };
     }
 
-    // -----------------------------------------------------------------------
-    // SELL_RESOURCE
-    // -----------------------------------------------------------------------
-    case "SELL_RESOURCE": {
-      const { resource, quantity, merchantId } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (typeof resource !== "string" || !isPositiveQuantity(quantity) ||
-          (merchantId === undefined ? !Object.hasOwn(BASE_SELL_PRICES, resource) :
-            !haggleMerchant(merchantId, state.season, resource, "sell"))) return state;
-      const available = state.inventory[resource] || 0;
-      if (available <= 0) return state;
-
-      const sellQty = Math.min(quantity, available);
-      const activated = state.synergies?.activated ?? [];
-      const price = marketQuickSalePrice(state.marketPrices, state.season, merchantId, resource, activated) || 0;
-      if (!isPositivePrice(price)) return state;
-      const isWoolish = resource === "wool" || resource === "cloth";
-      const income = marketSaleProceeds(price, sellQty, resource, state.blacksmith);
-      const newInventory = { ...state.inventory, [resource]: available - sellQty };
-
-      const prevSynergies = state.synergies ?? {};
-      const newWoolTrades = prevSynergies.woolTrades + (isWoolish ? sellQty : 0);
-      const newTradeTypes = prevSynergies.tradeTypes.includes(resource)
-        ? prevSynergies.tradeTypes
-        : [...prevSynergies.tradeTypes, resource];
-
-      const sellCfg: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale" };
-      return {
-        ...state,
-        inventory: newInventory,
-        denarii: state.denarii + income,
-        food: getTotalFood(newInventory),
-        tradeCount: (state.tradeCount || 0) + 1,
-        synergies: { ...prevSynergies, woolTrades: newWoolTrades, tradeTypes: newTradeTypes },
-        chronicle: addChronicle(state.chronicle, `Sold ${sellQty} ${sellCfg[resource] || resource} for ${income}d.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // BUY_RESOURCE
-    // -----------------------------------------------------------------------
-    case "BUY_RESOURCE": {
-      const { resource, quantity, merchantId } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (typeof resource !== "string" || !isPositiveQuantity(quantity) ||
-          (merchantId === undefined ? !Object.hasOwn(BASE_BUY_PRICES, resource) :
-            !haggleMerchant(merchantId, state.season, resource, "buy"))) return state;
-
-      const price = marketTradePrice(state.marketPrices, state.season, merchantId, resource, "buy") || 0;
-      if (!isPositivePrice(price)) return state;
-
-      const maxAfford = Math.floor(state.denarii / price);
-      const buyQty = Math.min(quantity, maxAfford, remainingMarketSupply(state.market,state.turn,resource));
-      if (buyQty <= 0) return state;
-
-      const supply=consumeMarketSupply(state.market,state.turn,resource,buyQty);
-      if(!supply)return state;
-      const totalCost = price * buyQty;
-      const currentQty = state.inventory[resource] || 0;
-      const newInventory = { ...state.inventory, [resource]: currentQty + buyQty };
-
-      const prevSynergies = state.synergies ?? {};
-      const newSpicePurchases = prevSynergies.spicePurchases + (resource === "spices" ? buyQty : 0);
-      const newTradeTypes = prevSynergies.tradeTypes.includes(resource)
-        ? prevSynergies.tradeTypes
-        : [...prevSynergies.tradeTypes, resource];
-
-      // B-14 FIX: diminishing-returns faith gain on spice buys.
-      const prevChapelBuy = state.chapel ?? {};
-      const prevSpiceYearBuy = prevChapelBuy.spicePurchasesThisYear ?? 0;
-      const faithGainBuy = resource === "spices"
-        ? computeSpiceFaithGain(prevSpiceYearBuy, buyQty)
-        : 0;
-      const nextChapelBuy = resource === "spices"
-        ? {
-            ...prevChapelBuy,
-            faith: Math.min(100, Math.max(0, (prevChapelBuy.faith ?? 50) + faithGainBuy)),
-            spicePurchasesThisYear: prevSpiceYearBuy + buyQty,
-          }
-        : prevChapelBuy;
-
-      const buyCfg: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", salt: "Salt", tools: "Tools", spices: "Spices" };
-      return {
-        ...state,
-        denarii: state.denarii - totalCost,
-        market:{...state.market,supply},
-        inventory: newInventory,
-        food: getTotalFood(newInventory),
-        tradeCount: (state.tradeCount || 0) + 1,
-        synergies: { ...prevSynergies, spicePurchases: newSpicePurchases, tradeTypes: newTradeTypes },
-        chapel: nextChapelBuy,
-        chronicle: addChronicle(state.chronicle, `Bought ${buyQty} ${buyCfg[resource] || resource} for ${totalCost}d.`, state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // HAGGLE_START — Player approaches a merchant to haggle
-    // -----------------------------------------------------------------------
-    case "HAGGLE_START": {
-      const { merchantId, resource, quantity, mode } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      if (!isMarketReputation(state.market?.reputation)) return state;
-      if (state.market?.activeHaggle) return state;
-      if (state.market?.activeMarketEvent?.effect?.noHaggling) return state;
-      if (!isPositiveQuantity(quantity) || typeof resource !== "string" ||
-          (mode !== "sell" && mode !== "buy")) return state;
-      if (quantity > 1_000_000) return state;
-      const merchant = haggleMerchant(merchantId, state.season, resource, mode);
-      if (!merchant) return state;
-
-      const fairPrice = marketTradePrice(state.marketPrices, state.season, merchantId, resource, mode);
-      if (!Number.isSafeInteger(fairPrice) || !isPositivePrice(fairPrice)) return state;
-      if (mode === "buy" && (quantity > Math.floor(state.denarii / fairPrice)||quantity>remainingMarketSupply(state.market,state.turn,resource))) return state;
-
-      const difficulty = merchant.difficulty;
-
-      const rep = state.market?.reputation?.[merchantId] ?? 50;
-      const openingOffer = openingHaggleOffer(fairPrice, difficulty, mode, rep);
-
-      const qty = Math.min(quantity, mode === "sell" ? (state.inventory[resource] || 0) : quantity);
-      if (qty <= 0) return state;
-
-      return {
-        ...state,
-        market: {
-          ...state.market,
-          activeHaggle: {
-            merchantId, mode, resource, quantity: qty, fairPrice,
-            currentOffer: openingOffer, playerCounter: null,
-            round: 1, maxRounds: HAGGLE_CONFIG.maxRounds,
-            difficulty, status: "open",
-          },
-        },
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // HAGGLE_COUNTER — Player makes a counter-offer
-    // -----------------------------------------------------------------------
-    case "HAGGLE_COUNTER": {
-      const { counterPrice } = action.payload ?? {};
-      if (state.phase !== "management") return state;
-      const haggle = state.market?.activeHaggle;
-      if (!haggle || haggle.status !== "open") return state;
-      if (!isActiveHaggle(haggle, state.season, state.marketPrices, state.market?.reputation) ||
-          !isHaggleCounterPrice(counterPrice, haggle.fairPrice, haggle.mode)) return state;
-
-      const { fairPrice, currentOffer, round, maxRounds, difficulty, mode } = haggle;
-
-      const priceDiff = mode === "sell"
-        ? (counterPrice - fairPrice) / fairPrice
-        : (fairPrice - counterPrice) / fairPrice;
-
-      const chances = HAGGLE_CONFIG.acceptChance[difficulty] || HAGGLE_CONFIG.acceptChance.medium;
-      let acceptProb = 0;
-      if (priceDiff <= 0.10) acceptProb = chances.withinTenPercent;
-      else if (priceDiff <= 0.20) acceptProb = chances.withinTwenty;
-      else acceptProb = chances.aboveMarket;
-
-      if (random() < acceptProb) {
-        return {
-          ...state,
-          market: {
-            ...state.market,
-            activeHaggle: { ...haggle, currentOffer: counterPrice, playerCounter: counterPrice, status: "accepted", round },
-          },
-        };
-      }
-
-      const step = HAGGLE_CONFIG.counterStep[difficulty] || 0.5;
-      let newOffer;
-      if (mode === "sell") {
-        newOffer = Math.max(1, Math.round(currentOffer + (counterPrice - currentOffer) * step));
-      } else {
-        newOffer = Math.max(1, Math.round(currentOffer - (currentOffer - counterPrice) * step));
-      }
-
-      const newRound = round + 1;
-      return {
-        ...state,
-        market: {
-          ...state.market,
-          activeHaggle: { ...haggle, currentOffer: newOffer, playerCounter: counterPrice, round: newRound, status: newRound >= maxRounds ? "final" : "open" },
-        },
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // HAGGLE_ACCEPT — Player accepts the current offer
-    // -----------------------------------------------------------------------
-    case "HAGGLE_ACCEPT": {
-      if (state.phase !== "management") return state;
-      const haggle = state.market?.activeHaggle;
-      if (!haggle) return state;
-      if (!isActiveHaggle(haggle, state.season, state.marketPrices, state.market?.reputation)) return state;
-
-      const { merchantId, mode, resource, quantity, currentOffer, fairPrice } = haggle;
-      if (!isPositiveQuantity(quantity) || !isPositivePrice(currentOffer) || !isPositivePrice(fairPrice) ||
-          typeof resource !== "string" || (mode !== "sell" && mode !== "buy")) return state;
-      const price = currentOffer;
-      const prevMarket = state.market ?? {};
-      const prevSynergies = state.synergies ?? {};
-      const LABEL: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale", salt: "Salt", tools: "Tools", spices: "Spices" };
-
-      let newState;
-      if (mode === "sell") {
-        const available = state.inventory[resource] || 0;
-        if (available < quantity) return state;
-        const sellQty = quantity;
-        const income = marketSaleProceeds(price, sellQty, resource, state.blacksmith);
-        const newInventory = { ...state.inventory, [resource]: available - sellQty };
-        const isWoolish = resource === "wool" || resource === "cloth";
-        const newWoolTrades = prevSynergies.woolTrades + (isWoolish ? sellQty : 0);
-        const newTradeTypes = prevSynergies.tradeTypes.includes(resource)
-          ? prevSynergies.tradeTypes : [...prevSynergies.tradeTypes, resource];
-        const mName = LOCAL_MERCHANTS.find(m => m.id === merchantId)?.name || FOREIGN_TRADERS[state.season]?.name || "a merchant";
-        newState = {
-          ...state, inventory: newInventory, denarii: state.denarii + income,
-          food: getTotalFood(newInventory), tradeCount: (state.tradeCount || 0) + 1,
-          synergies: { ...prevSynergies, woolTrades: newWoolTrades, tradeTypes: newTradeTypes },
-          chronicle: addChronicle(state.chronicle, `Sold ${sellQty} ${LABEL[resource] || resource} to ${mName} for ${income}d (haggled from ${fairPrice}d each).`, state.season, state.year, state.turn, "action"),
-        };
-      } else {
-        const totalCost = price * quantity;
-        const supply=consumeMarketSupply(prevMarket,state.turn,resource,quantity);
-        if (!supply||state.denarii < totalCost) return state;
-        const currentQty = state.inventory[resource] || 0;
-        const newInventory = { ...state.inventory, [resource]: currentQty + quantity };
-        const newSpicePurchases = prevSynergies.spicePurchases + (resource === "spices" ? quantity : 0);
-        const newTradeTypes = prevSynergies.tradeTypes.includes(resource)
-          ? prevSynergies.tradeTypes : [...prevSynergies.tradeTypes, resource];
-        const mName = LOCAL_MERCHANTS.find(m => m.id === merchantId)?.name || FOREIGN_TRADERS[state.season]?.name || "a merchant";
-
-        // B-14 FIX: diminishing-returns faith gain on spice buys (same as BUY_RESOURCE).
-        const prevChapelHag = state.chapel ?? {};
-        const prevSpiceYearHag = prevChapelHag.spicePurchasesThisYear ?? 0;
-        const faithGainHag = resource === "spices"
-          ? computeSpiceFaithGain(prevSpiceYearHag, quantity)
-          : 0;
-        const nextChapelHag = resource === "spices"
-          ? {
-              ...prevChapelHag,
-              faith: Math.min(100, Math.max(0, (prevChapelHag.faith ?? 50) + faithGainHag)),
-              spicePurchasesThisYear: prevSpiceYearHag + quantity,
-            }
-          : prevChapelHag;
-
-        newState = {
-          ...state, denarii: state.denarii - totalCost, inventory: newInventory,
-          market:{...prevMarket,supply},
-          food: getTotalFood(newInventory), tradeCount: (state.tradeCount || 0) + 1,
-          synergies: { ...prevSynergies, spicePurchases: newSpicePurchases, tradeTypes: newTradeTypes },
-          chapel: nextChapelHag,
-          chronicle: addChronicle(state.chronicle, `Bought ${quantity} ${LABEL[resource] || resource} from ${mName} for ${totalCost}d (haggled from ${fairPrice}d each).`, state.season, state.year, state.turn, "action"),
-        };
-      }
-
-      const wonHaggle = mode === "sell" ? price >= fairPrice * 0.9 : price <= fairPrice * 1.1;
-      const wasFair = Math.abs(price - fairPrice) / fairPrice <= 0.1;
-      let repChange = REPUTATION_CONFIG.anyDeal;
-      if (wasFair) repChange += REPUTATION_CONFIG.fairDeal;
-      if (haggle.round === 1) repChange += REPUTATION_CONFIG.quickAccept;
-      const prevRep = prevMarket.reputation?.[merchantId] ?? 50;
-      const newRep = Math.max(REPUTATION_CONFIG.min, Math.min(REPUTATION_CONFIG.max, prevRep + repChange));
-
-      return {
-        ...newState,
-        market: {
-          ...prevMarket, ...newState.market, activeHaggle: null,
-          reputation: { ...prevMarket.reputation, [merchantId]: newRep },
-          tradesThisSeason: (prevMarket.tradesThisSeason || 0) + 1,
-          totalTradesLifetime: (prevMarket.totalTradesLifetime || 0) + 1,
-          totalHagglesWon: (prevMarket.totalHagglesWon || 0) + (wonHaggle ? 1 : 0),
-          totalHagglesLost: (prevMarket.totalHagglesLost || 0) + (wonHaggle ? 0 : 1),
-          denariiEarnedFromTrade: (prevMarket.denariiEarnedFromTrade || 0) + (mode === "sell" ? marketSaleProceeds(currentOffer, quantity, resource, state.blacksmith) : 0),
-          denariiSpentOnTrade: (prevMarket.denariiSpentOnTrade || 0) + (mode === "buy" ? currentOffer * quantity : 0),
-          haggleTradesUsed: (prevMarket.haggleTradesUsed || 0) + 1,
-          lastTradedSeason: { ...(prevMarket.lastTradedSeason ?? {}), [merchantId]: state.turn },
-        },
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // HAGGLE_WALK_AWAY — Player abandons the current haggle
-    // -----------------------------------------------------------------------
-    case "HAGGLE_WALK_AWAY": {
-      if (state.phase !== "management") return state;
-      const haggle = state.market?.activeHaggle;
-      if (!haggle) return state;
-      if (!isActiveHaggle(haggle, state.season, state.marketPrices, state.market?.reputation)) return state;
-      const { merchantId } = haggle;
-      const prevMarket = state.market ?? {};
-      const prevRep = prevMarket.reputation?.[merchantId] ?? 50;
-      const newRep = Math.max(REPUTATION_CONFIG.min, prevRep + REPUTATION_CONFIG.walkAway);
-      return {
-        ...state,
-        market: { ...prevMarket, activeHaggle: null, reputation: { ...prevMarket.reputation, [merchantId]: newRep } },
-        chronicle: addChronicle(state.chronicle, "You walked away from a deal at the market.", state.season, state.year, state.turn, "action"),
-      };
-    }
+    // Posted and negotiated transactions share one pure Market owner.
+    case "SELL_RESOURCE":
+    case "BUY_RESOURCE":
+    case "HAGGLE_START":
+    case "HAGGLE_COUNTER":
+    case "HAGGLE_ACCEPT":
+    case "HAGGLE_WALK_AWAY":
+      return reduceMarketAction(state, action, random);
 
     // -----------------------------------------------------------------------
     // SET_TAX_RATE
