@@ -10,11 +10,12 @@ and evidence gates. Rewrite sections are committed on the independent
 ## Playwright Quick Reference
 
 - Config: `playwright.config.ts` (Chromium and gameplay projects, isolated Vite server on 127.0.0.1:5182 with no reuse).
-- Helpers: `tests/e2e/helpers.js` — `startGame()`, `navigateToTab()`,
+- Helpers: `tests/e2e/helpers.ts` — `startGame()`, `navigateToTab()`,
   `playOneTurn()`, `dismissOverlay()`, `dismissTutorial()`.
 - Existing specs:
-  - `tests/e2e/gameplay/*.spec.js` and `*.spec.ts` — gameplay / flow
-  - `tests/e2e/visual/*.spec.js` — screenshot / unicode / icon audits
+  - `tests/e2e/gameplay/*.spec.ts` — gameplay / flow
+  - `tests/e2e/visual/*.spec.ts` — screenshot / Unicode / icon audits
+  - `tests/e2e/qa/*.spec.ts` — persona and exploratory diagnostics
 - Commands:
   ```bash
   npm run test                  # full suite
@@ -22,26 +23,36 @@ and evidence gates. Rewrite sections are committed on the independent
   npx playwright test <file>    # one spec
   npm run test:update-snapshots # refresh baselines
   ```
-- QA persona driver: `tests/e2e/qa/persona-qa.spec.js` (added this cycle).
-- Screenshots are written to `playtest-screenshots/`.
+- QA persona driver: `tests/e2e/qa/persona-qa.spec.ts`.
+- Current screenshots/reports use Playwright per-test output paths. Each persona
+  attaches its own `qa-findings.json` and `qa-summary.json`; summaries describe one
+  attempt, with its own duration. Historical root JSON and screenshots are preserved.
+- Inspect and approve actual images before updating baselines. Existing Linux
+  images do not establish Windows acceptance; thirteen Windows baselines are missing.
 
 ## Personas (3 roles)
 
-### 1. Noob (6th grader, first time)
-- Click everything, dismiss every tooltip without reading.
-- Never opens Market, Chapel, Blacksmith; lives on Estate + Simulate.
-- Goal: game should not soft-lock or crash on random clicking.
+### 1. Noob
+- Current driver: Easy start, up to six turns, random Estate/Map/Market/Military/
+  People/Chapel visits and shared turn progression.
+- Intended review: novice exploration without crashes or blocked progression.
 
 ### 2. Avg Gamer
-- Follows the intended loop: build 1–2 economy buildings, recruit a few
-  levy, then simulate.
-- Uses the Market occasionally; reads scribe's notes.
-- Goal: beat 10+ turns, meters should not auto-kill them.
+- Current driver: Normal start, optional Strip Farm attempt and up to eight turns.
+- Its old exact `Build` selector can miss the current cost-labelled action;
+  the diagnostic test does not prove that construction happened.
+- Intended review: paid economy construction and ordinary seasonal management.
 
 ### 3. Goat Gamer
-- Optimal play: Spring/Summer farm build, Autumn tax stacking, Winter
-  fortify, military synergy by year 2.
-- Goal: reach the 40-turn victory and unlock synergies.
+- Current driver: Hard start and up to twelve turns using shared turn progression.
+- It does not implement an optimal strategy or run a full forty-turn campaign.
+- Intended review: difficult campaigns, strategic play and natural synergy acquisition.
+
+The current persona assertions allow fewer than five Noob or three Avg/Goat page
+errors and do not reject recorded progression bugs. Exploratory QA logs/attaches
+errors and ignores the turn-helper result. Transport filtering can exclude genuine
+resource failures. Treat these as diagnostic policies pending repair; a green
+execution is not strict QA acceptance.
 
 ## Bug Logging Format (backlog.md)
 

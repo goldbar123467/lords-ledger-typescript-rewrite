@@ -1,34 +1,53 @@
 /**
  * Persona QA — Noob, Avg Gamer, Goat Gamer.
  *
- * Each persona plays 8 turns max, logs console errors, captures one
- * screenshot at end-of-run. Bug findings are appended to
- * `qa-findings.json` at the repo root for review.
+ * Personas inspect 6, 8 and 12 turns respectively, log console errors and capture one
+ * screenshot at end-of-run. Findings and one-persona summaries are attached
+ * under per-test output paths; historical repository reports stay intact.
  */
 
-import { test, expect } from "@playwright/test";
-import { startGame, dismissOverlay, playOneTurn } from "../helpers.ts";
-import { writeFileSync, existsSync, readFileSync } from "fs";
-import { resolve } from "path";
+import {test, expect, type Page, type TestInfo} from '@playwright/test';
+import {startGame, dismissOverlay, playOneTurn, type TurnDiagnostic, type TurnExitReason} from '../helpers.ts';
+import {writeFileSync} from 'node:fs';
 
-const FINDINGS_PATH = resolve(import.meta.dirname, "..", "..", "..", "qa-findings.json");
-const SUMMARY_PATH = resolve(import.meta.dirname, "..", "..", "..", "qa-summary.json");
-const SHOT_DIR = resolve(import.meta.dirname, "..", "..", "..", "playtest-screenshots");
-const RUN_START = Date.now();
+type Persona = 'Noob' | 'Avg' | 'Goat';
+interface QaError {type: 'pageerror' | 'console'; msg: string;}
+interface StateSnapshot {innerText: string | null; buttonLabels: string[];}
+interface PersonaBug extends StateSnapshot {
+  persona: Persona; turn: number; note: string;
+  reason: TurnExitReason | 'unknown'; iteration: number | null;
+}
+interface Finding {persona: Persona; errors: QaError[]; bugs: PersonaBug[];}
+interface RecordedFinding extends Finding {ts: string;}
 
-function record(finding) {
-  let out = [];
-  if (existsSync(FINDINGS_PATH)) {
-    try { out = JSON.parse(readFileSync(FINDINGS_PATH, "utf8")); } catch { /* empty */ }
+function summarizeFindings(findings: readonly RecordedFinding[], runStart: number) {
+  const byPersona: Partial<Record<Persona | 'Unknown', number>> = {};
+  const bySeverity = {pageerror: 0, console: 0};
+  let totalBugs = 0;
+  for (const finding of findings) {
+    const persona = finding.persona || 'Unknown';
+    byPersona[persona] = (byPersona[persona] || 0) + 1;
+    for (const error of finding.errors) bySeverity[error.type] += 1;
+    totalBugs += finding.bugs.length;
   }
-  out.push({ ts: new Date().toISOString(), ...finding });
-  writeFileSync(FINDINGS_PATH, JSON.stringify(out, null, 2));
+  return {timestamp: new Date().toISOString(), durationMs: Date.now() - runStart,
+    totalFindings: findings.length, totalBugs, byPersona, bySeverity};
 }
 
+async function record(finding: Finding, info: TestInfo, runStart: number) {
+  // Reports describe this persona attempt; no shared history is read or overwritten.
+  const findings: RecordedFinding[] = [{ts: new Date().toISOString(), ...finding}];
+  const findingsPath = info.outputPath('qa-findings.json');
+  const summaryPath = info.outputPath('qa-summary.json');
+  writeFileSync(findingsPath, JSON.stringify(findings, null, 2));
+  writeFileSync(summaryPath, JSON.stringify(summarizeFindings(findings, runStart), null, 2));
+  await info.attach('qa-findings', {path: findingsPath, contentType: 'application/json'});
+  await info.attach('qa-summary', {path: summaryPath, contentType: 'application/json'});
+}
 // Network/transport noise from the sandboxed CDN (TLS, DNS, connection refused,
 // etc.) is not an app-level error and should not count toward the pageerror
 // budget or pollute qa-findings.json.
-function isNetworkNoise(text) {
+function isNetworkNoise(text: string) {
   if (!text) return false;
   return (
     text.includes("ERR_CERT_AUTHORITY_INVALID") ||
@@ -41,7 +60,7 @@ function isNetworkNoise(text) {
 // distinguish a real softlock from a harness timeout (B-58/B-59). We grab
 // the first 400 chars of body text plus up to 20 visible button labels;
 // errors are swallowed because this runs on the unhappy path.
-async function captureStateSnapshot(page) {
+async function captureStateSnapshot(page: Page): Promise<StateSnapshot> {
   try {
     const innerText = await page.evaluate(() => document.body.innerText.slice(0, 400));
     const buttonLabels = await page.evaluate(() =>
@@ -57,8 +76,8 @@ async function captureStateSnapshot(page) {
   }
 }
 
-async function collectErrors(page) {
-  const errors = [];
+async function collectErrors(page: Page) {
+  const errors: QaError[] = [];
   page.on("pageerror", (e) => {
     if (isNetworkNoise(e.message)) return;
     errors.push({ type: "pageerror", msg: e.message });
@@ -78,61 +97,26 @@ test.describe("Persona QA", () => {
   // down the context. Noob and Goat still set their own 120s cap inline.
   test.describe.configure({ timeout: 180_000 });
 
-  test.beforeAll(() => {
-    // Truncate findings at the start of each run so N invocations of this
-    // spec yield exactly 3 entries (one per persona) rather than N × 3.
-    // The afterAll summary then reflects only the current run's findings.
-    writeFileSync(FINDINGS_PATH, JSON.stringify([], null, 2));
-  });
-
-  test.afterAll(() => {
-    // Build a run-level summary of qa-findings.json so cycles can be compared.
-    let findings = [];
-    if (existsSync(FINDINGS_PATH)) {
-      try { findings = JSON.parse(readFileSync(FINDINGS_PATH, "utf8")); } catch { /* empty */ }
-    }
-    const byPersona = {};
-    const bySeverity = { pageerror: 0, console: 0 };
-    let totalBugs = 0;
-    for (const f of findings) {
-      const p = f.persona || "Unknown";
-      byPersona[p] = (byPersona[p] || 0) + 1;
-      if (Array.isArray(f.errors)) {
-        for (const e of f.errors) {
-          if (e.type && bySeverity[e.type] !== undefined) bySeverity[e.type] += 1;
-        }
-      }
-      if (Array.isArray(f.bugs)) totalBugs += f.bugs.length;
-    }
-    const summary = {
-      timestamp: new Date().toISOString(),
-      durationMs: Date.now() - RUN_START,
-      totalFindings: findings.length,
-      totalBugs,
-      byPersona,
-      bySeverity,
-    };
-    writeFileSync(SUMMARY_PATH, JSON.stringify(summary, null, 2));
-  });
-
-  test("Noob — random clicker on easy", async ({ page }) => {
+  test("Noob — random clicker on easy", async ({ page }, info) => {
     test.setTimeout(120_000);
+    const runStart = Date.now();
     const errors = await collectErrors(page);
     await page.goto("/");
     await startGame(page, "easy");
-    const bugs = [];
+    const bugs: PersonaBug[] = [];
 
     for (let i = 0; i < 6; i++) {
       // Click every visible tab in random order
       const tabs = ["Estate", "Map", "Market", "Military", "People", "Chapel"];
       const tab = tabs[Math.floor(Math.random() * tabs.length)];
+      if (tab === undefined) throw new Error('Random tab index is out of bounds.');
       const btn = page.locator(`button[aria-label*="${tab}"]`).first();
       if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
         await btn.click();
         await page.waitForTimeout(200);
         await dismissOverlay(page);
       }
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) {
         const snapshot = await captureStateSnapshot(page);
@@ -148,20 +132,21 @@ test.describe("Persona QA", () => {
       }
     }
 
-    await page.screenshot({ path: `${SHOT_DIR}/qa-noob.png`, fullPage: true });
-    record({ persona: "Noob", errors, bugs });
+    await page.screenshot({ path: info.outputPath('qa-noob.png'), fullPage: true });
+    await record({ persona: "Noob", errors, bugs }, info, runStart);
     expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(5);
   });
 
-  test("Avg Gamer — builds and simulates", async ({ page }) => {
+  test("Avg Gamer — builds and simulates", async ({ page }, info) => {
     // Normal-difficulty 8-turn loop + per-turn overlay dismissals regularly
     // runs past the 120s describe default, so give this persona more runway
     // (B-45). Noob/Goat stay at their own 120s budgets.
     test.setTimeout(180_000);
+    const runStart = Date.now();
     const errors = await collectErrors(page);
     await page.goto("/");
     await startGame(page, "normal");
-    const bugs = [];
+    const bugs: PersonaBug[] = [];
 
     // Try to build a Strip Farm
     const estate = page.locator('button[aria-label*="Estate"]').first();
@@ -179,7 +164,7 @@ test.describe("Persona QA", () => {
     }
 
     for (let i = 0; i < 8; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) {
         const snapshot = await captureStateSnapshot(page);
@@ -195,20 +180,21 @@ test.describe("Persona QA", () => {
       }
     }
 
-    await page.screenshot({ path: `${SHOT_DIR}/qa-avg.png`, fullPage: true });
-    record({ persona: "Avg", errors, bugs });
+    await page.screenshot({ path: info.outputPath('qa-avg.png'), fullPage: true });
+    await record({ persona: "Avg", errors, bugs }, info, runStart);
     expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(3);
   });
 
-  test("Goat Gamer — methodical full playthrough attempt", async ({ page }) => {
+  test("Goat Gamer — methodical full playthrough attempt", async ({ page }, info) => {
     test.setTimeout(120_000);
+    const runStart = Date.now();
     const errors = await collectErrors(page);
     await page.goto("/");
     await startGame(page, "hard");
-    const bugs = [];
+    const bugs: PersonaBug[] = [];
 
     for (let i = 0; i < 12; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) {
         const snapshot = await captureStateSnapshot(page);
@@ -224,8 +210,8 @@ test.describe("Persona QA", () => {
       }
     }
 
-    await page.screenshot({ path: `${SHOT_DIR}/qa-goat.png`, fullPage: true });
-    record({ persona: "Goat", errors, bugs });
+    await page.screenshot({ path: info.outputPath('qa-goat.png'), fullPage: true });
+    await record({ persona: "Goat", errors, bugs }, info, runStart);
     expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(3);
   });
 });
