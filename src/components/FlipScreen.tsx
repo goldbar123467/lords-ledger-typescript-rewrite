@@ -9,7 +9,7 @@ interface FlipScreenProps {
   currentFlipStats: FlipStats | null;
   currentDecisionIndex: number;
   currentFlipOutcome: string | null;
-  flipOutcomeWasSuccess: boolean | null;
+  flipOutcomeWasSuccess: boolean | null | undefined;
   consequences: FlipEffects | null;
   prevStats: FlipStats | null;
   currentCyoaNodeId: string | null;

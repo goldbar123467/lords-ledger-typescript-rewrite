@@ -611,6 +611,12 @@ function assertSnapshot(value: unknown): asserts value is CompatibleSnapshot {
   if (issue) throw new Error(issue);
 }
 
+/** In-memory simulation output must already carry its random cursor; no migration or copying. */
+export function assertGameSnapshot(value: unknown): asserts value is GameSnapshot {
+  assertSnapshot(value);
+  if (!isRandomState(value.rngState)) throw new Error('Game state random cursor is missing or invalid.');
+}
+
 function withRandomState(state: CompatibleSnapshot): GameSnapshot {
   return { ...state, rngState: state.rngState === undefined ? seedLegacySnapshot(state) : state.rngState };
 }

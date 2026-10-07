@@ -54,7 +54,7 @@ import type {ForgeAncillaryCommand} from "../engine/forgeAncillaryActions.ts";
 import type {ForgeItemCommand} from "../engine/forgeItemActions.ts";
 import type {ForgeCompletionCommand} from "../engine/forgeCompletion.ts";
 import type {ForgeResourceId, ForgeCategory, ForgeSeason, ForgeTemperature, ForgeBuyerDefinition, ForgeBuyerId, ForgeBuyerState, ForgeSupplyDefinition, ForgeGrade} from "../data/blacksmith.ts";
-import type {ResourceId} from "../data/economy.ts";
+import type {Inventory} from "../data/economy.ts";
 import { planForgeCompletion } from "../engine/forgeCompletion.ts";
 import {getForgeResourceQuote, getForgeSupplyStatus, planForgeTalk} from "../engine/forgeAncillaryActions.ts";
 
@@ -73,7 +73,7 @@ interface LocalForgeState {
 }
 interface BlacksmithViewState extends ForgeBuyerState {
   readonly phase:string; readonly turn:number; readonly year:number; readonly season:ForgeSeason;
-  readonly denarii:number; readonly inventory:Readonly<Record<ResourceId,number>>;
+  readonly denarii:number; readonly inventory:Readonly<Inventory>;
   readonly blacksmith:ForgeSaveState; readonly garrison:number; readonly rngState?:number; readonly market?:unknown;
 }
 interface CollectedResult {readonly item:ForgeRecipe; readonly grade:ForgingResult['grade']; readonly qualityScore:number; readonly itemUid:number}

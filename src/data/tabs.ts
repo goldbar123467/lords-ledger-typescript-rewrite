@@ -12,3 +12,6 @@ export const TAB_CONFIG = [
 ] as const;
 
 export type TabId = typeof TAB_CONFIG[number]['id'];
+export function isTabId(value: unknown): value is TabId {
+  return typeof value === 'string' && TAB_CONFIG.some(tab => tab.id === value);
+}

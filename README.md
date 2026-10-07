@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** A shared command contract now accounts for all 86 main reducer commands; App and the main reducer still need checked TypeScript migration. Final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** App now uses checked TSX with validated state and a shared contract for all 86 main reducer commands. The main reducer implementation remains JavaScript and unchecked. Final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -16,11 +16,11 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 ## Latest verified checkpoint
 
-Commit [`a0d951d`](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commit/a0d951d2163ccd42939280a23df0fc5e5682e35f) establishes a shared `GameCommand` union covering all 86 commands in the main reducer. Tavern actions and Rats in the Cellar results now use engine-owned contracts. A maintained compiler test checks command coverage against the reducer switch.
+App's state, dispatch, callbacks, DOM ref and story-stat projection now have checked TypeScript contracts. A temporary boundary validates unknown output from the JavaScript reducer without copying it, consuming randomness or migrating saves. Inactive prototype story IDs and unknown historical tabs render safely; their stored metadata stays intact until explicit navigation.
 
-All **714 unit tests**, typecheck, lint and production build passed for that checkpoint. Independent tester and grader reviews checked command payloads, coverage and compatibility. The type-only changes preserved the production build bytes; no new browser run was performed for this section.
+All **727 unit tests**, typecheck, lint and production build passed. Root browser verification passed five metadata regressions and 32 existing lifecycle, initialization, persistence and event-choice cases. Independent tester and grader reviews passed 14 and 12 browser cases respectively, with exact save/RNG checks, historical-default probes, compiler inspection and actual image review. These are scoped checks; final campaign and whole-interface acceptance remain pending.
 
-The next section migrates App to checked TSX using these commands and validated state. A temporary runtime boundary will validate output from the JavaScript reducer; it does not typecheck the reducer implementation. The subsequent reducer migration must remove that boundary. Full rewrite acceptance remains pending.
+The preceding command foundation ([`a0d951d`](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commit/a0d951d2163ccd42939280a23df0fc5e5682e35f)) covers all 86 main reducer tags. The next section must migrate the reducer implementation itself and remove the temporary boundary. Runtime validation does not typecheck that implementation or prove complete phase/state correctness.
 
 ## Current progress
 
@@ -28,7 +28,7 @@ The next section migrates App to checked TSX using these commands and validated 
 | --- | --- | --- |
 | Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
 | Content definitions | Typed resource, building, Market, decree, military, raid, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Complete registry cross-reference and runtime audits |
-| React interface | Typed management and interaction views, including Estate, Map, Chronicle, Tavern, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Migrate App; complete interface review |
+| React interface | Checked App shell and typed management and interaction views, including Estate, Map, Chronicle, Tavern, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Complete interface review and remaining phase/state contracts |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete remaining nested subsystem validation and whole-game deterministic replay checks |
 | Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
 | Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
@@ -49,7 +49,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,933 production lines versus the original 45,347, a reduction of 414 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,887 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+One source JavaScript file remains: `src/engine/gameReducer.js`. The latest recorded census counts 44,963 production lines versus the original 45,347, a reduction of 384 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,114 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -65,9 +65,9 @@ Knight's Gambit now uses checked TSX props and one discriminated stage instead o
 
 The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All 362 unit checks and 27 focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
 
-App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. The App and main reducer themselves remain unchecked pending migration.
+App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. App itself is now checked as described above; the main reducer remains unchecked.
 
-The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; the main reducer, App and complete loaded-state contracts remain unfinished.
+The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; the main reducer and complete loaded-state contracts remain unfinished.
 
 Seasonal and random event-choice settlement now uses checked TypeScript for resource effects, military reconciliation, history and ending checks. All 1,332 authored choice transitions retain complete state and save bytes across three seeds and all difficulties. The section passes 395 unit tests, static/build checks and four choice/Save/reload browser cases, with independent review. The inherited optional saved-event text gap is corrected below.
 
@@ -94,7 +94,7 @@ GameCommand now composes the existing domain actions into a finite 86-tag union.
 | Location | Rewrite responsibility |
 | --- | --- |
 | [src/engine/initialGameState.ts](src/engine/initialGameState.ts) | Checked seeded modern constructor; loaded-state and reducer contracts remain pending |
-| [src/App.jsx](src/App.jsx) | Root state wiring and phase presentation; migration pending |
+| [src/App.tsx](src/App.tsx) | Checked root state wiring and phase presentation; temporary validation of unchecked reducer output |
 | [src/engine/](src/engine/) | Game transitions, domain rules, and deterministic random helpers |
 | [src/data/](src/data/) | Authored content, resource IDs, and gameplay definitions |
 | [src/components/](src/components/) | React views and local presentation state |
@@ -120,11 +120,10 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate App to checked TSX with the shared 86-command contract, validate reducer output at the temporary boundary, and verify lifecycle and player flows.
-2. Migrate the main reducer implementation to checked TypeScript, simplify orchestration, and remove the temporary boundary. Complete remaining state and command validation.
-3. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
-4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
-5. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
+1. Migrate the main reducer implementation to checked TypeScript, simplify orchestration, and remove the temporary boundary. Complete remaining state and command validation.
+2. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
+3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
+4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
 
 ## Rewrite records
 

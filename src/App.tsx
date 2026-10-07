@@ -1,8 +1,15 @@
 import { useReducer, useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
-import { gameReducer, initialState } from "./engine/gameReducer";
+import { initialState } from "./engine/gameReducer.js";
+import { checkedGameReducer } from './engine/checkedGameReducer.ts';
+import { isTabId, type TabId } from './data/tabs.ts';
+import type { Difficulty } from './save/saveGame.ts';
+import type { BuildingId } from './data/buildings.ts';
+import type { ResourceId } from './data/economy.ts';
+import type { SoldierType, FortificationTrack } from './data/military.ts';
+import { FLIP_STAT_IDS, type FlipStats } from './data/flipTypes.ts';
 import seasonalEventsData from "./data/seasonalEvents";
 import randomEventsData from "./data/randomEvents";
-import { ALL_FLIPS, computeFlipConsequences, isCyoaFlip, computeCyoaConsequences } from "./engine/flipEngine";
+import { ALL_FLIPS, isFlipId, computeFlipConsequences, isCyoaFlip, computeCyoaConsequences } from "./engine/flipEngine";
 import useMusic from "./hooks/useMusic";
 import { useSaveFeedback } from './hooks/useSaveFeedback.ts';
 import { useDeferredAction } from './hooks/useDeferredAction.ts';
@@ -54,7 +61,7 @@ const seasonalEvents = Object.values(seasonalEventsData).flat();
 const randomEvents = randomEventsData;
 
 export default function App() {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [state, dispatch] = useReducer(checkedGameReducer, initialState);
   const [viewSession, setViewSession] = useState(0);
   const { muted, toggleMute, ensurePlaying } = useMusic();
 
@@ -95,7 +102,7 @@ export default function App() {
   } = state;
 
   const previousPhase = useRef(phase);
-  const phaseActionRef = useRef(null);
+  const phaseActionRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (previousPhase.current === phase) return;
     previousPhase.current = phase;
@@ -117,13 +124,13 @@ export default function App() {
     return Math.floor(Math.random() * 0x100000000);
   }
 
-  function handleStart(difficulty) {
+  function handleStart(difficulty: Difficulty) {
     cancelDeferredAction();
     clearSaveFeedback();
     dispatch({ type: "START_GAME", payload: { ...payload, difficulty, seed: newGameSeed() } });
   }
 
-  function handleSeasonalChoice(optionIndex) {
+  function handleSeasonalChoice(optionIndex: number) {
     dispatch({ type: "SELECT_SEASONAL_ACTION", payload: { optionIndex } });
   }
 
@@ -131,7 +138,7 @@ export default function App() {
     dispatch({ type: "CONTINUE_TO_RANDOM", payload });
   }
 
-  function handleRandomChoice(optionIndex) {
+  function handleRandomChoice(optionIndex: number) {
     dispatch({ type: "SELECT_RANDOM_RESPONSE", payload: { optionIndex } });
   }
 
@@ -149,57 +156,57 @@ export default function App() {
     dispatch({ type: "PLAY_AGAIN", payload: { ...payload, seed: newGameSeed() } });
   }
 
-  function handleSetTab(tab) {
+  function handleSetTab(tab: TabId) {
     setTavernOpen(false);
     setWatchtowerOpen(false);
     dispatch({ type: "SET_TAB", payload: { tab } });
   }
 
-  function handleBuild(buildingId) {
+  function handleBuild(buildingId: BuildingId) {
     dispatch({ type: "BUILD_BUILDING", payload: { buildingId } });
   }
 
-  function handleDemolish(buildingIndex) {
+  function handleDemolish(buildingIndex: number) {
     dispatch({ type: "DEMOLISH_BUILDING", payload: { buildingIndex } });
   }
 
-  function handleRepair(buildingIndex) {
+  function handleRepair(buildingIndex: number) {
     dispatch({ type: "REPAIR_BUILDING", payload: { buildingIndex } });
   }
 
-  function handleUpgrade(buildingIndex) {
+  function handleUpgrade(buildingIndex: number) {
     dispatch({ type: "UPGRADE_BUILDING", payload: { buildingIndex } });
   }
 
-  function handleSell(resource, quantity) {
+  function handleSell(resource: ResourceId, quantity: number) {
     dispatch({ type: "SELL_RESOURCE", payload: { resource, quantity } });
   }
 
-  function handleBuy(resource, quantity) {
+  function handleBuy(resource: ResourceId, quantity: number) {
     dispatch({ type: "BUY_RESOURCE", payload: { resource, quantity } });
   }
 
-  function handleRecruit(soldierType, count) {
+  function handleRecruit(soldierType: SoldierType, count: number) {
     dispatch({ type: "RECRUIT_SOLDIERS", payload: { soldierType, count } });
   }
 
-  function handleDismiss(soldierType, count) {
+  function handleDismiss(soldierType: SoldierType, count: number) {
     dispatch({ type: "DISMISS_SOLDIERS", payload: { soldierType, count } });
   }
 
-  function handleUpgradeFortification(track) {
+  function handleUpgradeFortification(track: FortificationTrack) {
     dispatch({ type: "UPGRADE_FORTIFICATION", payload: { track } });
   }
 
   // --- Flip handlers ---
 
-  const [prevFlipStats, setPrevFlipStats] = useState(null);
+  const [prevFlipStats, setPrevFlipStats] = useState<FlipStats | null>(null);
 
   function handleDismissFlipIntro() {
     dispatch({ type: "DISMISS_FLIP_INTRO" });
   }
 
-  function handleFlipOption(optionIndex) {
+  function handleFlipOption(optionIndex: number) {
     setPrevFlipStats(currentFlipStats ? { ...currentFlipStats } : null);
     dispatch({ type: "SELECT_FLIP_OPTION", payload: { optionIndex } });
   }
@@ -216,7 +223,7 @@ export default function App() {
     dispatch({ type: "DISMISS_SYNERGY_NOTIFICATION" });
   }
 
-  function handleDismissTutorial(tab) {
+  function handleDismissTutorial(tab: TabId) {
     dispatch({ type: "DISMISS_TUTORIAL", payload: { tab } });
   }
 
@@ -337,29 +344,33 @@ export default function App() {
     phase === "flip_outcome" ||
     phase === "flip_summary";
 
-  const flipData = currentFlipId ? ALL_FLIPS[currentFlipId] : null;
+  const flipData = isFlipId(currentFlipId) ? ALL_FLIPS[currentFlipId] : null;
 
   const flipDisplayStats = useMemo(() => {
     if (!flipData || !currentFlipStats) return null;
     if (flipData.type === "cyoa") return null; // CYOA has no character stats
-    return Object.entries(flipData.characterStats).map(([key, config]) => ({
+    return Object.entries(flipData.characterStats).flatMap(([name, config]) => {
+      const key = FLIP_STAT_IDS.find(id => id === name);
+      if (!key || !config) return [];
+      return [{
       key,
       label: config.label,
       icon: config.icon,
       color: config.color,
       value: currentFlipStats[key] ?? 0,
-    }));
+      }];
+    });
   }, [flipData, currentFlipStats]);
 
   const flipConsequencesPreview = useMemo(() => {
-    if (!currentFlipId || phase !== "flip_summary") return null;
+    if (!isFlipId(currentFlipId) || phase !== "flip_summary") return null;
     if (isCyoaFlip(currentFlipId)) {
       return computeCyoaConsequences(currentFlipId, cyoaEndingType);
     }
     return computeFlipConsequences(currentFlipId, flipConsequenceFlags);
   }, [currentFlipId, flipConsequenceFlags, phase, cyoaEndingType]);
 
-  const displayTab = isEventPhase ? "chronicle" : activeTab;
+  const displayTab = isEventPhase ? "chronicle" : isTabId(activeTab) ? activeTab : 'estate';
   // B-09 FIX: queue tutorials behind the scribe's note so overlays never stack.
   // If a scribe's note is visible, defer the tutorial until it is dismissed.
   const showTutorial = isManagement && !isFlipPhase && !scribesNote && !tutorialsSeen?.includes(displayTab);
