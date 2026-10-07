@@ -11,6 +11,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Ordinary runs must not create unapproved reference images.
+  updateSnapshots: "none",
   // Cap local workers at 2 for the gameplay specs so overlay transitions don't
   // race under 8+ parallel browsers (B-33, B-34, B-44). CI already uses 1.
   // Visual specs run as part of the same project and still parallelise up to 2.

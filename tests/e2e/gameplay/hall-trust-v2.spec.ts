@@ -9,7 +9,9 @@ for (const width of [390, 1366]) for (const trust of [0, 85.5]) {
     const raw=writeV2Save(state),errors:string[]=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},raw);
     await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();
-    await expect(page.getByText(`Trust: ${trust===0?'Wary':'Devoted'}`,{exact:true})).toBeVisible();
+    const trustMeter=page.getByRole('meter',{name:"Edmund's trust",exact:true});
+    await expect(trustMeter).toHaveAttribute('aria-valuenow',String(trust));
+    await expect(trustMeter.locator('..').locator('p').first()).toHaveText(`Trust: ${trust===0?'Wary':'Devoted'} ${trust}/100`);
     await page.screenshot({path:info.outputPath('throne.png'),fullPage:true,animations:'disabled'});
     await page.getByRole('button',{name:'Council',exact:true}).click();
     await page.getByRole('button',{name:/Accept the Alliance/}).click();
@@ -18,7 +20,8 @@ for (const width of [390, 1366]) for (const trust of [0, 85.5]) {
     const result=readV2Save(saved);if(!result.ok)throw new Error(result.error);
     expect(result.state.greatHall.stewardTrust).toBe(trust+1);expect(result.state.rngState).toBe(state.rngState);
     await page.reload();await page.getByRole('button',{name:'Load saved game',exact:true}).click();
-    await expect(page.getByText(`Trust: ${trust===0?'Wary':'Bonded'}`,{exact:true})).toBeVisible();
+    await expect(trustMeter).toHaveAttribute('aria-valuenow',String(trust+1));
+    await expect(trustMeter.locator('..').locator('p').first()).toHaveText(`Trust: ${trust===0?'Wary':'Bonded'} ${trust+1}/100`);
     await page.getByRole('button',{name:'Save game',exact:true}).click();
     expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(saved);expect(errors).toEqual([]);
   });
