@@ -59,10 +59,13 @@ The Tavern shell now has checked station, saved-state, dispatch and child-callba
 
 App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. The App and main reducer themselves remain unchecked pending migration.
 
+The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; the main reducer, App and complete loaded-state contracts remain unfinished.
+
 ## Code map
 
 | Location | Rewrite responsibility |
 | --- | --- |
+| [src/engine/initialGameState.ts](src/engine/initialGameState.ts) | Checked seeded modern constructor; loaded-state and reducer contracts remain pending |
 | [src/App.jsx](src/App.jsx) | Root state wiring and phase presentation; migration pending |
 | [src/engine/](src/engine/) | Game transitions, domain rules, and deterministic random helpers |
 | [src/data/](src/data/) | Authored content, resource IDs, and gameplay definitions |

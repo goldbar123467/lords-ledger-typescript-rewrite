@@ -75,3 +75,8 @@ Keep the star/EMPTY easter egg and authored 25d reward, but expose a neutral Ins
 ## App transient ownership (2026-10-06)
 
 Save feedback is one local discriminated value: finite success status, error with optional validated recovery source, or durable import/recovery notice. Each fresh success object owns its two-second expiry, cleanup and identity guard. A nullable ref owns one deferred season action independently of asynchronous pending render state. Successful game replacement cancels that action; failures preserve the current game. These are transient DOM controllers, with no storage or simulation work inside either hook. Complete App/reducer state/action checking and broader lifecycle/AT/zoom remain IN PROGRESS.
+
+
+## Modern construction versus loaded state (2026-10-06)
+
+InitialGameState describes every modern constructor field with existing domain contracts, finite registry IDs and explicit nullable empty selections. InitialFields requires modern presence/non-null values while retaining selected null markers. Pure seeded construction owns inventories, prices, garrison, families and queues; consumers retain the public reducer reexport. Older validated GameSnapshot records can omit modern fields. Complete loaded-state and phase contracts must be established independently before checking the reducer; a modern construction interface cannot prove old loads or unchecked transition outputs.
