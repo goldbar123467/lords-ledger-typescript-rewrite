@@ -187,7 +187,8 @@ async function captureDiagnostics(page: Page, diagnosticPath: DiagnosticPath, ou
  * Play one full turn with event logging. Returns:
  *  { continued: bool, events: string[], choicesMade: string[], outcome: string|null }
  */
-export async function playOneTurnLogged(page: Page, diagnosticPath: DiagnosticPath): Promise<TurnResult> {
+export async function playOneTurnLogged(page: Page, diagnosticPath: DiagnosticPath,
+  chooseIndex?: (count: number) => number | Promise<number>): Promise<TurnResult> {
   const events: string[] = [];
   const choices: string[] = [];
 
@@ -272,12 +273,13 @@ export async function playOneTurnLogged(page: Page, diagnosticPath: DiagnosticPa
     const choiceBtns = page.locator('[role="group"] button');
     const choiceCount = await choiceBtns.count();
     if (choiceCount > 0 && await choiceBtns.first().isVisible({ timeout: 200 }).catch(() => false)) {
-      const idx = Math.floor(Math.random() * choiceCount);
+      const idx = chooseIndex ? await chooseIndex(choiceCount) : Math.floor(Math.random() * choiceCount);
+      if (!Number.isSafeInteger(idx) || idx < 0 || idx >= choiceCount) throw new Error('Choice selector returned an invalid index.');
       const choiceText = await choiceBtns.nth(idx).textContent().catch(() => "");
       // Scroll the page down to ensure event options clear the sticky dashboard
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(100);
-      await choiceBtns.nth(idx).click({ timeout: 5_000 }).catch(() => {});
+      await choiceBtns.nth(idx).click({ timeout: 5_000 });
       choices.push(`Choice[${idx + 1}/${choiceCount}]: ${(choiceText ?? '').trim().substring(0, 80)}`);
       continue;
     }

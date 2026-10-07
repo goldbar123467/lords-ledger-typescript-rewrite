@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. The rewrite preserves its authored content, narrative branches, economy, military, characters, and strategic choices while improving implementation, gameplay, and presentation.
 
-**Status: in progress.** Application source, tests, the Vite/ESLint configurations, and the headless playtest now use checked TypeScript. The root browser playtest still uses JavaScript. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
+**Status: in progress.** All first-party executable source, tests, configurations, and playtest tooling now use checked TypeScript under `strict` and `noUncheckedIndexedAccess`. The temporary JavaScript compiler allowance is removed. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
 
 ## Rewrite goals
 
@@ -36,12 +36,13 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | QA assertion correction (`9b3c2a8`) | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
 | Root configurations (`49ce34f`) | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
 | Headless driver (`75631db`) | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
+| Browser driver | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **45,003 lines**, versus 45,347 at baseline. The headless checkpoint's inclusive subtotal was **80,388 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **45,003 lines**, versus 45,347 at baseline. The browser tooling checkpoint's inclusive subtotal was **80,184 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -56,15 +57,15 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The headle
 | [tests/e2e/](tests/e2e/) | Browser gameplay, visual checks, and QA drivers |
 | [vite.config.ts](vite.config.ts), [eslint.config.ts](eslint.config.ts) | Checked build and lint configuration |
 | [playtest.ts](playtest.ts) | Seeded headless campaigns, six strategy profiles, transition invariants, and terminal reporting |
+| [playwright-playtest.ts](playwright-playtest.ts), [tools/browserPlaytestOptions.ts](tools/browserPlaytestOptions.ts) | Native browser campaigns, six preserved personas, checked progression, isolated reports, and production-preview identity checks |
 | [docs/v2/](docs/v2/) | Baseline, decisions, migration status, and verification records |
 
 ## Next rewrite sections
 
-1. Finish repairing and migrating the root browser playtest from `playwright-playtest.js` to checked TypeScript, preserving all six personas. Replace stale controls, verify actual turn progression and terminal outcomes, propagate failed interactions, and isolate each run's reports and screenshots. Remove the temporary JavaScript compiler allowance only after the complete executable body passes strict checks and focused browser verification.
-2. Strengthen remaining QA transport filtering and report emission on early failures.
-3. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
-4. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
-5. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
+1. Strengthen remaining QA transport filtering and report emission on early failures.
+2. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
+3. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
+4. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
 ## Rewrite workflow and history
 

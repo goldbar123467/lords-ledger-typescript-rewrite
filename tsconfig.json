@@ -8,11 +8,9 @@
     "types": ["vite/client", "node"],
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "allowJs": true,
-    "checkJs": false,
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src", "tests", "playwright.config.ts", "vite.config.ts", "eslint.config.ts", "playtest.ts"]
+  "include": ["src", "tests", "tools", "playwright.config.ts", "vite.config.ts", "eslint.config.ts", "playtest.ts", "playwright-playtest.ts"]
 }
