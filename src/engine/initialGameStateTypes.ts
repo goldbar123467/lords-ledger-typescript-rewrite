@@ -4,7 +4,7 @@ import type { TabId } from '../data/tabs.ts';
 import type { BardRiddleId, MartaOfferId, AldricOfferId } from '../data/tavern.ts';
 import type { EventDefinition } from '../data/eventTypes.ts';
 import type { FlipEnding, FlipStats } from '../data/flipTypes.ts';
-import type { FlipId, resolveFlipOption } from './flipEngine.ts';
+import type { FlipId } from './flipEngine.ts';
 import type { PeopleState } from '../data/people.ts';
 import type { MilitaryState } from '../data/military.ts';
 import type { ScanWarnings } from './watchtowerScan.ts';
@@ -82,7 +82,7 @@ export interface InitialGameState extends GameSnapshot {
   perspectiveFlips: Record<FlipId, boolean>;
   tradeCount: number; militaryEventEverFired: boolean; lastFlipTurn: number;
   currentFlipId: FlipId | null; currentFlipStats: FlipStats | null; currentDecisionIndex: number;
-  flipConsequenceFlags: readonly string[]; currentFlipOutcome: ReturnType<typeof resolveFlipOption> | null;
+  flipConsequenceFlags: string[]; currentFlipOutcome: string | null;
   currentCyoaNodeId: string | null; cyoaEndingType: FlipEnding | null;
   pendingSynergyNotifications: SynergyNotification[];
   raids: RaidState; watchtower: InitialWatchtowerState;

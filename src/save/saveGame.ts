@@ -1,4 +1,5 @@
 import {isMarketSupply} from "../engine/marketSupply.ts";
+import { validateViewMetadata, type ViewMetadata } from './viewMetadata.ts';
 import {isSavedChronicle,type SavedChronicleEntry} from '../engine/chronicle.ts';
 import {validateForgeState, type ForgeSaveState} from '../engine/forgeState.ts';
 import { validateHallCivicState } from '../engine/hallCivic.ts';
@@ -58,7 +59,7 @@ export interface BuildingInstance {
 }
 
 /** The first typed contract covers fields required for safe loading and core play. */
-export interface GameSnapshot {
+export interface GameSnapshot extends ViewMetadata {
   rngState: number;
   phase: GamePhase;
   difficulty: Difficulty;
@@ -354,6 +355,8 @@ function validateSnapshot(value: unknown): string | null {
   for (const key of nullableFields) {
     if (!Object.hasOwn(value, key)) return `Save field ${key} is missing.`;
   }
+  const metadataIssue = validateViewMetadata(value);
+  if (metadataIssue) return metadataIssue;
 
   const synergies = value.synergies;
   if (!isRecord(synergies) || !isActivatedSynergies(synergies.activated)) {

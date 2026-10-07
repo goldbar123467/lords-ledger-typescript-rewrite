@@ -55,11 +55,13 @@ The Bard view now has checked saved-content, answer callback and DOM-ref contrac
 
 Knight's Gambit now uses checked TSX props and one discriminated stage instead of five separate game-state hooks. Thirteen browser checks cover every weapon pair, all stakes, paid replay, cancellation and the fifth round. Shared owned timeouts cancel all four Gambit callbacks on teardown; broader minigame UI review remains unfinished.
 
-The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All362unit checks and27focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
+The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All 362 unit checks and 27 focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
 
 App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. The App and main reducer themselves remain unchecked pending migration.
 
 The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; the main reducer, App and complete loaded-state contracts remain unfinished.
+
+Save validation now checks consumed history, text lists, resource deltas, perspective metadata and pending/deferred synergy notifications. Malformed known fields are rejected by both readers and the writer; historical names, fractional values and unknown extensions retain their bytes. This closes a deferred notification queue crash during story continuation. The current section passes 390 unit tests, typecheck, lint, build, four browser rejection regressions and 28 existing persistence, lifecycle and initialization checks. Independent tester and grader reviews accept this scope. Complete save-schema validation remains unfinished.
 
 ## Code map
 
