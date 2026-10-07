@@ -902,6 +902,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     case "SELECT_FLIP_OPTION": {
       if (state.phase !== "flip_decision") return state;
       const { optionIndex } = action.payload ?? {};
+      if (typeof optionIndex !== 'number' || !Number.isSafeInteger(optionIndex) || optionIndex < 0) return state;
       if (!isFlipId(state.currentFlipId)) return state;
       const flip = ALL_FLIPS[state.currentFlipId];
       if (!flip) return state;
