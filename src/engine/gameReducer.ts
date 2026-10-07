@@ -703,13 +703,14 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     case "DONATE_TO_CHURCH": {
       const { amount } = action.payload ?? {};
       if (state.phase !== "management") return state;
-      if (!amount || amount <= 0) return state;
-      if (state.denarii < amount) return state;
+      if (!isPositivePrice(amount) || !Number.isFinite(state.denarii) || state.denarii < amount) return state;
+      const churchDonation = (state.churchDonation || 0) + amount;
+      if (!Number.isFinite(churchDonation)) return state;
 
       return {
         ...state,
         denarii: state.denarii - amount,
-        churchDonation: (state.churchDonation || 0) + amount,
+        churchDonation,
         chronicle: addChronicle(state.chronicle, `Donated ${amount}d to the Church.`, state.season, state.year, state.turn, "action"),
       };
     }
