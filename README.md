@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** The latest verified implementation checkpoint is `44c462f`, covering saved raid contracts and bookkeeping validation. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** The latest verified section covers saved Market contracts, bookkeeping and banner validation. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -41,7 +41,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,772 production lines versus the original 45,347, a reduction of 575 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,100 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,809 production lines versus the original 45,347, a reduction of 538 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,295 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -70,6 +70,8 @@ Optional event notes, choice notes and choice summaries now reject malformed val
 Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. At that checkpoint, the App migration probe had 36 compiler diagnostics; this verified persistence and view boundaries without migrating App.
 
 Loaded raids now have explicit bookkeeping, warning and result contracts. Malformed counters, flags, raid types and captured numeric metadata reject; omitted/null defaults and finite historical values stay intact. At checkpoint `44c462f`, all 521 unit tests, typecheck, lint and build pass. Three new raid persistence flows pass; the initial 28 integration scenarios have 24 passes and four failures from an older invalid Forge test fixture. The same four pass after the separately committed fixture repair, giving 31 distinct passing browser scenarios across the recorded batches. Independent tester and grader reviews accept this scope. An exploratory App migration probe still reports 34 diagnostics; production App and the reducer remain unchecked.
+
+Saved Market prices and pending bargains now expose the types proved by their existing guards. Bookkeeping, event-history lists, banner text and the no-haggling flag reject malformed values before loading. Historical missing/null defaults, fractional counters and unknown extensions retain their save bytes and trade behavior. The section passes 590 unit tests, typecheck, lint, build and 16 Market browser scenarios, with independent tester and grader review. Complete Market provenance, arithmetic invariants and remaining save contracts are still pending.
 
 ## Code map
 
@@ -102,7 +104,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the remaining consumed Market, Watchtower and other saved-state contracts, preserving supported historical defaults and save bytes.
+1. Complete the remaining consumed Watchtower and other saved-state contracts, preserving supported historical defaults and save bytes.
 2. Finish finite action contracts, migrate App and the main reducer to checked TypeScript, and simplify reducer orchestration.
 3. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.

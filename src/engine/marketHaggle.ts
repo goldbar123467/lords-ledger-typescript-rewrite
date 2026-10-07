@@ -1,11 +1,17 @@
 /** A pending market bargain is executable only for an offered good at a bounded price. */
 import {getDeployedToolIds} from './forgeTools.ts';
-import { TRADE_GOODS, BASE_BUY_PRICES, BASE_SELL_PRICES } from '../data/economy.ts';
+import { TRADE_GOODS, BASE_BUY_PRICES, BASE_SELL_PRICES, type GeneratedMarketPrices, type ResourceId } from '../data/economy.ts';
+import type { HaggleDifficulty, MarketMerchantId } from '../data/market.ts';
 import { FOREIGN_TRADERS, HAGGLE_CONFIG, LOCAL_MERCHANTS, getReputationTier } from '../data/market.ts';
 import { SYNERGY_PATH_LIST, SYNERGY_TIER_MAP } from '../data/synergies.ts';
 import { getSynergyTradePriceBonus, getSynergyWoolSellBonus } from './synergyEngine.ts';
 
 export type HaggleMode = 'buy' | 'sell';
+export interface ActiveHaggle {
+  merchantId: MarketMerchantId; resource: ResourceId; quantity: number; fairPrice: number;
+  currentOffer: number; round: number; maxRounds: number; mode: HaggleMode;
+  status: 'open' | 'accepted' | 'final'; difficulty: HaggleDifficulty; playerCounter: number | null;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -16,7 +22,7 @@ function isPrice(value: unknown): value is number {
 }
 
 /** All saved merchant relationships must remain usable even when no deal is pending. */
-export function isMarketReputation(value: unknown): boolean {
+export function isMarketReputation(value: unknown): value is Record<string, number> {
   return isRecord(value) && Object.values(value).every(reputation =>
     typeof reputation === 'number' && Number.isFinite(reputation) &&
     reputation >= 0 && reputation <= 100);
@@ -38,7 +44,7 @@ export function isActivatedSynergies(value: unknown): value is string[] {
 }
 
 /** Seasonal prices are rounded draws from each authored base price at ±20%. */
-export function isGeneratedMarketPrices(value: unknown): boolean {
+export function isGeneratedMarketPrices(value: unknown): value is GeneratedMarketPrices {
   if (!isRecord(value)) return false;
   for (const [sideName, bases] of [
     ['sell', BASE_SELL_PRICES], ['buy', BASE_BUY_PRICES],
@@ -155,7 +161,7 @@ export function openingHaggleOffer(
 /** Validate the terms a save or direct action could otherwise turn into a trade. */
 export function isActiveHaggle(
   value: unknown, season: unknown, marketPrices: unknown, reputations: unknown,
-): boolean {
+): value is ActiveHaggle {
   if (!isRecord(value) || !isRecord(marketPrices) || typeof value.merchantId !== 'string' ||
       typeof value.resource !== 'string' ||
       typeof value.status !== 'string' ||

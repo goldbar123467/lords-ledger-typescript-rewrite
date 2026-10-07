@@ -6,7 +6,8 @@
  * reputation tracking, seasonal forecasts, and Quick Trade fallback.
  */
 
-import {remainingMarketSupply,type MarketSupply} from "../engine/marketSupply.ts";
+import {remainingMarketSupply} from "../engine/marketSupply.ts";
+import type { SavedMarketEvent, SavedMarketState } from '../save/savedMarket.ts';
 import type {ForgeSaveState} from "../engine/forgeState.ts";
 import { useState, useMemo, useLayoutEffect } from "react";
 import { RESOURCE_CONFIG, BASE_SELL_PRICES, BASE_BUY_PRICES } from "../data/economy.ts";
@@ -16,25 +17,13 @@ import {
   MARKET_SUBTITLES, MARKET_SCRIBES_NOTES,
   getForecasts,
 } from "../data/market.ts";
-import type { HaggleDifficulty, MarketEvent, MarketMerchantId, MarketResource, MarketSeason } from "../data/market.ts";
+import type { HaggleDifficulty, MarketMerchantId, MarketResource, MarketSeason } from "../data/market.ts";
 import { marketQuickSalePrice, marketTradePrice, marketSaleProceeds, hasHorseshoeTradeBonus } from "../engine/marketHaggle.ts";
-import type { HaggleMode } from "../engine/marketHaggle.ts";
+import type { ActiveHaggle, HaggleMode } from "../engine/marketHaggle.ts";
 
 interface MarketPrices {
   sell: Partial<Record<MarketResource, number>>;
   buy: Partial<Record<MarketResource, number>>;
-}
-
-interface ActiveHaggle {
-  merchantId: MarketMerchantId;
-  resource: MarketResource;
-  quantity: number;
-  fairPrice: number;
-  currentOffer: number;
-  round: number;
-  maxRounds: number;
-  mode: HaggleMode;
-  status: 'open' | 'accepted' | 'final';
 }
 
 interface MarketViewState {
@@ -45,13 +34,7 @@ interface MarketViewState {
   inventoryCapacity: number;
   denarii: number;
   marketPrices: MarketPrices;
-  market?: {
-    supply?:MarketSupply;
-    reputation?: Partial<Record<MarketMerchantId, number>>;
-    activeHaggle?: ActiveHaggle | null;
-    activeMarketEvent?: MarketEvent | null;
-    marketScribesNoteSeen?: boolean;
-  };
+  market?: SavedMarketState;
   synergies?: { activated: string[] };
 }
 
@@ -99,7 +82,7 @@ function isMarketResource(value: string): value is MarketResource {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function MarketHeader({ subtitle, marketEvent }: { subtitle: string; marketEvent: MarketEvent | null }) {
+function MarketHeader({ subtitle, marketEvent }: { subtitle: string; marketEvent: SavedMarketEvent | null }) {
   return (
     <div className="text-center mb-4">
       <h2
@@ -337,11 +320,11 @@ function MerchantCard({ merchant, isForeign, reputation, onClick, marketEvent, l
   isForeign: boolean;
   reputation?: number;
   onClick: () => void;
-  marketEvent: MarketEvent | null;
+  marketEvent: SavedMarketEvent | null;
   lockedByHaggle: boolean;
 }) {
   const rep = reputation ?? 50;
-  const disabled = lockedByHaggle || (marketEvent?.effect?.noHaggling && !isForeign);
+  const disabled = lockedByHaggle || !!(marketEvent?.effect?.noHaggling && !isForeign);
   const diffColor = {
     easy: "#4a8a3a",
     medium: "#c4a24a",
@@ -424,7 +407,7 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
   state: MarketViewState;
   dispatch: MarketSquareProps['dispatch'];
   onBack: () => void;
-  marketEvent: MarketEvent | null;
+  marketEvent: SavedMarketEvent | null;
 }) {
   const { inventory, denarii, marketPrices, market } = state;
   const [mode, setMode] = useState<HaggleMode | null>(null);

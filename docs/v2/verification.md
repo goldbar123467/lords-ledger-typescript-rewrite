@@ -1488,3 +1488,9 @@ Independent reports artifacts/v2/tester-saved-raid-state/report.md and artifacts
 ## README status refresh after 44c462f
 
 Documentation-only verification: checked README claims against the latest migration ledger, saved raid verification record, recorded code census and actual remaining source JavaScript files. All 20 relative README links resolve; the removed Run locally section and local addresses remain absent. Git diff whitespace check passes. No gameplay checks rerun for this documentation-only change; the 521 units and browser results refer to the previously verified implementation checkpoint.
+
+## Saved Market contracts
+
+Root artifacts/v2/saved-market-state retains baseline65FAIL/4PASS units and two malformed browser failures/one historical native pass18.4s; trace confirms legacy object-title React#31 and parity.json records original '3' to '31' trade counter corruption. Final69 focused/590full units4.214s, typecheck/lint/build and16 browser cases19.7s PASS. Three new phone persistence cases reject malformed metadata with both slots intact and follow compatible legacy native bargain/settlement/reload. Twenty-five original/current full-save byte pairs pass. Managed fixtures are not campaigns; original failed typecheck with two stale child annotations is retained.
+
+Independent reports artifacts/v2/tester-saved-market-state/report.md and artifacts/v2/grader-saved-market-state/review.md accept frozen93A356A410633F03F6280087C110FE4DBD062D62AD07D20CA81E0FFDC2BBDB6D/nine matching files. Each reruns three production cases and69groups, probes malformed/default/type boundaries and opens actual before/current images. Exact compatibility, helper-body equality and nullable disabled DOM equivalence are scoped. Root App diagnostic33 is exploratory, not shipped checking. All owned browsers closed/freezes released. No complete schema/provenance/raw ownership/phase/global arithmetic/UI/AT/zoom/RNG/campaign/rewrite approval.

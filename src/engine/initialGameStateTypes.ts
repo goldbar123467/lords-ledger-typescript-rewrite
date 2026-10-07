@@ -10,7 +10,8 @@ import type { MilitaryState } from '../data/military.ts';
 import type { ScanWarnings } from './watchtowerScan.ts';
 import type { RaidState } from './raidEngine.ts';
 import type { SynergyTierId } from '../data/synergies.ts';
-import type { MarketEvent, MarketMerchantId } from '../data/market.ts';
+import type { MarketEvent } from '../data/market.ts';
+import type { ActiveHaggle } from './marketHaggle.ts';
 import type { ChapelSaveState } from './chapelState.ts';
 import type { ForgeSaveState } from './forgeState.ts';
 import type { HallSaveState } from './hallAudienceState.ts';
@@ -43,10 +44,7 @@ export type InitialTavernState = Omit<Required<GameSnapshot['tavern']>, 'bardSol
 type ReputationOwner = 'edmund' | 'wulfric' | 'agnes' | 'foreign';
 export interface InitialMarketState {
   reputation: Record<ReputationOwner, number>;
-  activeHaggle: {
-    merchantId: MarketMerchantId; resource: ResourceId; quantity: number; fairPrice: number;
-    currentOffer: number; round: number; maxRounds: number; mode: 'buy' | 'sell'; status: 'open' | 'accepted' | 'final';
-  } | null;
+  activeHaggle: ActiveHaggle | null;
   currentForeignTrader: Season;
   tradesThisSeason: number; totalTradesLifetime: number; totalHagglesWon: number; totalHagglesLost: number;
   denariiEarnedFromTrade: number; denariiSpentOnTrade: number;

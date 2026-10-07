@@ -9,6 +9,7 @@ import randomEvents from '../data/randomEvents.ts';
 import type { EventDefinition } from '../data/eventTypes.ts';
 import type { SavedEvent } from './savedEvent.ts';
 import { validateRaidBookkeeping, type SavedRaidState } from './savedRaid.ts';
+import { validateMarketMetadata, type SavedMarketState } from './savedMarket.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -30,7 +31,7 @@ import { GAMBIT_MAX_ROUNDS } from '../data/tavern.ts';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
 import type { SynergyTierId } from '../data/synergies.ts';
 import { isFortificationLevel, type MilitaryDefenseState, type FortificationLevels } from '../data/military.ts';
-import { ALL_RESOURCES, RESOURCE_CONFIG, TAX_RATES, type Inventory, type ResourceId as AuthoredResourceId } from '../data/economy.ts';
+import { ALL_RESOURCES, RESOURCE_CONFIG, TAX_RATES, type GeneratedMarketPrices, type Inventory, type ResourceId as AuthoredResourceId } from '../data/economy.ts';
 export type { Inventory } from '../data/economy.ts';
 
 export const SAVE_KEY_V2 = 'lords-ledger-v2-save';
@@ -65,6 +66,8 @@ export interface GameSnapshot extends ViewMetadata {
   currentEvent: SavedEvent | null;
   currentRandomEvent: SavedEvent | null;
   raids: SavedRaidState;
+  market: SavedMarketState;
+  marketPrices: GeneratedMarketPrices;
   rngState: number;
   phase: GamePhase;
   difficulty: Difficulty;
@@ -498,6 +501,8 @@ function validateSnapshot(value: unknown): string | null {
   const market = value.market;
   if (!isRecord(market)) return 'Save market state is invalid.';
   if (!isMarketReputation(market.reputation)) return 'Save market reputation is invalid.';
+  const marketMetadataIssue = validateMarketMetadata(market);
+  if (marketMetadataIssue) return marketMetadataIssue;
   if(Object.hasOwn(market,'supply')&&(!Object.prototype.propertyIsEnumerable.call(market,'supply')||!isMarketSupply(market.supply,value.turn as number)))return 'Save market supply is invalid.';
   if (market.activeHaggle !== undefined && market.activeHaggle !== null &&
       !isActiveHaggle(market.activeHaggle, value.season, marketPrices, market.reputation)) {
