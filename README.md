@@ -22,7 +22,7 @@ The application calls the checked main reducer directly. Its command contract co
 
 Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
-Gameplay corrections cover invalid event and flip-choice indices, difficulty values, donation arithmetic, sustained-counter overflow, fractional Market trades, and raid progression in browser drivers. Calendar advancement now requires the random-event stage to be resolved; it cannot skip a pending seasonal continuation. Detailed migration and compatibility evidence belongs in the [migration ledger](docs/v2/migration-ledger.md) and [verification notes](docs/v2/verification.md).
+Gameplay corrections cover invalid event and flip-choice indices, difficulty values, donation arithmetic, sustained-counter overflow, fractional Market trades, and raid progression in browser drivers. Calendar advancement now requires the random-event stage to be resolved; it cannot skip a pending seasonal continuation. Henrik's audience now records trade permission through save/reload and seasonal continuation; contradictory receipt/cache saves are rejected. Detailed migration and compatibility evidence belongs in the [migration ledger](docs/v2/migration-ledger.md) and [verification notes](docs/v2/verification.md).
 
 ## Verified checkpoints and limits
 
@@ -49,12 +49,13 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Flip-choice input correction (`96ff0a1`) | 789 unit tests, typecheck, lint, build and seven focused browser cases passed. Independent tester passed four cases; both reviewers verified malformed-input rejection and valid-choice state/save/RNG preservation | G-FO01 is closed within raw index validation. Only numeric, nonnegative safe-integer indices can select available options; this does not establish contextual CYOA ownership or all narrative paths |
 | Flip lifecycle consolidation (`595469c`) | 789 unit tests, typecheck, lint, build and 32 focused browser cases passed. Independent tester matched 7,172 save roundtrips across all nine stories and passed four browser cases; grader verified expanded case bodies and fresh-array ownership | Main reducer: 1,946 to 1,646 lines; new owner: 304 lines. Five reset literals and two recovery paths share cleanup, but total production text increased by four. Managed story fixtures are not campaigns |
 | Shared synergy activation | 789 unit tests, typecheck, lint, build and 18 focused browser cases passed. Independent tester matched 1,150 state/save pairs and passed seven browser cases; grader checked all 21 tiers' receipt metadata | Removed 21 net production lines. Advancement retains all-active bonuses and next-season dates; story settlement retains new-only bonuses and deferred queues. Managed eligibility fixtures are not campaigns |
+| Henrik trade permission correction | 792 unit tests, typecheck, lint, build and 20 focused browser cases passed. Independent tester passed four native cases; both reviewers accepted receipt, save and buyer behavior | Warm and restricted permissions unlock Henrik in Spring/Autumn; refusal does not. Older resolved-only saves remain ambiguous. Browser items use managed paid Forge-result fixtures, not played crafting or campaigns |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,727 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, and shared synergy activation removed 21. Line totals also reflect comments and formatting. The prospective implementation target is **27,577 lines**, 10% below the original 30,642; current implementation is 28,120, leaving 543 lines before the target is met. This target is newly recorded after the audit found no earlier numeric target. The inclusive subtotal is **80,294 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. Documentation trimming is excluded from production reduction.
+Production text measured **44,749 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, shared synergy activation removed 21, and the Henrik correction added 22. Line totals also reflect comments and formatting. The prospective implementation target is **27,577 lines**, 10% below the original 30,642; current implementation is 28,138, leaving 561 lines before the target is met. This target is newly recorded after the audit found no earlier numeric target. The inclusive subtotal is **80,493 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. Documentation trimming is excluded from production reduction.
 
 ## Code map
 
@@ -74,7 +75,7 @@ Production text measured **44,727 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Correct Henrik welcome/refusal receipts and Spring buyer reachability, then reproduce and repair enlarged Forge grade labels. Continue runtime/save checks and meaningful duplication reduction; contextual CYOA ownership remains unproved.
+1. Reproduce and repair enlarged Forge grade labels, then review the remaining Hall aliases. Continue runtime/save checks and meaningful duplication reduction; contextual CYOA ownership remains unproved.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

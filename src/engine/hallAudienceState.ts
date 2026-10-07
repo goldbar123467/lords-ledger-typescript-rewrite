@@ -22,6 +22,8 @@ export interface HallLogEntry {
 export interface HallAudienceSaveState {
   meters: HallMeterEffects;
   audienceResolved?: string[] | null;
+  /** The recorded Henrik response permitted trade; omitted older responses are unknown. */
+  henrikWelcome?: boolean | null;
   stewardTrust?: number | null;
   hallLog?: HallLogEntry[] | null;
 }
@@ -73,7 +75,7 @@ function logEntry(value: unknown): boolean {
 /** Reject damaged consumed shapes without canonicalizing historical optional defaults. */
 export function validateHallAudienceState(value: unknown): string | null {
   if (!record(value)) return 'Save Great Hall state is invalid.';
-  if (!serializedField(value, 'meters') || ['audienceResolved', 'stewardTrust', 'hallLog'].some(key =>
+  if (!serializedField(value, 'meters') || ['audienceResolved', 'henrikWelcome', 'stewardTrust', 'hallLog'].some(key =>
       key in value && !serializedField(value, key))) return 'Save Great Hall serialized fields are invalid.';
   const meters = value.meters;
   if (!record(meters) || !meterKeys.every(key => serializedField(meters, key) &&
@@ -82,6 +84,11 @@ export function validateHallAudienceState(value: unknown): string | null {
   // Pre-guard reducers could append repeats. Preserve these safe historical lists.
   if (resolved != null && !dense(resolved, id => typeof id === 'string' && audienceIds.has(id))) {
     return 'Save Great Hall audience history is invalid.';
+  }
+  if (value.henrikWelcome != null && (typeof value.henrikWelcome !== 'boolean' ||
+      !Array.isArray(resolved) || !resolved.includes('aud_002') ||
+      value.henrikWelcome !== (record(value.compoundFlags) && value.compoundFlags.welcomedHenrik === true))) {
+    return 'Save Great Hall Henrik receipt is invalid.';
   }
   const trust = value.stewardTrust;
   if (trust != null && (!finite(trust) || trust < 0 || trust > 100)) return 'Save Great Hall steward trust is invalid.';

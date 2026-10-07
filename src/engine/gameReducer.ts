@@ -711,7 +711,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       };
 
       // Phase 5: Recompute compound flags
-      const advanceCompoundFlags = computeCompoundFlags(prevHallAdvance.rulingHistory || []);
+      const advanceCompoundFlags = computeCompoundFlags(prevHallAdvance.rulingHistory || [], prevHallAdvance.henrikWelcome);
 
       // Phase 5: Check for crisis/peak events at season boundary
       const advMeters = prevHallAdvance.meters || { people: 50, treasury: 50, church: 50, military: 50 };
@@ -1146,7 +1146,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const newTrust = Math.max(0, Math.min(100, (prevHall.stewardTrust ?? 50) + trustDelta));
 
       // Phase 5: Compound flags and hall log
-      const newCompoundFlags = computeCompoundFlags(newHistory);
+      const newCompoundFlags = computeCompoundFlags(newHistory, prevHall.henrikWelcome);
       const disputeLogEntry: HallLogEntry = {
         type: "dispute",
         text: `Ruled on dispute: "${decree}"`,
@@ -1216,6 +1216,14 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const plan = planAudienceResponse(state, action.payload);
       if (!plan) return state;
       const prevHall = state.greatHall;
+      let henrikPatch: Pick<HallSaveState, 'henrikWelcome' | 'compoundFlags'> = {};
+      if (plan.encounterId === 'aud_002') {
+        const henrikWelcome = plan.consequences.treasury > 0;
+        const compoundFlags = {...prevHall.compoundFlags};
+        if (henrikWelcome) compoundFlags.welcomedHenrik = true;
+        else delete compoundFlags.welcomedHenrik;
+        henrikPatch = {henrikWelcome, compoundFlags};
+      }
 
       // Phase 5: Hall log
       const audLogEntry: HallLogEntry = {
@@ -1233,6 +1241,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
           audienceResolved: [...(prevHall.audienceResolved ?? []), plan.encounterId],
           stewardTrust: plan.stewardTrust,
           hallLog: [...(prevHall.hallLog || []), audLogEntry],
+          ...henrikPatch,
         },
         chronicle: addChronicle(
           state.chronicle,

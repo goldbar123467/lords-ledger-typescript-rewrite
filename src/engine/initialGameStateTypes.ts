@@ -59,7 +59,9 @@ export interface InitialMarketState {
 type InitialFields<T, Nullable extends keyof T> = {
   [K in keyof Required<T>]: K extends Nullable ? Required<T>[K] : NonNullable<T[K]>;
 };
-type InitialHallState = InitialFields<HallSaveState, 'reputationTrack' | 'pendingHallEvent'>;
+// The response receipt is created only after Henrik's audience, not at construction.
+type InitialHallState = InitialFields<Omit<HallSaveState, 'henrikWelcome'>, 'reputationTrack' | 'pendingHallEvent'>
+  & Pick<HallSaveState, 'henrikWelcome'>;
 type InitialChapelState = InitialFields<ChapelSaveState,
   'anselmGreeting' | 'caedmonGreeting' | 'currentDilemma' | 'dilemmaResult' | 'titheResponse' | 'msActiveSymbol' | 'msFact'>;
 type InitialForgeState = InitialFields<ForgeSaveState, 'marketPrices' | 'activeSupplyEvent'>;

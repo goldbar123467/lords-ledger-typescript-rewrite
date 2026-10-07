@@ -32,6 +32,7 @@ export interface HallDialogueState {
 }
 export interface HallPitchState {
   greatHall?: {
+    henrikWelcome?: boolean | null;
     meters?: HallMeterEffects | null;
     rulingHistory?: readonly HallRuling[] | null;
     disputesResolved?: number | null;
@@ -517,11 +518,14 @@ export const COMPOUND_RULES = [
  */
 export type CompoundFlag = typeof COMPOUND_RULES[number]['flag'];
 
-export function computeCompoundFlags(rulingHistory: readonly HallRuling[] | null | undefined): Partial<Record<CompoundFlag, true>> {
-  if (!rulingHistory || rulingHistory.length === 0) return {};
+export function computeCompoundFlags(rulingHistory: readonly HallRuling[] | null | undefined,
+  henrikWelcome?: boolean | null): Partial<Record<CompoundFlag, true>> {
+  const history = rulingHistory ?? [];
   const flags: Partial<Record<CompoundFlag, true>> = {};
   for (const rule of COMPOUND_RULES) {
-    if (rule.check(rulingHistory)) {
+    const active = rule.flag === 'welcomedHenrik' && typeof henrikWelcome === 'boolean'
+      ? henrikWelcome : history.length > 0 && rule.check(history);
+    if (active) {
       flags[rule.flag] = true;
     }
   }
@@ -584,7 +588,7 @@ export function exportPitchData(state: HallPitchState, prestige: 0 | 3 = 0) {
     hallLog: hall.hallLog || [],
 
     // Compound consequences achieved
-    compoundFlags: computeCompoundFlags(history),
+    compoundFlags: computeCompoundFlags(history, hall.henrikWelcome),
   };
 }
 
