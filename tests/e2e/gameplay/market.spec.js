@@ -5,7 +5,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { startGame, navigateToTab } from "../helpers.js";
+import { startGame, navigateToTab } from "../helpers.ts";
 
 /**
  * Get the current denarii from the Dashboard.

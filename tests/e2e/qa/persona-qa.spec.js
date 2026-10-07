@@ -7,7 +7,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { startGame, dismissOverlay, playOneTurn } from "../helpers.js";
+import { startGame, dismissOverlay, playOneTurn } from "../helpers.ts";
 import { writeFileSync, existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 

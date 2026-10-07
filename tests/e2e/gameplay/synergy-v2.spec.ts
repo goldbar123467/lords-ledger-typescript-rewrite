@@ -2,7 +2,7 @@ import type {SynergyTierId} from '../../../src/data/synergies.ts';
 import { expect, test, type Page } from '@playwright/test';
 import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
-import { playOneTurn } from '../helpers.js';
+import { playOneTurn } from '../helpers.ts';
 import { SYNERGY_TIER_MAP } from '../../../src/data/synergies.ts';
 
 function newGame() {

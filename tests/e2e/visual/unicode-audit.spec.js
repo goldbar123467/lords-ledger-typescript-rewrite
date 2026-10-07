@@ -11,7 +11,7 @@ import {
   waitForFonts,
   startGame,
   navigateToTab,
-} from "../helpers.js";
+} from "../helpers.ts";
 
 // Unicode ranges used as visual icons (not normal prose punctuation).
 // We look for anything in these blocks rendered as raw text:

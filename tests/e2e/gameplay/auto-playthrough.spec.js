@@ -9,7 +9,7 @@
  */
 
 import { expect, test } from "@playwright/test";
-import { startGame, dismissTutorial, dismissOverlay } from "../helpers.js";
+import { startGame, dismissTutorial, dismissOverlay } from "../helpers.ts";
 import { writeFileSync, existsSync, readFileSync, readdirSync, unlinkSync } from "fs";
 import { resolve } from "path";
 

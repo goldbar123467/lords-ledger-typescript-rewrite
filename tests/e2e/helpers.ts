@@ -1,3 +1,8 @@
+import type {Page} from '@playwright/test';
+
+export type TurnExitReason = 'sim_missing' | 'game_over' | 'victory' | 'title_screen' | 'page_closed' | 'loop_timeout';
+export interface TurnDiagnostic { reason?: TurnExitReason; iteration?: number; }
+
 /**
  * Shared test helpers for E2E Playwright tests.
  *
@@ -8,7 +13,7 @@
 /**
  * Wait for the title screen to be fully rendered and interactive.
  */
-export async function waitForTitleScreen(page) {
+export async function waitForTitleScreen(page: Page) {
   await page.waitForSelector("text=The Lord's Ledger", { timeout: 15_000 });
   // Wait for difficulty buttons to appear
   await page.waitForSelector("text=Normal", { timeout: 5_000 });
@@ -19,7 +24,7 @@ export async function waitForTitleScreen(page) {
  * Dismisses the initial tutorial popup, then returns
  * after the management phase is fully loaded.
  */
-export async function startGame(page, difficulty = "normal") {
+export async function startGame(page: Page, difficulty = "normal") {
   await waitForTitleScreen(page);
   const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
   await page.getByText(label, { exact: false }).first().click();
@@ -33,7 +38,7 @@ export async function startGame(page, difficulty = "normal") {
  * Navigate to a specific tab during the management phase.
  * Dismisses any tutorial popup that appears on the new tab.
  */
-export async function navigateToTab(page, tabName) {
+export async function navigateToTab(page: Page, tabName: string) {
   // Dismiss any existing tutorial overlay first
   await dismissTutorial(page);
   const tabButton = page.locator(`button[aria-label*="${tabName}"]`);
@@ -47,7 +52,7 @@ export async function navigateToTab(page, tabName) {
 /**
  * Wait for all images on the page to finish loading (or error).
  */
-export async function waitForAllImages(page) {
+export async function waitForAllImages(page: Page) {
   await page.waitForFunction(() => {
     const images = Array.from(document.querySelectorAll("img"));
     return images.every((img) => img.complete);
@@ -57,7 +62,7 @@ export async function waitForAllImages(page) {
 /**
  * Wait for Google Fonts to finish loading.
  */
-export async function waitForFonts(page) {
+export async function waitForFonts(page: Page) {
   await page.waitForFunction(() => document.fonts.ready.then(() => true), {
     timeout: 15_000,
   });
@@ -72,7 +77,7 @@ export async function waitForFonts(page) {
  * Handles overlay race conditions by retrying once if the element
  * detaches mid-click (e.g. fade-in transition not yet settled).
  */
-export async function dismissTutorial(page) {
+export async function dismissTutorial(page: Page) {
   const dismissButton = page.getByText("I Understand", { exact: true }).first();
   // Fast no-op path: short visibility probe so callers stay snappy.
   const visible = await dismissButton
@@ -88,7 +93,8 @@ export async function dismissTutorial(page) {
       await page.waitForTimeout(200);
       return;
     } catch (err) {
-      const msg = String(err && err.message ? err.message : err);
+      const msg = String(err && (typeof err === "object" || typeof err === "function") &&
+        "message" in err && err.message ? err.message : err);
       if (
         msg.includes("element is detached") ||
         msg.includes("not stable") ||
@@ -122,7 +128,7 @@ export async function dismissTutorial(page) {
  * Handles: Scribe's Note, Tutorial popup, Raid screen buttons.
  * Returns true if an overlay was dismissed.
  */
-export async function dismissOverlay(page) {
+export async function dismissOverlay(page: Page) {
   // Scribe's Note overlay — has a "Continue" button inside a fixed z-50 div
   const scribesNote = page.locator(".fixed.inset-0.z-50 button").filter({ hasText: "Continue" });
   if (await scribesNote.isVisible({ timeout: 300 }).catch(() => false)) {
@@ -165,8 +171,8 @@ export async function dismissOverlay(page) {
  * minigame — personas Avg/Goat never navigate there, so that path is
  * not a false-positive source.
  */
-export async function playOneTurn(page, diag) {
-  const record = (reason, iteration) => {
+export async function playOneTurn(page: Page, diag?: TurnDiagnostic) {
+  const record = (reason: TurnExitReason, iteration: number) => {
     if (diag && typeof diag === "object") {
       diag.reason = reason;
       diag.iteration = iteration;
@@ -322,7 +328,7 @@ export async function playOneTurn(page, diag) {
 /**
  * Get the computed style property of an element.
  */
-export async function getComputedStyleProp(page, selector, property) {
+export async function getComputedStyleProp(page: Page, selector: string, property: string) {
   return page.evaluate(
     ({ sel, prop }) => {
       const el = document.querySelector(sel);

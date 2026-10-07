@@ -11,7 +11,7 @@ import {
   waitForFonts,
   startGame,
   getComputedStyleProp,
-} from "../helpers.js";
+} from "../helpers.ts";
 
 // Expected theme colors from index.css @theme
 const THEME = {

@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForTitleScreen, waitForFonts, startGame } from "../helpers.js";
+import { waitForTitleScreen, waitForFonts, startGame } from "../helpers.ts";
 
 test.describe("Font Loading", () => {
   test("title heading element references Cinzel Decorative", async ({ page }) => {

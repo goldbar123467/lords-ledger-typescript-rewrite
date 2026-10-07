@@ -5,7 +5,7 @@
  */
 
 import { test } from "@playwright/test";
-import { startGame, navigateToTab, dismissOverlay, playOneTurn } from "../helpers.js";
+import { startGame, navigateToTab, dismissOverlay, playOneTurn } from "../helpers.ts";
 import { resolve } from "path";
 // Import the authoritative tab list so spec tours stay in sync with the UI.
 // A rename in data/tabs.ts automatically flows into this spec rather than

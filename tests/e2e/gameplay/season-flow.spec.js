@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { startGame, dismissTutorial, playOneTurn } from "../helpers.js";
+import { startGame, dismissTutorial, playOneTurn } from "../helpers.ts";
 
 /**
  * Click "Simulate Season" and wait for the seasonal event screen.

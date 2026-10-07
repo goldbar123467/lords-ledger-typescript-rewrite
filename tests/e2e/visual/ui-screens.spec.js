@@ -11,7 +11,7 @@ import {
   waitForFonts,
   startGame,
   navigateToTab,
-} from "../helpers.js";
+} from "../helpers.ts";
 
 test.describe("Title Screen", () => {
   test("renders difficulty selection buttons", async ({ page }) => {

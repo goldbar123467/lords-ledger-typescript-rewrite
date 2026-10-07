@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForFonts, startGame } from "../helpers.js";
+import { waitForFonts, startGame } from "../helpers.ts";
 
 test.describe("Dashboard Icons", () => {
   test.beforeEach(async ({ page }) => {
