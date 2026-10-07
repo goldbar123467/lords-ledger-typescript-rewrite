@@ -11,7 +11,7 @@
 import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import WatchtowerDefenseStatus from './WatchtowerDefenseStatus.tsx';
 import { createRandomCursor } from "../engine/random.ts";
-import { createScanPlan, summarizeScan, type ScanAnomaly, type ScanPlan, type ScanReport, type ScanWarnings } from "../engine/watchtowerScan.ts";
+import { createScanPlan, summarizeScan, type ScanAnomaly, type ScanPlan, type ScanReport } from "../engine/watchtowerScan.ts";
 import {
   WATCHTOWER_SUBTITLES,
   type RodericState,
@@ -25,23 +25,13 @@ import {
 
 
 import type { SavedRaidState } from '../save/savedRaid.ts';
+import type { SavedWatchtowerState } from '../save/savedWatchtower.ts';
 
-interface WatchtowerProgress {
-  scannedThisSeason?: boolean;
-  scanScribesNoteSeen?: boolean;
-  rodericScribesNoteSeen?: boolean;
-  totalScans?: number;
-  totalAnomaliesSpotted?: number;
-  totalAnomaliesMissed?: number;
-  perfectScans?: number;
-  warnings?: Partial<ScanWarnings>;
-  signalLog?: readonly { season: string; year: number; type: string; text: string }[];
-}
 interface WatchtowerViewState extends RodericState {
   phase: string;
   rngState: number;
   raids?: SavedRaidState;
-  watchtower?: WatchtowerProgress;
+  watchtower?: SavedWatchtowerState;
 }
 type WatchtowerCommand =
   | { type: 'WATCHTOWER_SCAN_SCRIBES_NOTE_SEEN' | 'WATCHTOWER_RODERIC_SCRIBES_NOTE_SEEN' | 'DISMISS_SCRIBES_NOTE' }

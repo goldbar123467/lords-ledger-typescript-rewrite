@@ -27,7 +27,7 @@ interface MilitaryViewState extends MilitaryReadinessState {
   garrison: number;
   castleLevel: FortificationLevels['walls'];
   military?: MilitaryDefenseState | null;
-  watchtower?: (NonNullable<MilitaryReadinessState['watchtower']> & { scannedThisSeason?: boolean }) | null;
+  watchtower?: (NonNullable<MilitaryReadinessState['watchtower']> & { scannedThisSeason?: boolean | null }) | null;
   tavern?: { aldricDrillActive?: number } | null;
   chronicle?: readonly SavedChronicleEntry[];
 }

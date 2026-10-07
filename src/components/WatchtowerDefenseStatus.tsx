@@ -1,11 +1,11 @@
 import { getMilitaryReadiness, type MilitaryReadinessState } from '../engine/militaryReadiness.ts';
 import { WALLS_TRACK, GATE_TRACK, MOAT_TRACK, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD } from '../data/military.ts';
 import type { SavedRaidState } from '../save/savedRaid.ts';
-import type { ScanWarnings } from '../engine/watchtowerScan.ts';
+import type { SavedWatchtowerState } from '../save/savedWatchtower.ts';
 
 interface ReadinessViewState extends MilitaryReadinessState {
   raids?: SavedRaidState;
-  watchtower?: { warnings?: Partial<ScanWarnings> };
+  watchtower?: Pick<SavedWatchtowerState, 'warnings'>;
 }
 
 export default function WatchtowerDefenseStatus({ state }: { state: ReadinessViewState }) {

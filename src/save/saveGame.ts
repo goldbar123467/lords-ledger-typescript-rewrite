@@ -10,6 +10,7 @@ import type { EventDefinition } from '../data/eventTypes.ts';
 import type { SavedEvent } from './savedEvent.ts';
 import { validateRaidBookkeeping, type SavedRaidState } from './savedRaid.ts';
 import { validateMarketMetadata, type SavedMarketState } from './savedMarket.ts';
+import { validateWatchtowerState, type SavedWatchtowerState } from './savedWatchtower.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -68,6 +69,7 @@ export interface GameSnapshot extends ViewMetadata {
   raids: SavedRaidState;
   market: SavedMarketState;
   marketPrices: GeneratedMarketPrices;
+  watchtower: SavedWatchtowerState;
   rngState: number;
   phase: GamePhase;
   difficulty: Difficulty;
@@ -89,6 +91,9 @@ export interface GameSnapshot extends ViewMetadata {
     gambitScribesNoteSeen?: boolean;
     ratsScribesNoteSeen?: boolean;
     ratsPlayedThisSeason?: boolean;
+    ratsBestScore?: number;
+    martaSpiceInvestment?: boolean;
+    aldricDrillActive?: number;
     wallStashFound?: boolean;
     totalVisits?: TavernLedgerInteger;
     gambitTotalWins?: TavernLedgerInteger;
@@ -384,6 +389,8 @@ function validateSnapshot(value: unknown): string | null {
   }
   const metadataIssue = validateViewMetadata(value);
   if (metadataIssue) return metadataIssue;
+  const watchtowerIssue = validateWatchtowerState(value.watchtower);
+  if (watchtowerIssue) return watchtowerIssue;
 
   const synergies = value.synergies;
   if (!isRecord(synergies) || !isActivatedSynergies(synergies.activated)) {

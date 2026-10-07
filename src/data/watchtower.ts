@@ -1,6 +1,7 @@
 import { WALLS_TRACK, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD } from './military.ts';
 import { getMilitaryReadiness, type MilitaryReadinessState } from '../engine/militaryReadiness.ts';
 import type { SavedRaidState } from '../save/savedRaid.ts';
+import type { SavedWatchtowerState } from '../save/savedWatchtower.ts';
 
 export type AnomalyId = 'campfire' | 'dust' | 'signal' | 'wagon' | 'birds';
 export type WarningKey = 'criminalRaidBonus' | 'scottishRaidBonus' | 'raidRequirementReduction' | 'merchantPreview';
@@ -24,10 +25,7 @@ export interface RodericState extends MilitaryReadinessState {
   raids?: Pick<SavedRaidState, 'lastRaidType' | 'lastRaidTurn' | 'totalCriminalRaids' | 'totalScottishRaids' | 'criminalCooldown' | 'scottishCooldown'> & {
     activeRaid?: { result?: { victory: boolean } | null } | null;
   };
-  watchtower?: {
-    scannedThisSeason?: boolean;
-    warnings?: Partial<Record<Exclude<WarningKey, 'merchantPreview'>, number>>;
-  };
+  watchtower?: Pick<SavedWatchtowerState, 'scannedThisSeason' | 'warnings'>;
 }
 type RodericResponse = (state: RodericState) => string | null;
 

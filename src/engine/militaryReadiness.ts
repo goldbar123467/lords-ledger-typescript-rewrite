@@ -5,15 +5,16 @@ import {
 } from '../data/military.ts';
 import { getAldricDrillBonus } from '../data/militaryRules.ts';
 import { calculateForgeReadiness, type EquippedItem } from './forgeReadiness.ts';
+import type { SavedScanWarnings } from '../save/savedWatchtower.ts';
 
 /** Incremental consumed-state contract, not validation of an imported whole-game save. */
 export interface MilitaryReadinessState {
   garrison?: number;
   castleLevel?: FortificationLevels['walls'];
   military?: (Partial<FortificationLevels> & { garrison?: Partial<Garrison>; morale?: number }) | null;
-  blacksmith?: { equipped?: readonly EquippedItem[] } | null;
+  blacksmith?: { equipped?: readonly EquippedItem[] | null } | null;
   tavern?: { aldricDrillActive?: number } | null;
-  watchtower?: { warnings?: { criminalRaidBonus?: number; scottishRaidBonus?: number; raidRequirementReduction?: number } } | null;
+  watchtower?: { warnings?: SavedScanWarnings | null } | null;
 }
 
 /** Same current-state calculation for simulation and advice; future seasonal changes still matter. */

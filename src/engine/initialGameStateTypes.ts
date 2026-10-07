@@ -12,6 +12,7 @@ import type { RaidState } from './raidEngine.ts';
 import type { SynergyTierId } from '../data/synergies.ts';
 import type { MarketEvent } from '../data/market.ts';
 import type { ActiveHaggle } from './marketHaggle.ts';
+import type { SavedWatchtowerState } from '../save/savedWatchtower.ts';
 import type { ChapelSaveState } from './chapelState.ts';
 import type { ForgeSaveState } from './forgeState.ts';
 import type { HallSaveState } from './hallAudienceState.ts';
@@ -29,7 +30,7 @@ export interface SynergyNotification {
   tierId: SynergyTierId; tier: 1 | 2 | 3; title: string; description: string;
   pathName: string; pathIcon: string; pathColor: string; scribesNote?: string | null;
 }
-export interface InitialWatchtowerState {
+export interface InitialWatchtowerState extends SavedWatchtowerState {
   scannedThisSeason: boolean;
   lastScanResult: { anomaliesTotal: number; anomaliesFound: number; rating: string } | null;
   warnings: ScanWarnings;
