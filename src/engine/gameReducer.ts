@@ -178,8 +178,9 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     // -----------------------------------------------------------------------
     case "START_GAME":
     case "PLAY_AGAIN": {
-      const difficulty = action.payload?.difficulty || state.difficulty || "normal";
-      const config = DIFFICULTY_CONFIGS[difficulty] || DIFFICULTY_CONFIGS.normal;
+      const difficulty = action.payload?.difficulty ?? state.difficulty ?? "normal";
+      if (difficulty !== "easy" && difficulty !== "normal" && difficulty !== "hard") return state;
+      const config = DIFFICULTY_CONFIGS[difficulty];
       const startInventory = { ...EMPTY_INVENTORY, ...config.startingInventory };
 
       const openingText =

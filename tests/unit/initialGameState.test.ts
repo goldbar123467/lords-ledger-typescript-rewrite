@@ -3,10 +3,34 @@ import test from 'node:test';
 import { createHash } from 'node:crypto';
 import { createInitialState } from '../../src/engine/gameReducer.ts';
 import { rawGameReducer as gameReducer } from '../gameInput.ts';
+import { invokeGameReducer } from '../gameInput.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 
 const seeds = [0, 1, 104, 4294967295, ...Array.from({ length: 100 }, (_, index) => index + 200)];
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
+
+for (const type of ['START_GAME', 'PLAY_AGAIN']) {
+  test(`${type} rejects invalid difficulty before replacing the current game`, () => {
+    const state = gameReducer(createInitialState(104), {type: 'START_GAME', payload: {seed: 104, difficulty: 'hard'}});
+    const before = writeV2Save(state);
+    for (const difficulty of ['unknown', 'toString', 'constructor', '__proto__', '', 'Normal',
+      true, false, 0, 1, NaN, Infinity, {}, [], ['easy'], 1n, Symbol('difficulty')]) {
+      assert.strictEqual(invokeGameReducer(state, {type, payload: {difficulty, seed: 1}}), state);
+      assert.equal(writeV2Save(state), before);
+    }
+  });
+}
+
+test('missing and null start difficulties retain the current supported difficulty', () => {
+  const state = gameReducer(createInitialState(104), {type: 'START_GAME', payload: {seed: 104, difficulty: 'hard'}});
+  for (const type of ['START_GAME', 'PLAY_AGAIN']) for (const difficulty of [undefined, null]) {
+    const next = gameReducer(state, {type, payload: {difficulty, seed: 104}});
+    assert.equal(next.difficulty, 'hard');
+    assert.equal(next.denarii, state.denarii);
+    assert.equal(writeV2Save(next), writeV2Save(state));
+    assert.notStrictEqual(next, state, 'valid restart still constructs an independently owned game');
+  }
+});
 test('104 seeded constructor states and canonical saves preserve the pre-extraction bytes', () => {
   const rows = seeds.map(seed => {
     const state = createInitialState(seed);

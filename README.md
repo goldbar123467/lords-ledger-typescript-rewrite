@@ -28,7 +28,9 @@ Seasonal and random settlement now share one checked domain function, removing d
 
 **Legacy donation correction: G-ES01 closed.** The retained `DONATE_TO_CHURCH` command now rejects coerced amounts and nonfinite totals atomically while preserving valid fractional donations. All **743 unit tests**, typecheck, lint and build pass, along with two related Chapel payment/save/reload browser cases. Independent reviews reproduce the original failures and check legal state/save parity. The Chapel interface uses its separate tithe command; this fix does not imply whole-game arithmetic closure.
 
-Seasonal processing now has a checked owner for economy, morale, wear, timed effects and raid interruption, with shared result assembly and a shared calendar. All **744 unit tests**, static checks, build and **31 affected browser cases** pass. Baseline comparisons match 120 complete seeded replay campaigns/28,632 state-save pairs and 180 targeted snapshots. Independent review also matches 1,809 random draws. The main reducer is now 2,508 lines; the 428-line season owner still needs further decomposition. **G-SO01 is open:** malformed start-game difficulty values can select inherited configuration properties or produce an unsaveable state. Its correction is next.
+Seasonal processing now has a checked owner for economy, morale, wear, timed effects and raid interruption, with shared result assembly and a shared calendar. All **744 unit tests**, static checks, build and **31 affected browser cases** pass. Baseline comparisons match 120 complete seeded replay campaigns/28,632 state-save pairs and 180 targeted snapshots. Independent review also matches 1,809 random draws. The main reducer is now 2,508 lines; the 428-line season owner still needs further decomposition. **G-SO01 is now closed:** both start commands reject malformed difficulty values before replacing state or indexing configuration.
+Start/restart validation passes **747 unit tests**, typecheck, lint, build and five native start/restart browser cases. Independent reviews verify invalid-input identity, supported difficulty defaults, exact save/RNG behavior and fresh ownership. Invalid empty, zero and false difficulty values now reject; omitted/null values retain the supported default. Broader action, phase, seed and saved-state validation remains incomplete.
+
 ## Current progress
 
 | Area | Included in the checkpoint | Remaining work |
@@ -56,7 +58,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-No source JavaScript files remain. The latest recorded census counts 45,002 production lines versus the original 45,347, a reduction of 345 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,684 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,741 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -127,7 +129,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct G-SO01 start difficulty validation, continue decomposing season and subsystem orchestration, and complete remaining state and command validation.
+1. Continue decomposing season and subsystem orchestration, and complete remaining state and command validation.
 2. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
 4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
