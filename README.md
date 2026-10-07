@@ -36,13 +36,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | QA assertion correction (`9b3c2a8`) | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
 | Root configurations (`49ce34f`) | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
 | Headless driver (`75631db`) | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
-| Browser driver | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
+| Browser driver (`13ca781`) | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
+| QA diagnostics | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **45,003 lines**, versus 45,347 at baseline. The browser tooling checkpoint's inclusive subtotal was **80,184 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **45,003 lines**, versus 45,347 at baseline. The QA diagnostics checkpoint's inclusive subtotal was **80,407 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -62,10 +63,9 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The browse
 
 ## Next rewrite sections
 
-1. Strengthen remaining QA transport filtering and report emission on early failures.
-2. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
-3. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
-4. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
+1. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
+2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
+3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
 ## Rewrite workflow and history
 
