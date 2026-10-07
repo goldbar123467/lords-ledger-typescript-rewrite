@@ -24,7 +24,7 @@ import {
 } from "../data/watchtower.ts";
 
 
-import type { RaidState } from '../engine/raidEngine.ts';
+import type { SavedRaidState } from '../save/savedRaid.ts';
 
 interface WatchtowerProgress {
   scannedThisSeason?: boolean;
@@ -40,7 +40,7 @@ interface WatchtowerProgress {
 interface WatchtowerViewState extends RodericState {
   phase: string;
   rngState: number;
-  raids?: Partial<RaidState>;
+  raids?: SavedRaidState;
   watchtower?: WatchtowerProgress;
 }
 type WatchtowerCommand =

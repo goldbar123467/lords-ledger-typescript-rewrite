@@ -69,6 +69,8 @@ Optional event notes, choice notes and choice summaries now reject malformed val
 
 Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. The App remains JavaScript; its migration probe still has 36 compiler diagnostics, so this is a persistence and view-boundary checkpoint.
 
+Loaded raids now have explicit bookkeeping, warning and result contracts. Malformed counters, flags, raid types and captured numeric metadata reject; omitted/null defaults and finite historical values stay intact. All 521 unit tests and static/build checks pass. Three new raid persistence flows and 28 integration scenarios pass across the recorded batches, including repair of an older invalid Forge test fixture. Independent tester and grader reviews accept this scope. The App probe has 34 diagnostics remaining; the App and reducer remain unchecked.
+
 ## Code map
 
 | Location | Rewrite responsibility |

@@ -10,6 +10,7 @@ import { RAID_TYPES, TRADE_GOODS_FOR_RAIDS, type RaidType, type RaidTradeGoodId 
 
 export type { RaidType } from '../data/raids.ts';
 export type RandomSource = () => number;
+import type { SavedRaidState } from '../save/savedRaid.ts';
 
 export interface RaidResult {
   victory: boolean;
@@ -101,7 +102,7 @@ export function getInitialRaidState(): RaidState {
 }
 
 /** Check whether a raid triggers this season; a forced border raid takes priority. */
-export function checkForRaid(raids: Pick<RaidState, 'criminalCooldown' | 'scottishCooldown' | 'lastRaidTurn' | 'totalScottishRaids'> | null, turn: number, random: RandomSource): { type: RaidType } | null {
+export function checkForRaid(raids: Pick<SavedRaidState, 'criminalCooldown' | 'scottishCooldown' | 'lastRaidTurn' | 'totalScottishRaids'> | null, turn: number, random: RandomSource): { type: RaidType } | null {
   if (!raids) return null;
 
   const criminalDef = RAID_TYPES.criminal;
@@ -262,7 +263,7 @@ export function resolveRaid(raidType: string, defenseRating: number, defenseThre
 /**
  * Build chronicle text for a raid outcome.
  */
-export function buildRaidChronicleText(raidType: RaidType, result: RaidResult, season: string, year: number, garrison: number, defenseRating: number, defenseThreshold: number, watchtowerBonus: number): string {
+export function buildRaidChronicleText(raidType: RaidType, result: Omit<RaidResult, 'tradeGoodLost'> & { tradeGoodLost: { resource: string; amount: number } | null }, season: string, year: number, garrison: number, defenseRating: number, defenseThreshold: number, watchtowerBonus: number): string {
   if (result.victory) {
     const wtNote = watchtowerBonus > 0 ? `, watchtower intel +${watchtowerBonus}` : "";
     const parts = [`${result.raidName} attacked the estate. Your defenses held (rating ${defenseRating} vs ${defenseThreshold} required${wtNote}).`];

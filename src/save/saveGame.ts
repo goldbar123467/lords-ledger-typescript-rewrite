@@ -8,6 +8,7 @@ import seasonalEvents from '../data/seasonalEvents.ts';
 import randomEvents from '../data/randomEvents.ts';
 import type { EventDefinition } from '../data/eventTypes.ts';
 import type { SavedEvent } from './savedEvent.ts';
+import { validateRaidBookkeeping, type SavedRaidState } from './savedRaid.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -63,6 +64,7 @@ export interface BuildingInstance {
 export interface GameSnapshot extends ViewMetadata {
   currentEvent: SavedEvent | null;
   currentRandomEvent: SavedEvent | null;
+  raids: SavedRaidState;
   rngState: number;
   phase: GamePhase;
   difficulty: Difficulty;
@@ -241,6 +243,8 @@ function validateSavedEvent(
 function validateRaidPhase(state: Record<string, unknown>): string | null {
   const raids = state.raids;
   if (!isRecord(raids)) return 'Save raid state is invalid.';
+  const bookkeepingIssue = validateRaidBookkeeping(raids);
+  if (bookkeepingIssue) return bookkeepingIssue;
   const active = raids.activeRaid;
   const isRaidPhase = state.phase === 'raid_warning' || state.phase === 'raid_result';
   if (!isRaidPhase) return active == null ? null : 'Save has a raid outside a raid phase.';
@@ -249,6 +253,9 @@ function validateRaidPhase(state: Record<string, unknown>): string | null {
   }
   const expectedPhase = state.phase === 'raid_warning' ? 'warning' : 'result';
   if (active.phase !== expectedPhase) return 'Save pending raid phase does not match the game phase.';
+  for (const key of ['defenseThreshold', 'watchtowerBonus']) {
+    if (active[key] != null && !isFiniteNumber(active[key])) return `Save raid ${key} must be a finite number or null.`;
+  }
   if (active.drillBonus !== undefined &&
       (!Number.isSafeInteger(active.drillBonus) || (active.drillBonus as number) < 0 ||
        (active.drillBonus as number) > (state.garrison as number))) return 'Save raid drill bonus is invalid.';

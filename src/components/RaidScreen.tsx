@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useId, useRef, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
-import type { ActiveRaid } from "../engine/raidEngine.ts";
+import type { SavedActiveRaid } from "../save/savedRaid.ts";
 import type { MilitaryDefenseState } from "../data/military.ts";
 import { RAID_TYPES } from "../data/raids.ts";
 import { CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD, calculateDefenseRating } from "../data/military.ts";
@@ -16,7 +16,7 @@ type RaidStyle = CSSProperties & { "--raid-glow"?: string; "--px"?: string; "--p
 function raidStyle(style: RaidStyle): CSSProperties { return style; }
 
 interface RaidScreenProps {
-  raidState: ActiveRaid | null;
+  raidState: SavedActiveRaid | null;
   suspended?: boolean;
   garrison: number;
   military?: MilitaryDefenseState | null;
