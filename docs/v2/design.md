@@ -80,3 +80,9 @@ Save feedback is one local discriminated value: finite success status, error wit
 ## Modern construction versus loaded state (2026-10-06)
 
 InitialGameState describes every modern constructor field with existing domain contracts, finite registry IDs and explicit nullable empty selections. InitialFields requires modern presence/non-null values while retaining selected null markers. Pure seeded construction owns inventories, prices, garrison, families and queues; consumers retain the public reducer reexport. Older validated GameSnapshot records can omit modern fields. Complete loaded-state and phase contracts must be established independently before checking the reducer; a modern construction interface cannot prove old loads or unchecked transition outputs.
+
+## Prospective reduction target (2026-10-07)
+
+The requirement audit found no explicit numeric reduction target in the earlier baseline/design/current guide; historical statements that a target was unmet did not name one. This omission is recorded rather than retroactively declaring a target achieved.
+
+From the consistent census, original implementation is 30,642 physical lines and current implementation is 28,120, including mixed types/comments/blank lines. Set a prospective final implementation target of at least 10% below the original, or at most 27,577 lines. The current reduction is about 8.23%, so 543 further implementation lines remain before that target is met. Production including authored data/styles remains separately measured at 44,727 versus 45,347; the target does not permit deleting authored choices, moving code outside counted categories, minifying, removing useful comments/tests or weakening contracts. Prefer cohesive shared logic and redundant-state/dead-path removal, and report any unmet target honestly. Inclusive repository growth remains a separate disclosure.

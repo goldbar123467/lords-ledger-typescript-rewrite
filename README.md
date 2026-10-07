@@ -4,6 +4,8 @@ An incremental rewrite of The Lord's Ledger, a React game about managing a medie
 
 **Status: in progress.** All first-party executable source, tests, configurations, and playtest tooling now use checked TypeScript under `strict` and `noUncheckedIndexedAccess`. The temporary JavaScript compiler allowance is removed. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
 
+The current requirement audit is recorded in [verification notes](docs/v2/verification.md). Browser discovery finds 820 cases in 146 files; this is not a passing full-suite result. Final-build seeded campaigns, platform visual approval and a consolidated interface verdict remain open.
+
 ## Rewrite goals
 
 - Check all first-party executable code with TypeScript `strict` and `noUncheckedIndexedAccess`, including tests and tooling.
@@ -52,7 +54,7 @@ At the QA migration checkpoint, browser discovery found **789 tests across 140 f
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,727 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, and shared synergy activation removed 21. Line totals also reflect comments and formatting. At the fractional Market checkpoint, the inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,727 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, and shared synergy activation removed 21. Line totals also reflect comments and formatting. The prospective implementation target is **27,577 lines**, 10% below the original 30,642; current implementation is 28,120, leaving 543 lines before the target is met. This target is newly recorded after the audit found no earlier numeric target. The inclusive subtotal is **80,294 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. Documentation trimming is excluded from production reduction.
 
 ## Code map
 
@@ -72,7 +74,7 @@ Production text measured **44,727 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Reconcile the working guide with current source and audit remaining completion requirements. Prioritize outstanding gameplay and interface defects, runtime/save contracts, and substantive duplication. Contextual CYOA ownership remains unproved; no native stale-choice defect has been reproduced.
+1. Correct Henrik welcome/refusal receipts and Spring buyer reachability, then reproduce and repair enlarged Forge grade labels. Continue runtime/save checks and meaningful duplication reduction; contextual CYOA ownership remains unproved.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

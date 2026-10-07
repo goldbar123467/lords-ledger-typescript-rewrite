@@ -23,7 +23,7 @@ and evidence gates. Rewrite sections are committed on the independent
   npm run test                  # full suite
   npm run test:visual           # visual only
   npx playwright test <file>    # one spec
-  npm run test:update-snapshots # refresh baselines
+  npm run test:update-snapshots # only after independent image approval; scope the update
   ```
 - QA persona driver: `tests/e2e/qa/persona-qa.spec.ts`.
 - Current screenshots/reports use Playwright per-test output paths. Each persona
@@ -61,9 +61,13 @@ screens cannot save, so the stored pre-turn snapshot is not final state evidence
 
 `tests/e2e/qa/qa-progress.spec.ts` covers phone/desktop managed victory and famine
 transitions plus a deliberately blocked Simulate action. These are fixture regressions,
-not natural campaigns. Transport filtering can still exclude genuine resource failures;
-exceptions before report emission can still prevent a findings file. Random persona
-choices and short 6/8/12 bounds do not establish deterministic replay or full QA acceptance.
+not natural campaigns. `tests/e2e/qaDiagnostics.ts` retains page, console, request and
+HTTP errors, including origin metadata, and records failed attempts and early exceptions.
+Known media cancellation during an explicitly declared reload is recorded separately;
+the correlation is not universal causal attribution. Negative fault/report-loss tests
+were verified at `fbd8c8f`; that checkpoint is not a fresh whole-suite result. Random
+persona choices and short 6/8/12 bounds do not establish deterministic replay, complete
+failure attribution, interruption recovery or full QA acceptance.
 
 ## Bug Logging Format (backlog.md)
 
