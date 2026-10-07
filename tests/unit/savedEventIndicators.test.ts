@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import seasonal from '../../src/data/seasonalEvents.ts';
 import random from '../../src/data/randomEvents.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
@@ -27,7 +28,7 @@ test('historical empty indicators and omitted notes preserve bytes and legal set
   const authored = seasonal.spring[0];
   const event = { ...authored, scribesNote: undefined,
     options: authored.options.map(option => ({ ...option, indicators: { ...option.indicators, treasury: '', historicalIndicator: 'north' } })) };
-  const state = { ...base, phase: 'seasonal_action', currentEvent: event }, raw = writeV2Save(state);
+  const state = { ...base, phase: 'seasonal_action' as const, currentEvent: event }, raw = writeV2Save(state);
   const loaded = readV2Save(raw), legacy = readLegacySave(JSON.stringify(state));
   if (!loaded.ok) throw new Error(loaded.error);
   if (!legacy.ok) throw new Error(legacy.error);

@@ -1,5 +1,6 @@
+import {snapshotFixture} from '../../gameInput.ts';
 import { expect, test } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save } from '../../../src/save/saveGame.ts';
 import encounters from '../../../src/data/audience.ts';
 
@@ -7,7 +8,7 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
   test(`damaged dispute history blocks ${kind} load and preserves slots at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'],
+    const state = { ...base, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'],
       greatHall: { ...base.greatHall, rulingHistory: [null] } };
     const legacy = JSON.stringify(state), v2 = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : null;
     const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
@@ -27,9 +28,9 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
   test(`compatible dispute history ${kind} save continues and resaves at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'],
-      greatHall: { ...base.greatHall, rulingHistory: [{ disputeId: 'dispute_001', rulingId: 'a', decree: 'Older decree wording.', consequences: { people: 0.5 }, turn: 1, season: 'spring', year: 1 },
-        { disputeId: 'dispute_001', rulingId: 'a', decree: 'Older decree wording.', consequences: null, turn: 1, season: 'spring', year: 1 }], disputesResolved: 9, stewardTrust: 0 } };
+    const state = { ...base, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'],
+      greatHall: { ...base.greatHall, rulingHistory: [{ disputeId: 'dispute_001', rulingId: 'a', decree: 'Older decree wording.', consequences: { people: 0.5 }, turn: 1, season: 'spring' as const, year: 1 },
+        { disputeId: 'dispute_001', rulingId: 'a', decree: 'Older decree wording.', consequences: null, turn: 1, season: 'spring' as const, year: 1 }], disputesResolved: 9, stewardTrust: 0 } };
     const legacy = JSON.stringify(state), v2 = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : null;
     await page.addInitScript(({ v2, legacy }) => {
       if (!localStorage.getItem('lords-ledger-save')) localStorage.setItem('lords-ledger-save', legacy);
@@ -49,7 +50,7 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
     expect(raw).not.toBeNull(); if (raw === null) throw new Error('Save slot missing');
     const loaded = readV2Save(raw);
     expect(loaded.ok).toBe(true); if (!loaded.ok) return;
-    const expected = gameReducer(state, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex: 0 } });
+    const expected = gameReducer(snapshotFixture(state), { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex: 0 } });
     expect(loaded.state.greatHall).toEqual(expected.greatHall); expect(loaded.state.rngState).toBe(state.rngState);
     await page.screenshot({ path: info.outputPath('continued-dispute-history.png'), animations: 'disabled' });
     await page.reload(); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();

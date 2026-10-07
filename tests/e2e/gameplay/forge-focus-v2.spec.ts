@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 import {hitRhythm} from '../forgeRhythm.ts';
 import {focusCollect} from '../forgeFocus.ts';

@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 
 function freshGame() {
   return gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'normal' } });
@@ -51,8 +53,10 @@ test('legacy string building upgrades to a valid uniquely identified instance', 
   const result = gameReducer(state, { type: 'UPGRADE_BUILDING', payload: { buildingIndex: 0 } });
   assert.notEqual(result, state);
   assert.equal(result.denarii, 380);
-  assert.equal(result.buildings[0].type, 'demesne_field');
-  assert.equal(result.buildings[0].condition, 100);
-  assert.equal(typeof result.buildings[0].instanceId, 'string');
+  const upgraded = present(result.buildings[0], 'upgraded building');
+  assert.ok(typeof upgraded !== 'string');
+  assert.equal(upgraded.type, 'demesne_field');
+  assert.equal(upgraded.condition, 100);
+  assert.equal(typeof upgraded.instanceId, 'string');
   assert.equal(state.buildings[0], 'strip_farm');
 });

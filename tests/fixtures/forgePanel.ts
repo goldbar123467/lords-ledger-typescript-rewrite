@@ -1,4 +1,4 @@
-import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../src/engine/gameReducer.ts';
 /** Paid normal-startup items with prescribed quality, for UI coverage rather than acquisition evidence. */
 export function forgePanelFixture() {
  let state=gameReducer(createInitialState(104),{type:'START_GAME',payload:{difficulty:'normal',seed:104}});

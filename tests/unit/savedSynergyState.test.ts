@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { advanceSynergyCounters, checkSynergies } from '../../src/engine/synergyEngine.ts';
 import { isActivatedSynergies } from '../../src/engine/marketHaggle.ts';
 import type { SavedSynergyState } from '../../src/save/savedSynergy.ts';

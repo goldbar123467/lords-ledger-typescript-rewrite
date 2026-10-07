@@ -1,5 +1,7 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
+import {emptyInventory} from '../../gameInput.ts';
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 import { TAB_CONFIG } from '../../../src/data/tabs.ts';
 
@@ -23,7 +25,7 @@ async function expectReadableText(page: Page, selector: string, background: stri
   }
 }
 
-async function load(page: Page, state: typeof normal, enlarged = false) {
+async function load(page: Page, state: GameSnapshot, enlarged = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(state));
   await page.goto('/');
@@ -88,7 +90,7 @@ for (const [width, height, enlarged] of [
 for (const width of [390, 1366]) {
   test(`dashboard preserves critical warnings and saved values at ${width}px`, async ({ page }, info) => {
     const warnings = { ...normal, denarii: 0, food: 0, population: 5, garrison: 0, bankruptcyTurns: 5,
-      inventory: Object.fromEntries(Object.keys(normal.inventory).map(key => [key, 0])),
+      inventory: emptyInventory(normal.inventory),
       military: { ...normal.military, morale: 10, garrison: { levy: 0, menAtArms: 0, knights: 0 } },
       resourceDeltas: { denarii: -15, food: -20, population: -2, garrison: -1 },
     };
@@ -116,7 +118,7 @@ for (const width of [390, 1366]) {
 }
 
 test('perspective meters stay separate with enlarged phone text', async ({ page }, info) => {
-  const simulated = gameReducer({ ...normal, turn: 7, season: 'autumn', year: 2, taxRate: 'high' },
+  const simulated = gameReducer({ ...normal, turn: 7, season: 'autumn' as const, year: 2, taxRate: 'high' },
     { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
   const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
   expect(entered.currentFlipId).toBe('serf_week');

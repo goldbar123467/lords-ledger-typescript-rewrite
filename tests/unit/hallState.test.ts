@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { validateHallConsequenceState } from '../../src/engine/hallConsequenceState.ts';
-import { createInitialState } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']};
-const snapshot={turn:0,season:'winter',year:25,meters:{people:0,treasury:12.5,church:100,military:50}};
+const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']};
+const snapshot={turn:0,season:'winter' as const,year:25,meters:{people:0,treasury:12.5,church:100,military:50}};
 const event={type:'crisis',meter:'people',text:'Older unrest prose.',chronicle:'Older chronicle.',effects:{people:-2.5}};
 function record(value:unknown):value is Record<string,unknown>{return typeof value==='object'&&value!==null&&!Array.isArray(value);}
 function damagedRaw(key:string,value:unknown){const envelope:unknown=JSON.parse(writeV2Save(state));if(!record(envelope)||!record(envelope.state)||!record(envelope.state.greatHall))throw Error('Invalid fixture');return {v2:JSON.stringify({...envelope,state:{...envelope.state,greatHall:{...envelope.state.greatHall,[key]:value}}}),legacy:JSON.stringify({...envelope.state,greatHall:{...envelope.state.greatHall,[key]:value}})};}
@@ -13,7 +13,7 @@ const badFields:readonly [string,unknown][]=[
  ['reputationScores',[]],['reputationScores',{merciful:-1}],['reputationScores',{merciful:'many'}],
  ['meterHistory',{}],['meterHistory',[null,snapshot]],['meterHistory',[{...snapshot,meters:null}]],
  ['meterHistory',[{...snapshot,meters:{...snapshot.meters,people:101}}]],['meterHistory',[{...snapshot,meters:{...snapshot.meters,people:'broken'}}]],
- ['meterHistory',[{...snapshot,season:'rainy'}]],['meterHistory',[{...snapshot,year:0}]],['meterHistory',[{...snapshot,turn:-1}]],
+ ['meterHistory',[{...snapshot,season:'rainy' as const}]],['meterHistory',[{...snapshot,year:0}]],['meterHistory',[{...snapshot,turn:-1}]],
  ['compoundFlags',[]],['compoundFlags',{ironRule:'yes'}],['crisisTriggered',true],['crisisTriggered',{people:1}],['peakTriggered',{church:{}}],
  ['pendingHallEvent',[]],['pendingHallEvent',{...event,type:'other'}],['pendingHallEvent',{...event,text:{}}],
  ['pendingHallEvent',{...event,meter:{}}],['pendingHallEvent',{...event,effects:{people:'broken'}}],['pendingHallEvent',{...event,effects:{foreign:3}}],

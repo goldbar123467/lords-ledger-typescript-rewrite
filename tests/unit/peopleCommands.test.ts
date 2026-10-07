@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 
-const management = () => ({ ...createInitialState(104), phase: 'management' });
+const management = () => ({ ...createInitialState(104), phase: 'management' as const });
 
 test('People rejects malformed labor atomically without touching state or RNG', () => {
   const state = management();

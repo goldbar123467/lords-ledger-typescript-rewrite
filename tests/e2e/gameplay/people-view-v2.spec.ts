@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { getInitialTiers, pickFeedEvents } from '../../../src/data/people.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) {
@@ -7,7 +7,7 @@ for (const width of [390, 1366]) {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
     const families = base.people.notableFamilies.map(f => f.id === 'miller' ? { ...f, present: false, turnsGone: 3, loyalty: 0 } : f);
-    const state = { ...base, phase: 'management', activeTab: 'people', tutorialsSeen: ['people'],
+    const state = { ...base, phase: 'management' as const, activeTab: 'people', tutorialsSeen: ['people'],
       people: { ...base.people, notableFamilies: families, villageFeed: pickFeedEvents('spring', 57, 1, 20, families, () => 0) } };
     const raw = writeV2Save(state);
     const errors: string[] = [];
@@ -49,7 +49,7 @@ for (const width of [390, 1366]) {
   });
   test(`People missing-tier display conserves four population at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
-    const state = { ...createInitialState(104), phase: 'management', population: 4, activeTab: 'people', tutorialsSeen: ['people'], people: {} };
+    const state = { ...createInitialState(104), phase: 'management' as const, population: 4, activeTab: 'people', tutorialsSeen: ['people'], people: {} };
     const raw = writeV2Save(state);
     expect(readV2Save(raw).ok).toBe(true);
     await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), raw);

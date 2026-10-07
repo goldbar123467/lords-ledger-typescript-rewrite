@@ -1,11 +1,13 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';import test from 'node:test';
-import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';import {writeV2Save,readV2Save} from '../../src/save/saveGame.ts';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';import {writeV2Save,readV2Save} from '../../src/save/saveGame.ts';
 function snapshot(value: unknown) {const read=readV2Save(writeV2Save(value));if(!read.ok)throw Error(read.error);return read.state;}
 function chronicleTexts(value: unknown): string[] {
  if(typeof value!=='object'||value===null||!('chronicle' in value)||!Array.isArray(value.chronicle))throw Error('Missing chronicle');
  return value.chronicle.map((entry: unknown)=>{if(typeof entry!=='object'||entry===null||!('text' in entry)||typeof entry.text!=='string')throw Error('Invalid chronicle text');return entry.text;});
 }
-function equipped() {const initial=createInitialState(104);const made=gameReducer({...initial,phase:'management',inventoryCapacity:10000},{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId:'hinges_fittings',qualityScore:50,completionUid:1}});assert.equal(made.blacksmith.inventory.length,1);return gameReducer(made,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}});}
+function equipped() {const initial=createInitialState(104);const made=gameReducer({...initial,phase:'management' as const,inventoryCapacity:10000},{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId:'hinges_fittings',qualityScore:50,completionUid:1}});assert.equal(present(made.blacksmith.inventory, "made.blacksmith.inventory").length,1);return gameReducer(made,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}});}
 test('Deployed fittings reduce seasonal wear and retain exact fractional condition in saves',()=>{
  const state=equipped(),after=snapshot(gameReducer(state,{type:'SIMULATE_SEASON'}));const farm=after.buildings.find(b=>typeof b!=='string'&&b.type==='strip_farm');assert.ok(farm&&typeof farm!=='string');assert.equal(farm.condition,98.1);const saved=readV2Save(writeV2Save(after));assert.ok(saved.ok);if(saved.ok)assert.deepEqual(saved.state.buildings,after.buildings);
 });

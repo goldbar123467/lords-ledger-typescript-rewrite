@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save, SAVE_KEY_V2, LEGACY_SAVE_KEY } from '../../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
@@ -28,7 +28,7 @@ test('legacy Watchtower defaults retain old log, native scan, readiness and relo
   const state = { ...base, activeTab: 'map', tutorialsSeen: ['map', 'estate'], blacksmith: { ...base.blacksmith, equipped: null },
     watchtower: { scannedThisSeason: null, scanScribesNoteSeen: true, rodericScribesNoteSeen: null,
       totalScans: null, totalAnomaliesSpotted: null, totalAnomaliesMissed: null, perfectScans: null, warnings: null,
-      signalLog: [{ season: 'Historical season', year: null, text: 'Historical lookout', type: null }, {}],
+      signalLog: [{ season: 'Historical season' as const, year: null, text: 'Historical lookout', type: null }, {}],
       lastScanResult: { historicalRating: { kept: true } }, historicalExtension: { kept: true } } };
   const raw = JSON.stringify(state), errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

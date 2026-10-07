@@ -1,20 +1,23 @@
+import type {GameSnapshot} from '../../src/save/saveGame.ts';
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { getManuscriptRound } from '../../src/engine/chapelManuscript.ts';
 
-function management(quill = false) {
+function management(quill = false): GameSnapshot {
   const base = createInitialState(104);
-  return { ...base, phase: 'management', chapel: { ...base.chapel, inventory: quill ? ['quill_ink'] : [] } };
+  return { ...base, phase: 'management' as const, chapel: { ...base.chapel, inventory: quill ? ['quill_ink'] : [] } };
 }
 
-function completeRun(state: ReturnType<typeof management>) {
+function completeRun(state: GameSnapshot) {
   let current = gameReducer(state, { type: 'CHAPEL_MS_START' });
   for (let round = 1; round <= 4; round++) {
     assert.equal(current.chapel.msRound, round);
-    assert.equal(current.chapel.msPattern.length, round + 2);
-    const pattern = [...current.chapel.msPattern];
+    assert.equal(present(current.chapel.msPattern, "current.chapel.msPattern").length, round + 2);
+    const pattern = [...present(current.chapel.msPattern, "current.chapel.msPattern")];
     for (const index of pattern) {
       current = gameReducer(current, { type: 'CHAPEL_MS_FLASH', payload: { index } });
       current = gameReducer(current, { type: 'CHAPEL_MS_CLEAR_FLASH' });
@@ -36,11 +39,11 @@ test('four authored rounds reward once per run and legitimate retries stay avail
     assert.equal(next.denarii, 500 + reward);
     assert.equal(next.chapel.faith, 55);
     assert.equal(next.chapel.piety, 33);
-    assert.equal(next.chapel.gameLog.length, 1);
+    assert.equal(present(next.chapel.gameLog, "next.chapel.gameLog").length, 1);
     assert.deepEqual(state, snapshot);
     const second = completeRun(next);
     assert.equal(second.denarii, 500 + reward * 2);
-    assert.equal(second.chapel.gameLog.length, 2);
+    assert.equal(present(second.chapel.gameLog, "second.chapel.gameLog").length, 2);
     assert.doesNotThrow(() => writeV2Save(second));
   }
 });
@@ -79,8 +82,8 @@ test('invalid symbols and inconsistent saved prefixes reject without a failure d
     assert.equal(gameReducer(showing, { type: 'CHAPEL_MS_FLASH', payload: { index } }), showing);
   }
   for (const patch of [{ msPattern: [] }, { msRound: 0 }, { msRound: 5 }, { msMaxRound: 1 },
-    { msPattern: [0, 1, '2'] }, { msPlayerInput: [...input.chapel.msPattern] },
-    { msPlayerInput: [(input.chapel.msPattern[0] + 1) % 8] }]) {
+    { msPattern: [0, 1, '2'] }, { msPlayerInput: [...present(input.chapel.msPattern, 'complete pattern')] },
+    { msPlayerInput: [(present(present(input.chapel.msPattern, "input.chapel.msPattern")[0], "present(input.chapel.msPattern, \"input.chapel.msPattern\")[0]") + 1) % 8] }]) {
     const state = { ...input, chapel: { ...input.chapel, ...patch } };
     assert.equal(gameReducer(state, { type: 'CHAPEL_MS_INPUT', payload: { index: 0 } }), state);
   }
@@ -89,20 +92,20 @@ test('invalid symbols and inconsistent saved prefixes reject without a failure d
 test('partial manuscript save resumes the same prefix, RNG and outcome; mistakes keep zero penalty', () => {
   const showing = gameReducer(management(), { type: 'CHAPEL_MS_START' });
   const input = gameReducer(showing, { type: 'CHAPEL_MS_DONE_SHOWING' });
-  const pattern = [...input.chapel.msPattern];
+  const pattern = [...present(input.chapel.msPattern, 'resumed manuscript pattern')];
   const partial = gameReducer(input, { type: 'CHAPEL_MS_INPUT', payload: { index: pattern[0] } });
   const loaded = readV2Save(writeV2Save(partial));
   assert.ok(loaded.ok);
   assert.deepEqual(loaded.state, partial);
   const action = { type: 'CHAPEL_MS_INPUT', payload: { index: pattern[1] } };
   assert.deepEqual(gameReducer(loaded.state, action), gameReducer(partial, action));
-  const failed = gameReducer(input, { type: 'CHAPEL_MS_INPUT', payload: { index: (pattern[0] + 1) % 8 } });
+  const failed = gameReducer(input, { type: 'CHAPEL_MS_INPUT', payload: { index: (present(pattern[0], 'first pattern symbol') + 1) % 8 } });
   assert.equal(failed.chapel.msPhase, 'fail');
   assert.equal(failed.denarii, 500);
   assert.equal(failed.chapel.faith, 50);
   assert.equal(failed.chapel.piety, 30);
   assert.equal(failed.chapel.msReward, 0);
-  assert.equal(failed.chapel.gameLog.length, 0);
+  assert.equal(present(failed.chapel.gameLog, "failed.chapel.gameLog").length, 0);
   assert.equal(typeof failed.chapel.msFact, 'string');
 });
 
@@ -119,7 +122,7 @@ test('sparse and inherited symbol slots cannot validate or create a null saved p
       assert.throws(() => writeV2Save(state), /manuscript/i);
       assert.equal(getManuscriptRound(state.chapel), null);
       for (const type of ['CHAPEL_MS_FLASH', 'CHAPEL_MS_CLEAR_FLASH', 'CHAPEL_MS_DONE_SHOWING', 'CHAPEL_MS_INPUT']) {
-        assert.equal(gameReducer(state, { type, payload: { index: input.chapel.msPattern[1] } }), state);
+        assert.equal(gameReducer(state, { type, payload: { index: present(input.chapel.msPattern, "input.chapel.msPattern")[1] } }), state);
       }
       assert.equal(JSON.stringify(state), raw);
       assert.throws(() => writeV2Save(state), /manuscript/i);

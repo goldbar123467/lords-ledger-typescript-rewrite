@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { SHOP_ITEMS } from '../../../src/data/chapel.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const width of [390, 1366]) {
   test(`Chapel presets, all shop goods and timer departure at ${width}px`, async ({ page }, info) => {
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'chapel', tutorialsSeen: ['chapel'] };
+    const state = { ...base, phase: 'management' as const, activeTab: 'chapel', tutorialsSeen: ['chapel'] };
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.setViewportSize({ width, height: 844 });

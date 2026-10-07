@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save, type GameSnapshot } from '../../../src/save/saveGame.ts';
 import seasonalEvents from '../../../src/data/seasonalEvents.ts';
 import randomEvents from '../../../src/data/randomEvents.ts';
@@ -15,7 +15,7 @@ function snapshot(value: unknown): GameSnapshot {
 const started = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'easy', seed: 104 } });
 const base = snapshot(gameReducer(started, { type: 'DISMISS_TUTORIAL', payload: { tab: 'estate' } }));
 async function boot(page: Page, title = false) {
-  const state = snapshot(title ? { ...base, phase: 'title' } : base);
+  const state = snapshot(title ? { ...base, phase: 'title' as const } : base);
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });

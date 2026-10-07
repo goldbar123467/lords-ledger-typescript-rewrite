@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save, SAVE_KEY_V2, LEGACY_SAVE_KEY } from '../../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
@@ -23,9 +23,9 @@ for (const kind of ['v2', 'legacy'] as const) test(`${kind} malformed raid histo
 });
 
 test('legacy null raid bookkeeping retains warning, defense, history and reload', async ({ page }, info) => {
-  const state = { ...base, phase: 'raid_warning', military: { ...base.military, walls: 4, gate: 4, moat: 3 },
+  const state = { ...base, phase: 'raid_warning' as const, military: { ...base.military, walls: 4, gate: 4, moat: 3 },
     raids: { ...base.raids, totalCriminalRaids: null, criminalVictories: null, totalDenariiRecovered: null,
-      activeRaid: { type: 'criminal', phase: 'warning' }, historicalExtension: { kept: true } } };
+      activeRaid: { type: 'criminal', phase: 'warning' as const }, historicalExtension: { kept: true } } };
   const raw = JSON.stringify(state), errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });

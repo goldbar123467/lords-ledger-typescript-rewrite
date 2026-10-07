@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 
 test('malformed Chapel navigation cannot erase the current view or RNG', () => {
-  const state = { ...createInitialState(104), phase: 'management' };
+  const state = { ...createInitialState(104), phase: 'management' as const };
   const before = structuredClone(state);
   for (const view of [undefined, null, {}, [], 0, '', 'unknown', 'dilemma']) {
     assert.equal(gameReducer(state, { type: 'CHAPEL_SET_VIEW', payload: { view } }), state);
@@ -21,12 +22,12 @@ test('Chapel navigation is phase-gated and rejects a nonexistent pending dilemma
     const state = { ...base, phase };
     assert.equal(gameReducer(state, { type: 'CHAPEL_SET_VIEW', payload: { view: 'anselm' } }), state);
   }
-  const bad = { ...base, phase: 'management', chapel: { ...base.chapel, currentDilemma: { id: 'unknown', title: 'Unknown' } } };
+  const bad = { ...base, phase: 'management' as const, chapel: { ...base.chapel, currentDilemma: { id: 'unknown', title: 'Unknown' } } };
   assert.equal(gameReducer(bad, { type: 'CHAPEL_SET_VIEW', payload: { view: 'dilemma' } }), bad);
 });
 
 test('valid legacy optional/null Chapel fields remain saveable after each legal entry command', () => {
-  const base = { ...createInitialState(104), phase: 'management' };
+  const base = { ...createInitialState(104), phase: 'management' as const };
   for (const chapel of [{ faith: 50 }, { faith: 50, view: null, piety: null, inventory: null, dilemmasCompleted: null, gameLog: null }]) {
     const state = { ...base, chapel };
     assert.doesNotThrow(() => writeV2Save(state));

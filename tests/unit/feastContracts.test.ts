@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { FEAST_DATA, type HallMeterEffects } from '../../src/data/decrees.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { hasFeastedInSeason, isFeastHistory, resolveFeast, validateHallFeastState } from '../../src/engine/feast.ts';
-const state = { ...createInitialState(104), phase: 'management' };
+const state = { ...createInitialState(104), phase: 'management' as const };
 const selection = { guestId: 'village', entertainmentId: 'musicians', courseId: 'modest', seed: state.rngState };
-function history() { return { season: 'spring', year: 1, totalEffects: resolveFeast(selection, state.rngState)?.totalEffects,
+function history() { return { season: 'spring' as const, year: 1, totalEffects: resolveFeast(selection, state.rngState)?.totalEffects,
   guestId: 'village', entertainmentId: 'musicians', courseId: 'modest', eventId: resolveFeast(selection, state.rngState)?.event.id }; }
 test('Feast command consumes serialized identities rather than inherited or hidden fields', () => {
   assert.equal(resolveFeast(Object.create(selection), state.rngState), null);
@@ -39,7 +40,8 @@ test('Feast history meter values must be own serialized fields', () => {
 });
 
 test('current history gates a missing flag without modifying compatible save bytes', () => {
-  const settled = gameReducer(state, { type: 'HALL_FEAST_COMPLETE', payload: selection });
+  const completed = gameReducer(state, { type: 'HALL_FEAST_COMPLETE', payload: selection });
+  const settled = {...completed, greatHall: {...completed.greatHall}};
   delete settled.greatHall.hasFeastedThisSeason;
   const raw = writeV2Save(settled), loaded = readV2Save(raw);
   assert.ok(loaded.ok);
@@ -59,7 +61,7 @@ test('all authored Feast totals validate detailed and effect-only legacy history
       for (const effects of [guest.effects, entertainment.effects, course.effects, event.effects]) {
         for (const key of ['people', 'treasury', 'church', 'military'] as const) totalEffects[key] += effects[key];
       }
-      const legacy = { season: 'spring', year: 1, totalEffects };
+      const legacy = { season: 'spring' as const, year: 1, totalEffects };
       const detailed = { ...legacy, guestId: guest.id, entertainmentId: entertainment.id, courseId: course.id, eventId: event.id };
       assert.equal(isFeastHistory([legacy]), true); assert.equal(isFeastHistory([detailed]), true);
       assert.equal(isFeastHistory([{ ...legacy, guestId: guest.id }]), false);

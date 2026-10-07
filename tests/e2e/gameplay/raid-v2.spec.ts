@@ -9,8 +9,8 @@ test('a loaded raid warning resolves through the real reducer and resumes the se
   page.on('pageerror', error => pageErrors.push(error.message));
   const state = {
     ...fixture,
-    phase: 'raid_warning',
-    raids: { ...fixture.raids, activeRaid: { type: 'criminal', phase: 'warning' } },
+    phase: 'raid_warning' as const,
+    raids: { ...fixture.raids, activeRaid: { type: 'criminal', phase: 'warning' as const } },
   };
   const raw = JSON.stringify({ format: 'lords-ledger', version: 2, state });
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: saveKey, value: raw });
@@ -36,10 +36,10 @@ test('a loaded raid warning resolves through the real reducer and resumes the se
 test('a zero-garrison partial defense describes the fortifications consistently', async ({ page }) => {
   const state = {
     ...fixture,
-    phase: 'raid_warning',
+    phase: 'raid_warning' as const,
     garrison: 0,
     military: { ...fixture.military, garrison: { levy: 0, menAtArms: 0, knights: 0 } },
-    raids: { ...fixture.raids, activeRaid: { type: 'criminal', phase: 'warning' } },
+    raids: { ...fixture.raids, activeRaid: { type: 'criminal', phase: 'warning' as const } },
   };
   const raw = JSON.stringify({ format: 'lords-ledger', version: 2, state });
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: saveKey, value: raw });
@@ -61,10 +61,10 @@ test('Aldric drill is visible in a third-season raid and changes its outcome', a
   await page.setViewportSize({ width: 390, height: 844 });
   const state = {
     ...fixture,
-    phase: 'raid_warning',
+    phase: 'raid_warning' as const,
     tavern: { ...fixture.tavern, aldricDrillActive: 0 },
     raids: { ...fixture.raids, activeRaid: {
-      type: 'criminal', phase: 'warning', result: null, drillBonus: 5, defenseRating: 20,
+      type: 'criminal', phase: 'warning' as const, result: null, drillBonus: 5, defenseRating: 20,
     } },
   };
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), {

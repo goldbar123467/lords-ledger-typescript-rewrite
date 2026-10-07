@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { MORAL_DILEMMAS } from '../../../src/data/chapel.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const width of [390, 1366]) {
   test(`Chapel descriptions agree with herbs and Bishop effects at ${width}px`, async ({ page }, info) => {
     const base = createInitialState(104);
-    const state = { ...base, denarii: 100, phase: 'management', turn: 8, year: 2, season: 'winter',
+    const state = { ...base, denarii: 100, phase: 'management' as const, turn: 8, year: 2, season: 'winter' as const,
       activeTab: 'chapel', tutorialsSeen: ['chapel'], chapel: { ...base.chapel,
         dilemmasCompleted: MORAL_DILEMMAS.filter(d => d.id !== 'bishops_demand').map(d => d.id) } };
     const errors: string[] = [];

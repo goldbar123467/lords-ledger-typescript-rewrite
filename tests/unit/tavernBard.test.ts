@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { nextBardContent } from '../../src/engine/tavernBard.ts';
 import { BARD_TALES } from '../../src/data/tavern.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
@@ -66,12 +68,12 @@ test('a seeded riddle pays once for its stable ID, including after save and repe
 
   let current = solved;
   for (let count = 0; count < 10; count++) current = gameReducer(current, { type: 'TAVERN_BARD_NEXT' });
-  assert.equal(current.tavern.bardCurrentContent?.id, 'map_without_houses');
+  const currentRiddle=present(current.tavern.bardCurrentContent, 'current riddle');assert.ok(currentRiddle.type==='riddle');assert.equal(currentRiddle.id, 'map_without_houses');
   assert.equal(current.rngState, 1320036242);
   const repeated = gameReducer(current, { type: 'TAVERN_BARD_ANSWER', payload: { option: 'A map' } });
   assert.equal(repeated.denarii, 710);
   assert.equal(repeated.tavern.bardRiddlesSolved, 1);
-  assert.equal(repeated.tavern.bardCurrentContent.awarded, false);
+  const repeatedRiddle=present(repeated.tavern.bardCurrentContent, 'repeated riddle');assert.ok(repeatedRiddle.type==='riddle');assert.equal(repeatedRiddle.awarded, false);
 });
 
 test('invalid saved Bard content and history are rejected while older saves remain readable', () => {

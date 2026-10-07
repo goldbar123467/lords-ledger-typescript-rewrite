@@ -1,6 +1,9 @@
+import {snapshotFixture} from '../gameInput.ts';
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { nextCompanionContent } from '../../src/engine/tavernCompanion.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { calculateDefenseRating } from '../../src/data/military.ts';
@@ -125,7 +128,7 @@ test('invalid companion offer histories and pending content cannot load', () => 
 test('Aldric drill changes a raid defense rating after its fee is paid', () => {
   const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 2 } });
   const offered = gameReducer(gameReducer(started, { type: 'TAVERN_VISIT' }), { type: 'TAVERN_ALDRIC_NEXT' });
-  assert.equal(offered.tavern.aldricCurrentContent?.offerId, 'basic_drill');
+  const drillOffer=present(offered.tavern.aldricCurrentContent, 'drill offer');assert.ok(drillOffer.type==='offer');assert.equal(drillOffer.offerId, 'basic_drill');
   const drilled = gameReducer(offered, {
     type: 'TAVERN_ALDRIC_ACCEPT_OFFER', payload: { offerId: 'basic_drill' },
   });
@@ -133,15 +136,15 @@ test('Aldric drill changes a raid defense rating after its fee is paid', () => {
   assert.equal(drilled.tavern.aldricDrillActive, 3);
   const warning = {
     ...drilled,
-    phase: 'raid_warning',
-    raids: { ...drilled.raids, activeRaid: { type: 'criminal', phase: 'warning', result: null } },
+    phase: 'raid_warning' as const,
+    raids: { ...drilled.raids, activeRaid: { type: 'criminal', phase: 'warning' as const, result: null } },
   };
-  const defended = gameReducer(warning, { type: 'RAID_DEFEND' });
-  assert.equal(defended.raids.activeRaid.defenseRating,
+  const defended = snapshotFixture(gameReducer(warning, { type: 'RAID_DEFEND' }));
+  assert.equal(present(defended.raids.activeRaid, "defended.raids.activeRaid").defenseRating,
     calculateDefenseRating(drilled.military) + drilled.garrison);
-  assert.equal(defended.raids.activeRaid.drillBonus, drilled.garrison);
+  assert.equal(present(defended.raids.activeRaid, "defended.raids.activeRaid").drillBonus, drilled.garrison);
   const thirdSeason = {
-    ...drilled, turn: 16, season: 'winter', year: 4,
+    ...drilled, turn: 16, season: 'winter' as const, year: 4,
     tavern: { ...drilled.tavern, aldricDrillActive: 1 },
   };
   const simulated = gameReducer(thirdSeason, {
@@ -149,20 +152,20 @@ test('Aldric drill changes a raid defense rating after its fee is paid', () => {
   });
   assert.equal(simulated.phase, 'raid_warning');
   assert.equal(simulated.tavern.aldricDrillActive, 0);
-  assert.equal(simulated.raids.activeRaid.drillBonus, simulated.garrison);
+  assert.equal(present(simulated.raids.activeRaid, "simulated.raids.activeRaid").drillBonus, simulated.garrison);
   assert.equal(readV2Save(writeV2Save(simulated)).ok, true);
   const forgedWarning = JSON.parse(writeV2Save(simulated));
   forgedWarning.state.raids.activeRaid.drillBonus = simulated.garrison + 1;
   assert.equal(readV2Save(JSON.stringify(forgedWarning)).ok, false);
   const lastCoveredRaid = gameReducer(simulated, { type: 'RAID_DEFEND' });
-  assert.equal(lastCoveredRaid.raids.activeRaid.defenseRating,
+  assert.equal(present(lastCoveredRaid.raids.activeRaid, "lastCoveredRaid.raids.activeRaid").defenseRating,
     calculateDefenseRating(simulated.military) + simulated.garrison);
 });
 
 test('Aldric referral obeys total, type, and population recruitment limits', () => {
   const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 49 } });
   const offered = gameReducer(gameReducer(started, { type: 'TAVERN_VISIT' }), { type: 'TAVERN_ALDRIC_NEXT' });
-  assert.equal(offered.tavern.aldricCurrentContent?.offerId, 'recruit_referral');
+  const referralOffer=present(offered.tavern.aldricCurrentContent, 'referral offer');assert.ok(referralOffer.type==='offer');assert.equal(referralOffer.offerId, 'recruit_referral');
   const accept = (state: typeof offered) => gameReducer(state, {
     type: 'TAVERN_ALDRIC_ACCEPT_OFFER', payload: { offerId: 'recruit_referral' },
   });

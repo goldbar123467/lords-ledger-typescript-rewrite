@@ -1,9 +1,9 @@
 import {confirmForgeDialog,focusForgeConfirm} from '../forgeDialog.ts';
 import {expect,test} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save,readV2Save} from '../../../src/save/saveGame.ts';
-for(const width of [390,1366])for(const itemId of ['plowshare','scythe'])test(`Agriculture deployment ${itemId} ${width}`,async({page},info)=>{
- const loaded=readV2Save(writeV2Save({...createInitialState(104),phase:'management',turn:3,season:'autumn',activeTab:'forge',tutorialsSeen:['forge','estate'],inventoryCapacity:10000,buildings:[{type:'demesne_field',instanceId:'demesne-test',condition:100,builtOnTurn:0}]}));if(!loaded.ok)throw Error(loaded.error);
+for(const width of [390,1366])for(const itemId of ['plowshare','scythe'] as const)test(`Agriculture deployment ${itemId} ${width}`,async({page},info)=>{
+ const loaded=readV2Save(writeV2Save({...createInitialState(104),phase:'management' as const,turn:3,season:'autumn' as const,activeTab:'forge',tutorialsSeen:['forge','estate'],inventoryCapacity:10000,buildings:[{type:'demesne_field',instanceId:'demesne-test',condition:100,builtOnTurn:0}]}));if(!loaded.ok)throw Error(loaded.error);
  let expected=gameReducer(loaded.state,{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId,qualityScore:50,completionUid:1}});
  expected=gameReducer(expected,{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId,qualityScore:0,completionUid:2}});
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:844});await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},writeV2Save(expected));

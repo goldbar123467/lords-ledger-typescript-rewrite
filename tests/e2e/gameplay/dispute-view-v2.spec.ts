@@ -1,11 +1,11 @@
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import disputes from '../../../src/data/disputes.ts';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 const dispute = disputes[0];
 if (!dispute || !dispute.petitionerA || !dispute.petitionerB) throw new Error('Missing paired fixture');
 async function setup(page: Page, width: number) {
-  const state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] }, raw = writeV2Save(state);
+  const state = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] }, raw = writeV2Save(state);
   await page.setViewportSize({ width, height: 844 });
   await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
   await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { PERSPECTIVE_FLIPS } from '../../../src/data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../../../src/data/cyoaFlips.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
@@ -20,7 +20,7 @@ for (const width of [390, 1366]) for (const branching of [false, true]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 768 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const started = gameReducer(createInitialState(17), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
-    const simulated = gameReducer({ ...started, turn: 7, season: 'autumn', year: 2, taxRate: branching ? 'medium' : 'high' },
+    const simulated = gameReducer({ ...started, turn: 7, season: 'autumn' as const, year: 2, taxRate: branching ? 'medium' : 'high' },
       { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
     const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
     const story = branching ? CYOA_FLIPS.cyoa_lord : PERSPECTIVE_FLIPS.serf_week;

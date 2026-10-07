@@ -1,3 +1,7 @@
+import type {HallSaveState} from './hallAudienceState.ts';
+import type {ChapelSaveState} from './chapelState.ts';
+import {isForgePlannerState} from './forgeState.ts';
+import type {Inventory} from '../data/economy.ts';
 import {computeReputation} from "../data/greatHall.ts";
 import {isHallDisputeState} from "./hallAudienceState.ts";
 import {CHANDELIER_PRESTIGE_BONUS,getDeployableTool, isWorkingTool, getDeployedToolIds} from './forgeTools.ts';
@@ -9,8 +13,8 @@ export type ForgeItemCommand =
  | {type:'BLACKSMITH_SCRAP_ITEM';payload:{itemUid:number}};
 interface ItemContext {
  readonly phase:string; readonly turn:number; readonly year:number; readonly season:string;
- readonly denarii:number; readonly inventory:Readonly<Record<string,number>>;
- readonly blacksmith:unknown; readonly greatHall?:unknown; readonly chapel?:unknown;
+ readonly denarii:number; readonly inventory:Readonly<Inventory>;
+ readonly blacksmith:unknown; readonly greatHall?:HallSaveState; readonly chapel?:ChapelSaveState;
 }
 function record(value:unknown):value is Record<string,unknown> {return typeof value==='object' && value!==null && !Array.isArray(value);}
 function array(value:unknown):value is readonly unknown[] {return Array.isArray(value);}
@@ -27,7 +31,7 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
  if(state.phase!=='management' || !Number.isSafeInteger(state.turn) || state.turn<1 || state.turn>40 ||
     state.year!==Math.ceil(state.turn/4) || !season(state.season) ||
     state.season!==['spring','summer','autumn','winter'][(state.turn-1)%4] ||
-    !record(payload) || !uid(payload.itemUid) || !record(state.blacksmith)) return null;
+    !record(payload) || !uid(payload.itemUid) || !isForgePlannerState(state.blacksmith,state.turn)) return null;
  const bs=state.blacksmith, inventory=bs.inventory ?? [], equipped=bs.equipped ?? [];
  if(!array(inventory) || !array(equipped)) return null;
  const identities=new Set<number>();
@@ -44,9 +48,9 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
   if(!amount(militaryBonus) || ((item.category==='weapon'||item.category==='armor')&&!hasDefenseBonus(militaryBonus))) return null;
   // Existing equipped ownership is the durable first-installation receipt, including old saves.
   const firstBell=item.itemId==='church_bell' && !getDeployedToolIds(bs).has('church_bell');
-  let chapelPatch: {chapel: Record<string,unknown>} | Record<string,never> = {};
+  let chapelPatch: {chapel: ChapelSaveState} | Record<string,never> = {};
   let faithGain=0;
-  let hallPatch:{greatHall:Record<string,unknown>}|Record<string,never>={};
+  let hallPatch:{greatHall:HallSaveState}|Record<string,never>={};
   if(item.itemId==='chandelier'&&!getDeployedToolIds(bs).has('chandelier')){
    if(!isHallDisputeState(state.greatHall))return null;
    const reputation=computeReputation(state.greatHall.rulingHistory,CHANDELIER_PRESTIGE_BONUS);
@@ -86,7 +90,7 @@ export function planForgeItemAction(state:ItemContext,type:ForgeItemCommand['typ
  if(!amount(tradeValue) || !amount(state.denarii) || !amount(sales) || !Number.isSafeInteger(sales) ||
     sales>=Number.MAX_SAFE_INTEGER || !amount(earned) || typeof soldToMortimer!=='boolean' ||
     (payload.buyerId!==undefined && typeof payload.buyerId!=='string')) return null;
- const hall=record(state.greatHall)?state.greatHall:{}, flags=record(hall.compoundFlags)?hall.compoundFlags:{};
+ const flags=state.greatHall?.compoundFlags ?? {};
  const buyer:ForgeBuyerDefinition|undefined=payload.buyerId===undefined?undefined:getAvailableBuyers(state.season,{greatHall:{compoundFlags:{welcomedHenrik:flags.welcomedHenrik===true}}}).find(b=>b.id===payload.buyerId);
  if(payload.buyerId!==undefined && (!buyer || !buyer.prefers.some(category=>category===item.category))) return null;
  const price=buyer?getBuyerPrice(buyer,{category:item.category,grade:item.grade,tradeValue},sales):tradeValue;

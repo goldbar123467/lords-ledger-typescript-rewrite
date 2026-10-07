@@ -1,10 +1,12 @@
+import type {GameSnapshot} from '../../src/save/saveGame.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import crypto from 'node:crypto';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { DECREE_OPTIONS, COUNCIL_TOPICS, FEAST_DATA } from '../../src/data/decrees.ts';
 import { readV2Save, readLegacySave, writeV2Save } from '../../src/save/saveGame.ts';
-const fixture = () => ({ ...createInitialState(104), phase: 'management', turn: 4, season: 'winter' });
+const fixture = () => ({ ...createInitialState(104), phase: 'management' as const, turn: 4, season: 'winter' as const });
 const decree = DECREE_OPTIONS[0], topic = COUNCIL_TOPICS[0], option = topic?.options[0];
 if (!decree || !topic || !option) throw new Error('Missing authored civic fixtures');
 test('civic commands reject wrong phases and malformed payloads atomically', () => {
@@ -26,10 +28,10 @@ test('Council uses authored first-unresolved choices, unlock boundaries and prev
   for (const payload of [{ topicId: 'fake', optionId: option.id }, { topicId: topic.id, optionId: 'fake' },
     { topicId: COUNCIL_TOPICS[1]?.id, optionId: COUNCIL_TOPICS[1]?.options[0]?.id }]) assert.equal(gameReducer(base, { type: 'HALL_COUNCIL_VOTE', payload }), base);
   for (const people of [0, 70, 70.5, 100]) {
-    const state = { ...base, turn: 1, season: 'spring', greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people } } };
+    const state = { ...base, turn: 1, season: 'spring' as const, greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people } } };
     assert.equal(gameReducer(state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: option.id } }) === state, people <= 70);
   }
-  let state = base;
+  let state: GameSnapshot = base;
   for (const current of COUNCIL_TOPICS) state = gameReducer(state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: current.id, optionId: current.options[0]?.id } });
   assert.deepEqual(state.greatHall.councilResolved, COUNCIL_TOPICS.map(t => t.id));
 });
@@ -97,8 +99,8 @@ test('saved replay guards and seasonal reset preserve active decree rules', () =
   const voted = gameReducer(base, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: option.id } });
   const loadedVote = readV2Save(writeV2Save(voted)); assert.ok(loadedVote.ok);
   assert.equal(gameReducer(loadedVote.state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: option.id, consequences: option.consequences } }), loadedVote.state);
-  const next = gameReducer({ ...issued, phase: 'seasonal_resolve' }, { type: 'ADVANCE_TURN' });
+  const next = gameReducer({ ...issued, phase: 'seasonal_resolve' as const }, { type: 'ADVANCE_TURN' });
   assert.equal(next.greatHall.decreeSlotsUsed, 0); assert.deepEqual(next.greatHall.activeDecrees, [decree.id]);
-  const fresh = gameReducer({ ...next, phase: 'management' }, { type: 'HALL_ISSUE_DECREE', payload: { decreeId: DECREE_OPTIONS[1]?.id } });
+  const fresh = gameReducer({ ...next, phase: 'management' as const }, { type: 'HALL_ISSUE_DECREE', payload: { decreeId: DECREE_OPTIONS[1]?.id } });
   assert.equal(fresh.greatHall.decreeSlotsUsed, 1);
 });

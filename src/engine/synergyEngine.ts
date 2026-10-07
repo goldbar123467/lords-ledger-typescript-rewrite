@@ -10,7 +10,7 @@ import {
   SYNERGY_PATH_LIST, SYNERGY_TIER_MAP, FOOD_BUILDING_IDS,
   HIGH_FAITH_THRESHOLD, HIGH_PEOPLE_THRESHOLD,
 } from "../data/synergies.ts";
-import type { SynergyTierDefinition, SynergyConditions } from "../data/synergies.ts";
+import type { SynergyTierDefinition, SynergyConditions, SynergyTierId } from "../data/synergies.ts";
 import { getBuildingType } from "./buildingActions.ts";
 import { addTavernLedgerInteger as addExactInteger, isTavernLedgerInteger as isExactInteger, type TavernLedgerInteger as ExactInteger } from './tavernLedger.ts';
 
@@ -172,9 +172,9 @@ export function advanceSynergyCounters<Previous extends NonNullable<SynergyState
  * Only checks the next unactivated tier for each path.
  *
  */
-export function checkSynergies(state: SynergyState): string[] {
+export function checkSynergies(state: SynergyState): SynergyTierId[] {
   const activated = state.synergies?.activated ?? [];
-  const newlyActivated: string[] = [];
+  const newlyActivated: SynergyTierId[] = [];
 
   for (const path of SYNERGY_PATH_LIST) {
     // Find the next unactivated tier for this path

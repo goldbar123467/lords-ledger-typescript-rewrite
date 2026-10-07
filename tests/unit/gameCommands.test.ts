@@ -20,7 +20,7 @@ test('the checked command union accounts for every main reducer branch', () => {
     if (!tag.isStringLiteral()) throw new Error('Command tag is not a string literal.');
     return tag.value;
   });
-  const reducer = ts.createSourceFile('gameReducer.js', fs.readFileSync('src/engine/gameReducer.js', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const reducer = ts.createSourceFile('gameReducer.ts', fs.readFileSync('src/engine/gameReducer.ts', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const fn = reducer.statements.find((node): node is ts.FunctionDeclaration => ts.isFunctionDeclaration(node) && node.name?.text === 'reduceGame');
   const main = fn?.body?.statements.find(ts.isSwitchStatement);
   if (!main) throw new Error('Missing reducer command switch.');

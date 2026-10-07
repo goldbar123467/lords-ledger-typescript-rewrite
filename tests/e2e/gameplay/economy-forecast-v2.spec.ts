@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const scenario of [
-  { difficulty: 'easy', season: 'spring', turn: 1, need: 23, guidance: 'Farm output ×0.6' },
-  { difficulty: 'normal', season: 'spring', turn: 1, need: 29, guidance: 'Farm output ×0.6' },
-  { difficulty: 'hard', season: 'winter', turn: 4, need: 41, guidance: '+10% food consumption' },
+  { difficulty: 'easy', season: 'spring' as const, turn: 1, need: 23, guidance: 'Farm output ×0.6' },
+  { difficulty: 'normal', season: 'spring' as const, turn: 1, need: 29, guidance: 'Farm output ×0.6' },
+  { difficulty: 'hard', season: 'winter' as const, turn: 4, need: 41, guidance: '+10% food consumption' },
 ] as const) {
   test(`Estate forecasts the executable food rule on ${scenario.difficulty} ${scenario.season}`, async ({ page }, testInfo) => {
     const errors: string[] = [];

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 import { ALL_FLIPS } from '../../../src/engine/flipEngine.ts';
 
@@ -14,7 +14,7 @@ test('saved knight summary applies morale and leaves bankruptcy for the season s
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   const started = gameReducer(createInitialState(17), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
-  const boundary = { ...started, turn: 19, season: 'autumn', year: 5, garrison: 6,
+  const boundary = { ...started, turn: 19, season: 'autumn' as const, year: 5, garrison: 6,
     military: { ...started.military, garrison: { levy: 6, menAtArms: 0, knights: 0 } },
     perspectiveFlips: Object.fromEntries(Object.keys(ALL_FLIPS).filter(id => id !== 'cyoa_knight').map(id => [id, true])),
     raids: { ...started.raids, lastRaidTurn: 19 },
@@ -64,7 +64,7 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
     const started = gameReducer(createInitialState(17),
       { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
     // Fixture-assisted turn-seven boundary. The browser traverses the complete story.
-    const boundary = { ...started, turn: 7, season: 'autumn', year: 2, taxRate };
+    const boundary = { ...started, turn: 7, season: 'autumn' as const, year: 2, taxRate };
     const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
     const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
     expect(entered.currentFlipId).toBe(flipId);

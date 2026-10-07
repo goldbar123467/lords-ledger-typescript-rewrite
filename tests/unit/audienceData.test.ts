@@ -1,8 +1,10 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 import encounters from '../../src/data/audience.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('Audience retains all twenty authored encounters and sixty-one response branches', () => {
@@ -15,13 +17,13 @@ test('Audience retains all twenty authored encounters and sixty-one response bra
 
 test('Every authored audience response retains meter changes, logs and save continuation', () => {
   for (const encounter of encounters) for (const [responseIndex, response] of encounter.responses.entries()) {
-    const state = { ...createInitialState(104), phase: 'management' }, before = structuredClone(state);
+    const state = { ...createInitialState(104), phase: 'management' as const }, before = structuredClone(state);
     const next = gameReducer(state, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex, consequences: response.consequences } });
     for (const key of ['people', 'treasury', 'church', 'military'] as const) {
       assert.equal(next.greatHall.meters[key], Math.max(0, Math.min(100, state.greatHall.meters[key] + response.consequences[key])));
     }
     assert.deepEqual(next.greatHall.audienceResolved, [encounter.id]);
-    assert.deepEqual(next.greatHall.hallLog.at(-1).consequences, response.consequences);
+    assert.deepEqual(present(present(next.greatHall.hallLog, "next.greatHall.hallLog").at(-1), "present(next.greatHall.hallLog, \"next.greatHall.hallLog\").at(-1)").consequences, response.consequences);
     assert.equal(next.greatHall.stewardTrust, Math.min(100, (state.greatHall.stewardTrust ?? 50) + 1));
     assert.equal(next.chronicle.length, state.chronicle.length + 1);
     assert.equal(next.rngState, state.rngState); assert.deepEqual(state, before);

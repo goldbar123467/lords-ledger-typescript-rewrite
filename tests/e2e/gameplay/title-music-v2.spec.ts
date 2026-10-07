@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
 declare global {
@@ -29,14 +29,14 @@ for (const width of [390, 1366]) {
       const parsed = readV2Save(raw);
       if (!parsed.ok) throw new Error(parsed.error);
       expect(parsed.state).toMatchObject({ difficulty: difficulty.key, denarii: difficulty.denarii,
-        food: difficulty.food, population: difficulty.population, garrison: difficulty.garrison, turn: 1, season: 'spring' });
+        food: difficulty.food, population: difficulty.population, garrison: difficulty.garrison, turn: 1, season: 'spring' as const });
       expect(errors).toEqual([]);
     });
   }
   test(`Music uses real playback, mute persistence and native track ends at ${width}px`, async ({ page }, info) => {
     test.setTimeout(45_000);
     await page.setViewportSize({ width, height: 768 });
-    const state = { ...createInitialState(104), phase: 'management' };
+    const state = { ...createInitialState(104), phase: 'management' as const };
     const v2 = writeV2Save(state);
     const legacy = JSON.stringify(state);
     const errors: string[] = [];

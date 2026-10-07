@@ -1,6 +1,6 @@
 import {hitRhythm} from '../forgeRhythm.ts';
 import {test,expect} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 // Elapsed rhythm time is controlled. No result or inventory is injected.
 for(const width of [390,1366])for(const mode of ['miss','perfect','last-perfect'] as const)

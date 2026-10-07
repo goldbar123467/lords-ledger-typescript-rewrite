@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
-import { checkedGameReducer } from '../../src/engine/checkedGameReducer.ts';
+import { createInitialState, gameReducer } from '../../src/engine/gameReducer.ts';
 import { assertGameSnapshot, readV2Save, writeV2Save, type GameSnapshot } from '../../src/save/saveGame.ts';
 import type { GameCommand } from '../../src/engine/gameCommands.ts';
 import seasonalEvents from '../../src/data/seasonalEvents.ts';
@@ -35,12 +34,12 @@ function nextCommand(state: GameSnapshot): GameCommand {
   }
 }
 
-test('the in-memory boundary preserves identity and rejects missing RNG without migration', () => {
+test('the typed reducer preserves no-op identity and the snapshot assertion rejects missing RNG', () => {
   const state = initial(104), before = JSON.stringify(state);
   freeze(state);
   assertGameSnapshot(state);
-  assert.equal(checkedGameReducer(state, { type: 'UPGRADE_CASTLE' }), state);
-  assert.equal(checkedGameReducer(state, { type: 'INSTALL_DEFENSE', payload: { historical: true } }), state);
+  assert.equal(gameReducer(state, { type: 'UPGRADE_CASTLE' }), state);
+  assert.equal(gameReducer(state, { type: 'INSTALL_DEFENSE', payload: { historical: true } }), state);
   assert.equal(JSON.stringify(state), before);
   const { rngState: removed, ...legacy } = state;
   assert.equal(typeof removed, 'number');
@@ -51,18 +50,20 @@ test('the in-memory boundary preserves identity and rejects missing RNG without 
 });
 
 for (const difficulty of ['easy', 'normal', 'hard'] as const) {
-  for (const seed of [1, 17, 104, 0xffffffff]) test(`checked output matches raw transitions: ${difficulty}, seed ${seed}`, () => {
+  for (const seed of [1, 17, 104, 0xffffffff]) test(`typed transitions replay from persisted RNG: ${difficulty}, seed ${seed}`, () => {
     let state = initial(seed);
     function apply(command: GameCommand): void {
       const before = JSON.stringify(state);
       freeze(state);
-      const expected: unknown = gameReducer(state, command);
-      assertGameSnapshot(expected);
-      const actual = checkedGameReducer(state, command);
+      const restored = readV2Save(writeV2Save(state));
+      if (!restored.ok) throw new Error(restored.error);
+      const expected = gameReducer(restored.state, command);
+      const actual = gameReducer(state, command);
+      assertGameSnapshot(actual);
       assert.deepEqual(actual, expected);
       assert.equal(writeV2Save(actual), writeV2Save(expected));
       assert.equal(JSON.stringify(state), before, `Input mutated by ${command.type}`);
-      if (expected === state) assert.equal(actual, state);
+      if (expected === restored.state) assert.equal(actual, state);
       state = actual;
     }
     apply({ type: 'START_GAME', payload: { ...pools, difficulty, seed } });

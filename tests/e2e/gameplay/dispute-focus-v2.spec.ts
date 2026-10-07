@@ -1,6 +1,7 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import disputes from '../../../src/data/disputes.ts';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 async function tabTo(page: Page, target: Locator) {
   for (let i = 0; i < 120; i++) { if (await target.evaluate(e => e === document.activeElement)) return; await page.keyboard.press('Tab'); }
@@ -10,8 +11,8 @@ for (const scenario of [{ width: 1366, height: 768, root: 16, solo: false },
   { width: 390, height: 600, root: 32, solo: false }, { width: 390, height: 600, root: 32, solo: true }]) {
   test('focused ruling label and effects stay readable ' + JSON.stringify(scenario), async ({ page }, info) => {
     const dispute = scenario.solo ? disputes.find(d => d.id === 'dispute_015') : disputes[0]; if (!dispute) throw new Error('Missing case');
-    let state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
-    if (scenario.solo) { state = { ...state, turn: 4, season: 'winter' }; for (const prior of disputes) {
+    let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
+    if (scenario.solo) { state = { ...state, turn: 4, season: 'winter' as const }; for (const prior of disputes) {
       if (prior.id === dispute.id) break;
       if (prior.season === 'any' || prior.season === 'winter') state = gameReducer(state, { type: 'HALL_RULE_DISPUTE', payload: { disputeId: prior.id, rulingId: prior.rulings[0].id } });
     } }

@@ -1,5 +1,6 @@
+import type {SynergyTierId} from '../../../src/data/synergies.ts';
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 import { playOneTurn } from '../helpers.js';
 import { SYNERGY_TIER_MAP } from '../../../src/data/synergies.ts';
@@ -94,7 +95,8 @@ test('tier-two cards and a tier-three overlay advance without dropping authored 
   const state = newGame();
   state.synergies.activated = ['wool_baron_1', 'wool_baron_2', 'wool_baron_3', 'pious_lord_1', 'pious_lord_2'];
   // Rendering fixture for higher tiers; this does not claim natural achievement.
-  state.pendingSynergyNotifications = ['wool_baron_2', 'pious_lord_2', 'wool_baron_3'].map(tierId => {
+  const tiers: readonly SynergyTierId[] = ['wool_baron_2', 'pious_lord_2', 'wool_baron_3'];
+  state.pendingSynergyNotifications = tiers.map(tierId => {
     const entry = SYNERGY_TIER_MAP[tierId];
     if (!entry) throw new Error(`Missing authored tier ${tierId}`);
     return { tierId, tier: entry.tier.tier, title: entry.tier.title, description: entry.tier.description,
@@ -177,7 +179,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
       page.on('pageerror', error => errors.push(error.message));
       await page.setViewportSize(viewport);
       let state = newGame();
-      for (const buildingId of ['pasture', 'herb_garden']) {
+      for (const buildingId of ['pasture', 'herb_garden'] as const) {
         state = gameReducer(state, { type: 'BUILD_BUILDING', payload: { buildingId } });
       }
       state = gameReducer(state, { type: 'CHAPEL_PAY_TITHE', payload: { amount: 50 } });

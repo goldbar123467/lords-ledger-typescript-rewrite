@@ -1,5 +1,5 @@
 import {test,expect,type Page,type Locator} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import BUILDINGS from '../../../src/data/buildings.ts';
 import {nativeZoomContext,captureNativeViewport} from '../nativeZoom.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';

@@ -1,11 +1,12 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
 import {expect,test} from '@playwright/test';
 import disputes from '../../../src/data/disputes.ts';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';
 
 for(const width of [390,1366])test(`later solo dispute is reachable and saveable at ${width}px`,async({page},info)=>{
   const decision=disputes.find(d=>d.id==='dispute_015');if(!decision)throw new Error('Missing solo decision');
-  let state={...createInitialState(104),phase:'management',turn:4,season:'winter',activeTab:'hall',tutorialsSeen:['hall']};
+  let state: GameSnapshot={...createInitialState(104),phase:'management' as const,turn:4,season:'winter' as const,activeTab:'hall',tutorialsSeen:['hall']};
   for(const prior of disputes){if(prior.id===decision.id)break;if(prior.season==='any'||prior.season==='winter')state=gameReducer(state,{type:'HALL_RULE_DISPUTE',payload:{disputeId:prior.id,rulingId:prior.rulings[0].id}});}
   const raw=writeV2Save(state),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize({width,height:844});await page.addInitScript(raw=>localStorage.setItem('lords-ledger-v2-save',raw),raw);

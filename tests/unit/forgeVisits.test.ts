@@ -1,5 +1,7 @@
-import assert from 'node:assert/strict';import test from 'node:test';import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';import {readV2Save,writeV2Save} from '../../src/save/saveGame.ts';
-const base=()=>({...createInitialState(104),phase:'management'}),visit={type:'BLACKSMITH_VISIT'};
+import {present} from '../gameInput.ts';
+import assert from 'node:assert/strict';import test from 'node:test';import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';import {readV2Save,writeV2Save} from '../../src/save/saveGame.ts';
+const base=()=>({...createInitialState(104),phase:'management' as const}),visit={type:'BLACKSMITH_VISIT'};
 test('Forge visit preserves zero respect and is consumed once per saved turn',()=>{
  const initial=base(),state={...initial,blacksmith:{...initial.blacksmith,godricRespect:0}},next=gameReducer(state,visit);
  assert.equal(next.blacksmith.godricRespect,1);assert.equal(next.blacksmith.lastVisitTurn,1);assert.equal(gameReducer(next,visit),next);assert.equal(next.rngState,state.rngState);
@@ -12,6 +14,6 @@ test('Forge visit retains absence penalty and fractional/clamped respect across 
  }
 });
 test('Forge visit rejects invalid phase/calendar/consumed values and keeps nullish legacy defaults',()=>{
- const initial=base();for(const patch of [{phase:'victory'},{phase:'title'},{turn:0},{turn:41},{year:25},{season:'winter'},...[NaN,Infinity,-1,101,'0'].map(godricRespect=>({blacksmith:{...initial.blacksmith,godricRespect}})),...[-1,1.5,2,NaN,'0'].map(lastVisitTurn=>({blacksmith:{...initial.blacksmith,lastVisitTurn}}))]){const state={...initial,...patch};assert.equal(gameReducer(state,visit),state);}
- for(const blacksmith of [undefined,null,{}, {godricRespect:null,lastVisitTurn:null}]){const state={...initial,blacksmith},next=gameReducer(state,visit);assert.equal(next.blacksmith.godricRespect,51);assert.equal(next.blacksmith.lastVisitTurn,1);}
+ const initial=base();for(const patch of [{phase:'victory' as const},{phase:'title' as const},{turn:0},{turn:41},{year:25},{season:'winter' as const},...[NaN,Infinity,-1,101,'0'].map(godricRespect=>({blacksmith:{...initial.blacksmith,godricRespect}})),...[-1,1.5,2,NaN,'0'].map(lastVisitTurn=>({blacksmith:{...initial.blacksmith,lastVisitTurn}}))]){const state={...initial,...patch};assert.equal(gameReducer(state,visit),state);}
+ for(const blacksmith of [undefined,null,{}, {godricRespect:null,lastVisitTurn:null}]){const state={...initial,blacksmith},next=gameReducer(state,visit);assert.equal(present(next.blacksmith, "next.blacksmith").godricRespect,51);assert.equal(present(next.blacksmith, "next.blacksmith").lastVisitTurn,1);}
 });

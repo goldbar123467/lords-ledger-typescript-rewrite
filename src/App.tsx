@@ -1,6 +1,5 @@
 import { useReducer, useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
-import { initialState } from "./engine/gameReducer.js";
-import { checkedGameReducer } from './engine/checkedGameReducer.ts';
+import { gameReducer, initialState } from "./engine/gameReducer.ts";
 import { isTabId, type TabId } from './data/tabs.ts';
 import type { Difficulty } from './save/saveGame.ts';
 import type { BuildingId } from './data/buildings.ts';
@@ -61,7 +60,7 @@ const seasonalEvents = Object.values(seasonalEventsData).flat();
 const randomEvents = randomEventsData;
 
 export default function App() {
-  const [state, dispatch] = useReducer(checkedGameReducer, initialState);
+  const [state, dispatch] = useReducer(gameReducer, initialState);
   const [viewSession, setViewSession] = useState(0);
   const { muted, toggleMute, ensurePlaying } = useMusic();
 

@@ -1,9 +1,11 @@
+import {isForgePlannerState} from './forgeState.ts';
+import type {Inventory} from '../data/economy.ts';
 import {getForgeSupplyStatus} from './forgeAncillaryActions.ts';
-import {FORGEABLE_ITEMS, FORGE_RESOURCES, calculateGrade, type ForgeItemId} from '../data/blacksmith.ts';
+import {FORGEABLE_ITEMS, FORGE_RESOURCES, calculateGrade, type ForgeItemId, type ForgeSeason} from '../data/blacksmith.ts';
 export interface ForgeCompletionCommand {itemId:ForgeItemId; qualityScore:number; completionUid:number}
 interface CompletionContext {
- readonly phase:string; readonly turn:number; readonly year:number; readonly season:string;
- readonly denarii:number; readonly inventory:Readonly<Record<string,number>>; readonly blacksmith:unknown;
+ readonly phase:string; readonly turn:number; readonly year:number; readonly season:ForgeSeason;
+ readonly denarii:number; readonly inventory:Readonly<Inventory>; readonly blacksmith:unknown;
 }
 function record(value:unknown): value is Record<string,unknown> {
  return typeof value==='object' && value!==null && !Array.isArray(value);
@@ -17,7 +19,7 @@ export function planForgeCompletion(state:CompletionContext,payload:unknown) {
  if(state.phase!=='management' || !Number.isSafeInteger(state.turn) || state.turn<1 || state.turn>40 ||
     state.year!==Math.ceil(state.turn/4) || state.season!==['spring','summer','autumn','winter'][(state.turn-1)%4] ||
     !record(payload) || !recipeId(payload.itemId) || !nonnegative(payload.qualityScore) || payload.qualityScore>100 ||
-    !record(state.blacksmith) || !record(state.inventory) || !nonnegative(state.denarii)) return null;
+    !isForgePlannerState(state.blacksmith,state.turn) || !record(state.inventory) || !nonnegative(state.denarii)) return null;
  const bs=state.blacksmith, uid=bs.nextItemUid ?? 1;
  const total=bs.totalItemsForged ?? 0, masterworks=bs.masterworksCreated ?? 0, invested=bs.totalGoldInvested ?? 0, respect=bs.godricRespect ?? 50;
  const inventory=bs.inventory ?? [], equipped=bs.equipped ?? [], log=bs.productionLog ?? [];

@@ -1,3 +1,10 @@
+import type {HallLogEntry, HallSaveState} from './hallAudienceState.ts';
+import type {GameSnapshot, Season} from '../save/saveGame.ts';
+import type {GameCommand} from './gameCommands.ts';
+import type {EventDefinition, SeasonalEvent} from '../data/eventTypes.ts';
+import type {BuildingId, BuildingDefinition} from '../data/buildings.ts';
+import type {ResourceId} from '../data/economy.ts';
+import type {RandomSource} from './eventSelector.ts';
 import { resolveEventChoice, computeResourceDeltas } from './eventChoice.ts';
 import { createInitialState } from './initialGameState.ts';
 export { createInitialState } from './initialGameState.ts';
@@ -11,7 +18,7 @@ import { planHallEventDismissal } from './hallConsequences.ts';
 import { planCouncilVote, planDecreeIssue, planDecreeRevocation } from './hallCivic.ts';
 import { planDisputeRuling } from './disputeActions.ts';
 /**
- * gameReducer.js
+ * gameReducer.ts
  *
  * useReducer-compatible reducer for The Lord's Ledger.
  *
@@ -60,20 +67,15 @@ import BUILDINGS from "../data/buildings.ts";
 import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
   BASE_BUY_PRICES, BASE_SELL_PRICES,
-  CASTLE_LEVELS, CASTLE_LEVELS_EASY,
-  DEFENSE_UPGRADES, DEFENSE_UPGRADES_EASY,
-  RECRUIT_COST, MAX_GARRISON,
-  STARTING_TOTAL_PLOTS,
+  MAX_GARRISON,
 } from "../data/economy.ts";
-import { PERSPECTIVE_FLIPS } from "../data/perspectiveFlips.ts";
-import { ALL_FLIPS, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.ts";
+import { ALL_FLIPS, isFlipId, checkFlipTriggers, getInitialFlipStats, computeCyoaConsequences, resolveFlipOption, computeFlipConsequences } from "./flipEngine.ts";
 import { checkSynergies, advanceSynergyCounters, applySynergyMeterEffects } from "./synergyEngine.ts";
 import { SYNERGY_TIER_MAP } from "../data/synergies.ts";
 import { getInitialRaidState, checkForRaid, resolveRaid, buildRaidChronicleText } from "./raidEngine.ts";
 import { RAID_TYPES } from "../data/raids.ts";
 import {
-  WALLS_TRACK, GATE_TRACK, MOAT_TRACK, MORALE_LEVELS,
-  BASE_CASTLE_DEFENSE, CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
+  CRIMINAL_DEFENSE_THRESHOLD, SCOTTISH_DEFENSE_THRESHOLD,
   getMoraleLevel, getTotalGarrison, getMilitaryUpkeep,
   removeFromGarrison,
   getInitialMilitaryState, KNIGHT_NAMES, MILITARY_SCRIBES_NOTES,
@@ -91,7 +93,9 @@ import {
 // Constants
 // ---------------------------------------------------------------------------
 
-const SEASONS = ["spring", "summer", "autumn", "winter"];
+const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
+const HALL_METERS = ['people', 'treasury', 'church', 'military'] as const;
+const buildingDefinitions: Readonly<Record<BuildingId, BuildingDefinition>> = BUILDINGS;
 const MAX_TURNS = 40;
 const MAX_CAUSE_CHAIN = 4;
 
@@ -108,11 +112,13 @@ export const initialState = createInitialState();
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function turnToSeasonYear(turn) {
+function turnToSeasonYear(turn: number) {
   const zeroIndexed = turn - 1;
   const seasonIndex = zeroIndexed % 4;
   const year = Math.floor(zeroIndexed / 4) + 1;
-  return { season: SEASONS[seasonIndex], year };
+  const season = SEASONS[seasonIndex];
+  if (season === undefined) throw new RangeError('Turn has no valid season.');
+  return { season, year };
 }
 
 
@@ -133,7 +139,7 @@ function turnToSeasonYear(turn) {
  * @param {number} unitsBought number of spice units bought in this transaction
  * @returns {number} total faith delta (integer, >= 0)
  */
-function computeSpiceFaithGain(prevCount, unitsBought) {
+function computeSpiceFaithGain(prevCount: number, unitsBought: number) {
   if (unitsBought <= 0) return 0;
   let gain = 0;
   for (let i = 0; i < unitsBought; i++) {
@@ -145,7 +151,7 @@ function computeSpiceFaithGain(prevCount, unitsBought) {
   return gain;
 }
 
-function pickSeasonalEvent(season, usedSeasonalIds, turn, allSeasonalEvents, random) {
+function pickSeasonalEvent(season: Season, usedSeasonalIds: string[], turn: number, allSeasonalEvents: readonly SeasonalEvent[], random: RandomSource) {
   const event = selectSeasonalEvent(season, usedSeasonalIds, turn, allSeasonalEvents, random);
   if (!event) return { event: null, usedSeasonalIds };
 
@@ -158,7 +164,7 @@ function pickSeasonalEvent(season, usedSeasonalIds, turn, allSeasonalEvents, ran
   return { event, usedSeasonalIds: nextUsed };
 }
 
-function pickRandomEvent(usedRandomIds, turn, allRandomEvents, random) {
+function pickRandomEvent(usedRandomIds: string[], turn: number, allRandomEvents: readonly EventDefinition[], random: RandomSource) {
   const event = selectRandomEvent(usedRandomIds, turn, allRandomEvents, random);
   if (!event) return { event: null, usedRandomIds };
 
@@ -188,7 +194,7 @@ export function getUnlockedTabs() {
 // Reducer
 // ---------------------------------------------------------------------------
 
-function reduceGame(state, action, random) {
+function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSource): GameSnapshot {
   switch (action.type) {
 
     // -----------------------------------------------------------------------
@@ -285,8 +291,9 @@ function reduceGame(state, action, random) {
       newBuildings.splice(buildingIndex, 1);
 
       const removed = state.buildings[buildingIndex];
+      if (removed === undefined) return state;
       const removedType = getBuildingType(removed);
-      const def = BUILDINGS[removedType];
+      const def = buildingDefinitions[removedType];
       const refund = def ? Math.floor(def.cost / 2) : 0;
 
       return {
@@ -306,16 +313,16 @@ function reduceGame(state, action, random) {
       if (!isBuildingIndex(buildingIndex, state.buildings.length)) return state;
 
       const building = state.buildings[buildingIndex];
-      if (typeof building === "string") return state; // Can't repair legacy format
+      if (building === undefined || typeof building === "string") return state; // Can't repair legacy format
       if (building.condition >= 100) return state;
 
       const cost = getRepairCost(building);
       if (state.denarii < cost) return state;
 
       const repairedBuildings = state.buildings.map((b, i) =>
-        i === buildingIndex ? { ...b, condition: 100 } : b
+        i === buildingIndex && typeof b !== 'string' ? { ...b, condition: 100 } : b
       );
-      const def = BUILDINGS[getBuildingType(building)];
+      const def = buildingDefinitions[getBuildingType(building)];
 
       return {
         ...state,
@@ -334,22 +341,24 @@ function reduceGame(state, action, random) {
       if (!isBuildingIndex(buildingIndex, state.buildings.length)) return state;
 
       const building = state.buildings[buildingIndex];
+      if (building === undefined) return state;
       const typeId = getBuildingType(building);
-      const def = BUILDINGS[typeId];
+      const def = buildingDefinitions[typeId];
       if (!def?.upgradeTo) return state;
 
-      const upgradeDef = BUILDINGS[def.upgradeTo];
+      const upgradeDef = buildingDefinitions[def.upgradeTo];
       if (!upgradeDef) return state;
       const eligibility = getUpgradeEligibility(state, buildingIndex);
       if (!eligibility.allowed) return state;
       const upgradeCost = eligibility.cost;
-      const instanceId = nextBuildingInstanceId(def.upgradeTo, state.turn, state.chronicle.length, state.buildings);
+      const targetType = def.upgradeTo;
+      const instanceId = nextBuildingInstanceId(targetType, state.turn, state.chronicle.length, state.buildings);
 
       const upgradedBuildings = state.buildings.map((b, i) =>
         i === buildingIndex
           ? (typeof b === "string"
-            ? { type: def.upgradeTo, instanceId, condition: 100, builtOnTurn: state.turn }
-            : { ...b, type: def.upgradeTo, instanceId })
+            ? { type: targetType, instanceId, condition: 100, builtOnTurn: state.turn }
+            : { ...b, type: targetType, instanceId })
           : b
       );
 
@@ -387,7 +396,7 @@ function reduceGame(state, action, random) {
         ? prevSynergies.tradeTypes
         : [...prevSynergies.tradeTypes, resource];
 
-      const sellCfg = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale" };
+      const sellCfg: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale" };
       return {
         ...state,
         inventory: newInventory,
@@ -442,7 +451,7 @@ function reduceGame(state, action, random) {
           }
         : prevChapelBuy;
 
-      const buyCfg = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", salt: "Salt", tools: "Tools", spices: "Spices" };
+      const buyCfg: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", salt: "Salt", tools: "Tools", spices: "Spices" };
       return {
         ...state,
         denarii: state.denarii - totalCost,
@@ -563,7 +572,7 @@ function reduceGame(state, action, random) {
       const price = currentOffer;
       const prevMarket = state.market ?? {};
       const prevSynergies = state.synergies ?? {};
-      const LABEL = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale", salt: "Salt", tools: "Tools", spices: "Spices" };
+      const LABEL: Partial<Record<ResourceId, string>> = { grain: "Grain", livestock: "Livestock", fish: "Fish", timber: "Timber", clay: "Clay", iron: "Iron", stone: "Stone", wool: "Wool", cloth: "Cloth", honey: "Honey", herbs: "Herbs", ale: "Ale", salt: "Salt", tools: "Tools", spices: "Spices" };
 
       let newState;
       if (mode === "sell") {
@@ -638,7 +647,7 @@ function reduceGame(state, action, random) {
           denariiEarnedFromTrade: (prevMarket.denariiEarnedFromTrade || 0) + (mode === "sell" ? marketSaleProceeds(currentOffer, quantity, resource, state.blacksmith) : 0),
           denariiSpentOnTrade: (prevMarket.denariiSpentOnTrade || 0) + (mode === "buy" ? currentOffer * quantity : 0),
           haggleTradesUsed: (prevMarket.haggleTradesUsed || 0) + 1,
-          lastTradedSeason: { ...prevMarket.lastTradedSeason, [merchantId]: state.turn },
+          lastTradedSeason: { ...(prevMarket.lastTradedSeason ?? {}), [merchantId]: state.turn },
         },
       };
     }
@@ -667,7 +676,7 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
     case "SET_TAX_RATE":
     case "PEOPLE_SET_LABOR": {
-      const patch = planPeopleAction(state, action.type, action.payload);
+      const patch = planPeopleAction(state, action.type, 'payload' in action ? action.payload : undefined);
       return patch ? { ...state, ...patch } : state;
     }
 
@@ -675,7 +684,7 @@ function reduceGame(state, action, random) {
     case "RECRUIT_SOLDIERS":
     case "DISMISS_SOLDIERS":
     case "UPGRADE_FORTIFICATION": {
-      const change = planMilitaryAction(state, action.type, action.payload);
+      const change = planMilitaryAction(state, action.type, 'payload' in action ? action.payload : undefined);
       if (!change) return state;
       return {
         ...state,
@@ -751,9 +760,7 @@ function reduceGame(state, action, random) {
         castleLevel: state.castleLevel,
         taxRate: state.taxRate,
         season,
-        turn,
         difficulty: state.difficulty,
-        defenseUpgrades: state.defenseUpgrades,
         churchDonation: state.churchDonation ?? 0,
         synergies: state.synergies,
         military: state.military,
@@ -882,9 +889,9 @@ function reduceGame(state, action, random) {
         const def = BUILDINGS[getBuildingType(b)];
         if (!def) continue;
         const orig = state.buildings.find((sb) => typeof sb !== "string" && sb.instanceId === b.instanceId);
-        if (b.condition < 25 && orig && orig.condition >= 25) {
+        if (b.condition < 25 && orig && typeof orig !== 'string' && orig.condition >= 25) {
           nextChronicle = addChronicle(nextChronicle, `Your ${def.name} has fallen into ruin and produces nothing until repaired.`, season, year, turn, "system");
-        } else if (b.condition < 50 && b.condition >= 25 && orig && orig.condition >= 50) {
+        } else if (b.condition < 50 && b.condition >= 25 && orig && typeof orig !== 'string' && orig.condition >= 50) {
           nextChronicle = addChronicle(nextChronicle, `Your ${def.name} is in poor condition \u2014 output reduced by half.`, season, year, turn, "system");
         }
       }
@@ -1004,8 +1011,8 @@ function reduceGame(state, action, random) {
       }
 
       // Decrement Aldric's drill buff
-      if (tavernSeasonReset.aldricDrillActive > 0) {
-        tavernSeasonReset.aldricDrillActive -= 1;
+      if ((tavernSeasonReset.aldricDrillActive ?? 0) > 0) {
+        tavernSeasonReset.aldricDrillActive = (tavernSeasonReset.aldricDrillActive ?? 0) - 1;
         if (tavernSeasonReset.aldricDrillActive === 0) {
           nextChronicle = addChronicle(nextChronicle, "Aldric\u2019s training effect has faded.", season, year, turn, "system");
         }
@@ -1014,7 +1021,7 @@ function reduceGame(state, action, random) {
       // --- BLACKSMITH SEASON PROCESSING ---
       const prevBs = state.blacksmith ?? {};
       let forgeInv = econResult.inventory;
-      let forgeSeasonReset = { ...prevBs, salesThisSeason: 0 };
+      const forgeSeasonReset = { ...prevBs, salesThisSeason: 0 };
 
       // Iron vein passive production
       if (prevBs.ironVeinActive) {
@@ -1230,13 +1237,13 @@ function reduceGame(state, action, random) {
       const { season, year, turn } = state;
 
       // Apply resource changes — cap population loss at 25% per raid
-      let newDenarii = Math.max(0, state.denarii + result.denariiDelta);
+      const newDenarii = Math.max(0, state.denarii + result.denariiDelta);
       const maxPopLoss = Math.ceil(state.population * 0.25);
       const cappedPopDelta = result.populationDelta < 0
         ? Math.max(result.populationDelta, -maxPopLoss)
         : result.populationDelta;
-      let newPopulation = Math.max(0, state.population + cappedPopDelta);
-      let newInventory = { ...state.inventory };
+      const newPopulation = Math.max(0, state.population + cappedPopDelta);
+      const newInventory = { ...state.inventory };
 
       // Apply food delta to grain
       if (result.foodDelta !== 0) {
@@ -1279,7 +1286,7 @@ function reduceGame(state, action, random) {
       const defThreshold = activeRaid.defenseThreshold ?? 0;
       const wtBonus = activeRaid.watchtowerBonus ?? 0;
       const chronicleText = buildRaidChronicleText(raidType, result, season, year, state.garrison, defRating, defThreshold, wtBonus);
-      let nextChronicle = addChronicle(state.chronicle, chronicleText, season, year, turn, "event");
+      const nextChronicle = addChronicle(state.chronicle, chronicleText, season, year, turn, "event");
 
       // Update raid statistics
       const isCriminal = raidType === "criminal";
@@ -1366,7 +1373,8 @@ function reduceGame(state, action, random) {
 
       if (phase !== "seasonal_action" || !currentEvent) return state;
 
-      const partial = resolveEventChoice(state, currentEvent, optionIndex, "action");
+      const settled = resolveEventChoice(state, currentEvent, optionIndex, "action");
+      const partial = {...settled, military: settled.military ?? state.military};
 
       if (partial.gameOverReason) {
         return {
@@ -1426,7 +1434,8 @@ function reduceGame(state, action, random) {
 
       if (phase !== "random_event" || !currentRandomEvent) return state;
 
-      const partial = resolveEventChoice(state, currentRandomEvent, optionIndex, "event");
+      const settled = resolveEventChoice(state, currentRandomEvent, optionIndex, "event");
+      const partial = {...settled, military: settled.military ?? state.military};
 
       if (partial.gameOverReason) {
         return {
@@ -1502,7 +1511,7 @@ function reduceGame(state, action, random) {
       // Phase 4: Small trust decay if lord didn't interact with the hall at all
       const prevHallAdvance = state.greatHall ?? {};
       const hallWasActive = prevHallAdvance.hasFeastedThisSeason
-        || prevHallAdvance.decreeSlotsUsed > 0
+        || (prevHallAdvance.decreeSlotsUsed ?? 0) > 0
         || (prevHallAdvance.disputesResolved || 0) > 0;
       const trustDecay = hallWasActive ? 0 : -2;
       const advanceTrust = Math.max(0, Math.min(100, (prevHallAdvance.stewardTrust ?? 50) + trustDecay));
@@ -1526,18 +1535,19 @@ function reduceGame(state, action, random) {
       const advMeters = prevHallAdvance.meters || { people: 50, treasury: 50, church: 50, military: 50 };
       const advCrisis = { ...(prevHallAdvance.crisisTriggered || {}) };
       const advPeak = { ...(prevHallAdvance.peakTriggered || {}) };
-      let seasonHallEvent = null;
+      let seasonHallEvent: HallSaveState['pendingHallEvent'] = null;
       for (const [key, val] of Object.entries(advMeters)) {
-        if (val < 20 && !advCrisis[key] && CRISIS_EVENTS[key]) {
-          seasonHallEvent = { ...CRISIS_EVENTS[key], meter: key, type: "crisis" };
-          advCrisis[key] = true;
+        const meter = HALL_METERS.find(id => id === key);
+        if (meter && val < 20 && !advCrisis[meter] && CRISIS_EVENTS[meter]) {
+          seasonHallEvent = { ...CRISIS_EVENTS[meter], meter, type: "crisis" };
+          advCrisis[meter] = true;
         }
-        if (val > 80 && !advPeak[key] && PEAK_EVENTS[key]) {
-          seasonHallEvent = { ...PEAK_EVENTS[key], meter: key, type: "peak" };
-          advPeak[key] = true;
+        if (meter && val > 80 && !advPeak[meter] && PEAK_EVENTS[meter]) {
+          seasonHallEvent = { ...PEAK_EVENTS[meter], meter, type: "peak" };
+          advPeak[meter] = true;
         }
-        if (val >= 20) advCrisis[key] = false;
-        if (val <= 80) advPeak[key] = false;
+        if (val >= 20) Object.assign(advCrisis, {[key]: false});
+        if (val <= 80) Object.assign(advPeak, {[key]: false});
       }
 
       const advanceHall = {
@@ -1575,7 +1585,7 @@ function reduceGame(state, action, random) {
 
       let synergiesAfterCheck = updatedSynergies;
       let synChronicle = nextChronicle;
-      let synNotifications = [];
+      const synNotifications = [];
 
       if (newSynergyIds.length > 0) {
         synergiesAfterCheck = {
@@ -1682,7 +1692,7 @@ function reduceGame(state, action, random) {
     // -----------------------------------------------------------------------
     case "DISMISS_FLIP_INTRO": {
       if (state.phase !== "flip_intro") return state;
-      const flipForIntro = ALL_FLIPS[state.currentFlipId];
+      const flipForIntro = isFlipId(state.currentFlipId) ? ALL_FLIPS[state.currentFlipId] : null;
       // BUG-04 guard: if flip data is missing, recover to management
       if (!flipForIntro) {
         return {
@@ -1706,11 +1716,13 @@ function reduceGame(state, action, random) {
     case "SELECT_FLIP_OPTION": {
       if (state.phase !== "flip_decision") return state;
       const { optionIndex } = action.payload ?? {};
+      if (!isFlipId(state.currentFlipId)) return state;
       const flip = ALL_FLIPS[state.currentFlipId];
       if (!flip) return state;
 
       // --- CYOA branching flow ---
       if (flip.type === "cyoa") {
+        if (state.currentCyoaNodeId === null) return state;
         const node = flip.nodes[state.currentCyoaNodeId];
         if (!node || node.isEnding) return state;
         const option = node.options?.[optionIndex];
@@ -1743,6 +1755,7 @@ function reduceGame(state, action, random) {
       const option = decision.options[optionIndex];
       if (!option) return state;
 
+      if (state.currentFlipStats === null) return state;
       const { nextStats, consequenceFlags, outcome, wasSuccess } = resolveFlipOption(
         option,
         state.currentFlipStats,
@@ -1761,8 +1774,9 @@ function reduceGame(state, action, random) {
 
     case "CONTINUE_FLIP": {
       if (state.phase !== "flip_outcome") return state;
+      if (!isFlipId(state.currentFlipId)) return state;
       const flip = ALL_FLIPS[state.currentFlipId];
-      if (!flip) return state;
+      if (!flip || flip.type === 'cyoa') return state;
 
       const nextIndex = state.currentDecisionIndex + 1;
 
@@ -1786,7 +1800,7 @@ function reduceGame(state, action, random) {
       if (state.phase !== "flip_summary") return state;
 
       const { currentFlipId, flipConsequenceFlags, turn, chronicle } = state;
-      const flip = ALL_FLIPS[currentFlipId];
+      const flip = isFlipId(currentFlipId) ? ALL_FLIPS[currentFlipId] : null;
       // BUG-04 guard: if flip data is missing, recover to management
       if (!flip) {
         return {
@@ -1855,6 +1869,7 @@ function reduceGame(state, action, random) {
       const nextCauseChain = [...(state.causeChain || []), flipCauseEntry].slice(-MAX_CAUSE_CHAIN);
 
       // Mark flip as fired
+      if (!isFlipId(currentFlipId)) return state;
       const nextPerspectiveFlips = { ...state.perspectiveFlips, [currentFlipId]: true };
 
       if (gameOverReason) {
@@ -1913,7 +1928,7 @@ function reduceGame(state, action, random) {
       const flipStateForSynergyCheck = { ...newState, synergies: flipUpdatedSynergies };
       const flipNewSynergyIds = checkSynergies(flipStateForSynergyCheck);
       let flipSynergiesAfterCheck = flipUpdatedSynergies;
-      let flipSynNotifications = [];
+      const flipSynNotifications = [];
       if (flipNewSynergyIds.length > 0) {
         flipSynergiesAfterCheck = {
           ...flipUpdatedSynergies,
@@ -2073,7 +2088,7 @@ function reduceGame(state, action, random) {
       // Apply food loss to inventory (remove from grain first, then livestock, then fish)
       let remainingLoss = foodLost;
       const newInv = { ...state.inventory };
-      for (const key of ["grain", "livestock", "fish"]) {
+      for (const key of ["grain", "livestock", "fish"] as const) {
         if (remainingLoss <= 0) break;
         const available = newInv[key] || 0;
         const take = Math.min(available, remainingLoss);
@@ -2135,7 +2150,7 @@ function reduceGame(state, action, random) {
       const riddle = BARD_RIDDLES.find(item => item.id === content.id);
       const solvedIds = prevTvn.bardSolvedRiddleIds ?? [];
       const oldCount = prevTvn.bardRiddlesSolved ?? 0;
-      if (!riddle || !riddle.options.includes(option) || !isBardSolvedIds(solvedIds) ||
+      if (!riddle || !riddle.options.some(candidate => candidate === option) || !isBardSolvedIds(solvedIds) ||
           !Number.isSafeInteger(oldCount) || oldCount < 0 || oldCount >= Number.MAX_SAFE_INTEGER) return state;
       const awarded = option === riddle.answer && !solvedIds.includes(content.id);
       return {
@@ -2244,7 +2259,7 @@ function reduceGame(state, action, random) {
           current.offerId !== offerId || current.resolution !== null) return state;
       if ((prevTm.martaOffersUsed ?? []).includes(offerId)) return state;
 
-      const baseTavern = {
+      const baseTavern: GameSnapshot['tavern'] = {
         ...prevTm,
         martaOffersUsed: [...(prevTm.martaOffersUsed ?? []), offerId],
         martaCurrentContent: { ...current, resolution: "accepted" },
@@ -2275,7 +2290,7 @@ function reduceGame(state, action, random) {
         case "trade_route_tip": {
           if (state.denarii < 30) return state;
           // Find best-priced trade good
-          const tradeGoods = ["wool", "cloth", "honey", "herbs", "ale"];
+          const tradeGoods = ["wool", "cloth", "honey", "herbs", "ale"] as const;
           let bestGood = "cloth";
           let bestPrice = 0;
           for (const good of tradeGoods) {
@@ -2370,7 +2385,7 @@ function reduceGame(state, action, random) {
           current.offerId !== aldricOfferId || current.resolution !== null) return state;
       if ((prevTa2.aldricOffersUsed ?? []).includes(aldricOfferId)) return state;
 
-      const baseAldricTavern = {
+      const baseAldricTavern: GameSnapshot['tavern'] = {
         ...prevTa2,
         aldricOffersUsed: [...(prevTa2.aldricOffersUsed ?? []), aldricOfferId],
         aldricCurrentContent: { ...current, resolution: "accepted" },
@@ -2468,7 +2483,7 @@ function reduceGame(state, action, random) {
     case "CHAPEL_MS_CLEAR_FLASH":
     case "CHAPEL_MS_DONE_SHOWING":
     case "CHAPEL_MS_INPUT": {
-      const change = planChapelAction(state, action.type, action.payload, random);
+      const change = planChapelAction(state, action.type, 'payload' in action ? action.payload : undefined, random);
       if (!change) return state;
       const { chapel: patch, logText, chronicleText, chronicleKind, ...resources } = change;
       const chapel = { ...(state.chapel ?? {}), ...patch };
@@ -2514,7 +2529,7 @@ function reduceGame(state, action, random) {
 
       // Phase 5: Compound flags and hall log
       const newCompoundFlags = computeCompoundFlags(newHistory);
-      const disputeLogEntry = {
+      const disputeLogEntry: HallLogEntry = {
         type: "dispute",
         text: `Ruled on dispute: "${decree}"`,
         turn: state.turn, season: state.season, year: state.year,
@@ -2522,23 +2537,24 @@ function reduceGame(state, action, random) {
       };
 
       // Phase 5: Check for crisis/peak triggers after meter change
-      let pendingEvent = null;
+      let pendingEvent: HallSaveState['pendingHallEvent'] = null;
       const prevCrisis = prevHall.crisisTriggered || {};
       const prevPeak = prevHall.peakTriggered || {};
       const newCrisis = { ...prevCrisis };
       const newPeak = { ...prevPeak };
       for (const [key, val] of Object.entries(newMeters)) {
-        if (val < 20 && !prevCrisis[key] && CRISIS_EVENTS[key]) {
-          pendingEvent = { ...CRISIS_EVENTS[key], meter: key, type: "crisis" };
-          newCrisis[key] = true;
+        const meter = HALL_METERS.find(id => id === key);
+        if (meter && val < 20 && !prevCrisis[meter] && CRISIS_EVENTS[meter]) {
+          pendingEvent = { ...CRISIS_EVENTS[meter], meter, type: "crisis" };
+          newCrisis[meter] = true;
         }
-        if (val > 80 && !prevPeak[key] && PEAK_EVENTS[key]) {
-          pendingEvent = { ...PEAK_EVENTS[key], meter: key, type: "peak" };
-          newPeak[key] = true;
+        if (meter && val > 80 && !prevPeak[meter] && PEAK_EVENTS[meter]) {
+          pendingEvent = { ...PEAK_EVENTS[meter], meter, type: "peak" };
+          newPeak[meter] = true;
         }
         // Reset trigger if meter recovers
-        if (val >= 20) newCrisis[key] = false;
-        if (val <= 80) newPeak[key] = false;
+        if (val >= 20) Object.assign(newCrisis, {[key]: false});
+        if (val <= 80) Object.assign(newPeak, {[key]: false});
       }
 
       const conParts = Object.entries(consequences)
@@ -2584,7 +2600,7 @@ function reduceGame(state, action, random) {
       const prevHall = state.greatHall;
 
       // Phase 5: Hall log
-      const audLogEntry = {
+      const audLogEntry: HallLogEntry = {
         type: "audience",
         text: `Held audience with petitioner`,
         turn: state.turn, season: state.season, year: state.year,
@@ -2624,7 +2640,7 @@ function reduceGame(state, action, random) {
       const conText = conParts.length > 0 ? ` (${conParts.join(", ")})` : "";
 
       // Phase 5: Hall log
-      const decreeLogEntry = {
+      const decreeLogEntry: HallLogEntry = {
         type: "decree",
         text: `Issued decree: ${decreeId}`,
         turn: state.turn, season: state.season, year: state.year,
@@ -2659,7 +2675,7 @@ function reduceGame(state, action, random) {
       const prevHall = state.greatHall;
 
       // Phase 5: Hall log
-      const revokeLogEntry = {
+      const revokeLogEntry: HallLogEntry = {
         type: "decree_revoke",
         text: `Revoked decree: ${decreeId}`,
         turn: state.turn, season: state.season, year: state.year,
@@ -2699,7 +2715,7 @@ function reduceGame(state, action, random) {
       const cncTrust = Math.min(100, (prevHall.stewardTrust ?? 50) + 1);
 
       // Phase 5: Hall log
-      const councilLogEntry = {
+      const councilLogEntry: HallLogEntry = {
         type: "council",
         text: `Council voted on: ${topicId}`,
         turn: state.turn, season: state.season, year: state.year,
@@ -2739,7 +2755,7 @@ function reduceGame(state, action, random) {
       const { totalEffects } = outcome;
       const prevMeters = prevHall.meters;
 
-      const clamp = (v) => Math.max(0, Math.min(100, v));
+      const clamp = (v: number) => Math.max(0, Math.min(100, v));
       const newMeters = {
         people: clamp(prevMeters.people + (totalEffects.people || 0)),
         treasury: clamp(prevMeters.treasury + (totalEffects.treasury || 0)),
@@ -2756,7 +2772,7 @@ function reduceGame(state, action, random) {
       const fstTrust = Math.min(100, (prevHall.stewardTrust ?? 50) + 3);
 
       // Phase 5: Hall log
-      const feastLogEntry = {
+      const feastLogEntry: HallLogEntry = {
         type: "feast",
         text: "Hosted a feast in the Great Hall",
         turn: state.turn, season: state.season, year: state.year,
@@ -2802,7 +2818,7 @@ function reduceGame(state, action, random) {
       const { event: evt, effects: eff, meters: eMeters } = plan;
 
       // Log the event
-      const evtLogEntry = {
+      const evtLogEntry: HallLogEntry = {
         type: evt.type,
         text: evt.chronicle || evt.text,
         turn: state.turn, season: state.season, year: state.year,
@@ -2928,7 +2944,7 @@ function reduceGame(state, action, random) {
     case "BLACKSMITH_EQUIP_ITEM":
     case "BLACKSMITH_SELL_ITEM":
     case "BLACKSMITH_SCRAP_ITEM": {
-      const plan = planForgeItemAction(state, action.type, action.payload);
+      const plan = planForgeItemAction(state, action.type, 'payload' in action ? action.payload : undefined);
       if (!plan) return state;
       return {...state, ...plan.patch,
         chronicle: addChronicle(state.chronicle, plan.message, state.season, state.year, state.turn, "action")};
@@ -2948,7 +2964,7 @@ function reduceGame(state, action, random) {
     case "BLACKSMITH_ADVANCE_BANTER":
     case "BLACKSMITH_DISMISS_SUPPLY_EVENT":
     case "BLACKSMITH_INVEST_IRON_VEIN": {
-      const plan = planForgeAncillary(state, action.type, action.payload);
+      const plan = planForgeAncillary(state, action.type, 'payload' in action ? action.payload : undefined);
       if (!plan) return state;
       return {...state, ...plan.patch,
         ...(plan.message === null ? {} : {chronicle: addChronicle(state.chronicle, plan.message, state.season, state.year, state.turn, plan.chronicleKind)})};
@@ -2971,7 +2987,7 @@ function reduceGame(state, action, random) {
   }
 }
 
-export function gameReducer(state, action) {
+export function gameReducer(state: GameSnapshot, action: GameCommand): GameSnapshot {
   if (action.type === "START_GAME" || action.type === "PLAY_AGAIN") {
     return reduceGame(state, action, () => { throw new Error("Start must use its own seed."); });
   }

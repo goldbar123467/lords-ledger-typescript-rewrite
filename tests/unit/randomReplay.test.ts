@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import seasonalEventData from '../../src/data/seasonalEvents.ts';
 import randomEvents from '../../src/data/randomEvents.ts';
@@ -54,9 +55,9 @@ test('chance based raid defense and chapel actions replay from the same state', 
   const warning = {
     ...started,
     turn: 3,
-    season: 'autumn',
-    raids: { ...started.raids, activeRaid: { type: 'criminal', phase: 'warning', result: null } },
-    phase: 'raid_warning',
+    season: 'autumn' as const,
+    raids: { ...started.raids, activeRaid: { type: 'criminal', phase: 'warning' as const, result: null } },
+    phase: 'raid_warning' as const,
   };
   const defended = gameReducer(warning, { type: 'RAID_DEFEND' });
   assert.deepEqual(defended, gameReducer(warning, { type: 'RAID_DEFEND' }));

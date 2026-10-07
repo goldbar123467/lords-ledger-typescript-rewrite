@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import BUILDINGS from '../../../src/data/buildings.ts';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save,type GameSnapshot} from '../../../src/save/saveGame.ts';
 
 function snapshot(value:unknown):GameSnapshot{const result=readV2Save(writeV2Save(value));if(!result.ok)throw new Error(result.error);return result.state;}

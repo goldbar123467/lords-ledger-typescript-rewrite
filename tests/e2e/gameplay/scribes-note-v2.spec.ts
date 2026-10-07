@@ -77,7 +77,7 @@ test('a loaded long note scrolls, dismisses with Escape and restores the continu
   if (!result.ok) throw new Error(result.error);
   const event = seasonalEvents.spring[0];
   const longNote = Array(12).fill(event.scribesNote).join(' ');
-  const raw = writeV2Save({ ...result.state, phase: 'seasonal_resolve', currentEvent: event, scribesNote: longNote });
+  const raw = writeV2Save({ ...result.state, phase: 'seasonal_resolve' as const, currentEvent: event, scribesNote: longNote });
   await page.addInitScript(({ key, value }) => {
     if (!localStorage.getItem(key)) localStorage.setItem(key, value);
   }, { key: saveKey, value: raw });

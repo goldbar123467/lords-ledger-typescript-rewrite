@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save, type GameSnapshot } from '../../../src/save/saveGame.ts';
 
 async function openSeededCompanion(

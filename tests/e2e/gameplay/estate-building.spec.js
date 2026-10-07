@@ -6,7 +6,7 @@
 
 import { test, expect } from "@playwright/test";
 import { startGame } from "../helpers.js";
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 /**

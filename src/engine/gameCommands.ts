@@ -2,7 +2,7 @@ import type { Difficulty, GameSnapshot } from '../save/saveGame.ts';
 import type { TabId } from '../data/tabs.ts';
 import type { BuildingId } from '../data/buildings.ts';
 import type { ResourceId } from '../data/economy.ts';
-import type { EventDefinition } from '../data/eventTypes.ts';
+import type { EventDefinition, SeasonalEvent } from '../data/eventTypes.ts';
 import type { MarketMerchantId } from '../data/market.ts';
 import type { MartaOfferId, AldricOfferId } from '../data/tavern.ts';
 import type { GambitWeapon } from './tavernGambit.ts';
@@ -20,7 +20,7 @@ import type { ForgeItemCommand } from './forgeItemActions.ts';
 import type { ForgeCompletionCommand } from './forgeCompletion.ts';
 
 export interface EventPools {
-  seasonalEvents?: readonly EventDefinition[];
+  seasonalEvents?: readonly SeasonalEvent[];
   randomEvents?: readonly EventDefinition[];
 }
 export type TavernAction =

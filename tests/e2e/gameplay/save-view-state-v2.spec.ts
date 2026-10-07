@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'easy', seed: 104 } });

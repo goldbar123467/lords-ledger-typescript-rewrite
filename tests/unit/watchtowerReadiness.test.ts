@@ -1,10 +1,12 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getInitialMilitaryState } from '../../src/data/military.ts';
 import { RODERIC_DEFENSE_ASSESSMENTS, RODERIC_STRATEGIC_TIPS } from '../../src/data/watchtower.ts';
 import { getMilitaryReadiness } from '../../src/engine/militaryReadiness.ts';
 import { calculateForgeReadiness } from '../../src/engine/forgeReadiness.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 
 const base = { turn: 8, garrison: 5, castleLevel: 1 as const, food: 200, denarii: 500,
   military: getInitialMilitaryState() };
@@ -61,17 +63,18 @@ test('equipment, drills and scouting produce threat-specific readiness without m
 test('raid resolution uses the same threat rating and preserves a captured third-season drill', () => {
   const initial = createInitialState(104);
   for (const [type, defenseRating, threshold] of [['criminal', 28, 18], ['scottish', 29, 38]] as const) {
-    const state = { ...initial, phase: 'raid_warning',
+    const state = { ...initial, phase: 'raid_warning' as const,
       tavern: { ...initial.tavern, aldricDrillActive: 0 },
-      blacksmith: { ...initial.blacksmith, equipped: [{ category: 'weapon', militaryBonus: 8, qualityScore: 90 }] },
+      blacksmith: { ...initial.blacksmith, nextItemUid: 2,
+        equipped: [{ uid: 1, name: 'Readiness fixture weapon', grade: 'Masterwork', category: 'weapon', militaryBonus: 8, qualityScore: 90 }] },
       watchtower: { ...initial.watchtower, warnings: { criminalRaidBonus: 2, scottishRaidBonus: 3, raidRequirementReduction: 2 } },
-      raids: { ...initial.raids, activeRaid: { type, phase: 'warning', drillBonus: 5 } },
+      raids: { ...initial.raids, activeRaid: { type, phase: 'warning' as const, drillBonus: 5 } },
     };
     const next = gameReducer(state, { type: 'RAID_DEFEND' });
     assert.equal(next.phase, 'raid_result');
-    assert.equal(next.raids.activeRaid.defenseRating, defenseRating);
-    assert.equal(next.raids.activeRaid.defenseThreshold, threshold);
-    assert.equal(next.raids.activeRaid.drillBonus, 5);
-    assert.equal(next.raids.activeRaid.result.victory, type === 'criminal');
+    assert.equal(present(next.raids.activeRaid, "next.raids.activeRaid").defenseRating, defenseRating);
+    assert.equal(present(next.raids.activeRaid, "next.raids.activeRaid").defenseThreshold, threshold);
+    assert.equal(present(next.raids.activeRaid, "next.raids.activeRaid").drillBonus, 5);
+    assert.equal(present(present(next.raids.activeRaid, "next.raids.activeRaid").result, "present(next.raids.activeRaid, \"next.raids.activeRaid\").result").victory, type === 'criminal');
   }
 });

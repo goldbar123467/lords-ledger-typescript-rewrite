@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save, type GameSnapshot, type Difficulty } from '../../../src/save/saveGame.ts';
 
 declare global { interface Window { __llFreshSeeds?: number[] } }
@@ -51,7 +51,7 @@ for (const row of [
 for (const phase of ['game_over', 'victory'] as const) test(`native restart from a managed ${phase} fixture clears old subsystem state`, async ({ page }, info) => {
   // These terminal fixtures exercise the restart entry point; they are not reached campaigns.
   const value = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'hard', seed: 104 } });
-  const terminal = snapshot({ ...value, phase, turn: 40, year: 10, season: 'winter',
+  const terminal = snapshot({ ...value, phase, turn: 40, year: 10, season: 'winter' as const,
     gameOverReason: phase === 'game_over' ? { type: 'bankruptcy', reason: 'Managed restart fixture' } : null,
     denarii: phase === 'game_over' ? 0 : 400, bankruptcyTurns: phase === 'game_over' ? 6 : 0,
     tavern: { ...value.tavern, wallStashFound: true, gambitRoundsThisSeason: 5, totalVisits: 99 } });

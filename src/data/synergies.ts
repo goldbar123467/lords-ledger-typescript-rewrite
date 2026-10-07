@@ -386,7 +386,9 @@ export type SynergyReferenceCheck = AssertNever<
 >;
 
 /** Flat array of all paths for iteration */
-export const SYNERGY_PATH_LIST: readonly SynergyPathDefinition[] = Object.values(SYNERGY_PATHS);
+export const SYNERGY_PATH_LIST: readonly (SynergyPathDefinition & {
+  tiers: readonly (SynergyTierDefinition & { id: SynergyTierId })[];
+})[] = Object.values(SYNERGY_PATHS);
 
 /** Map of tierId → { path, tier } for quick lookup */
 export const SYNERGY_TIER_MAP: Record<string, { path: SynergyPathDefinition; tier: SynergyTierDefinition }> = {};

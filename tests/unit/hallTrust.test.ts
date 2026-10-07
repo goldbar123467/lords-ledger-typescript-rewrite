@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getTrustTier, exportPitchData } from '../../src/data/greatHall.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import disputes from '../../src/data/disputes.ts';
 import { COUNCIL_TOPICS } from '../../src/data/decrees.ts';
@@ -22,7 +23,7 @@ test('Hall rewards preserve zero and fractional trust through save continuation'
   if (!topic || !option) throw new Error('Missing authored council choice');
   for (const trust of [0,.5,30.5,50.5,85.5,99,100]) {
     const base=createInitialState(104);
-    const state={...base,phase:'management',greatHall:{...base.greatHall,stewardTrust:trust,meters:{...base.greatHall.meters,people:71}}};
+    const state={...base,phase:'management' as const,greatHall:{...base.greatHall,stewardTrust:trust,meters:{...base.greatHall.meters,people:71}}};
     const before=structuredClone(state);
     const cases: readonly {action:{type:string;payload:object};gain:number}[]=[
       {action:{type:'HALL_AUDIENCE_RESPOND',payload:{encounterId:'aud_001',responseIndex:0}},gain:1},
@@ -43,7 +44,7 @@ test('Hall rewards preserve zero and fractional trust through save continuation'
 test('inactive season decay keeps zero at zero and subtracts exactly two from fractions', () => {
   for (const trust of [0,.5,2,30.5,50.5,85.5,100]) {
     const base=createInitialState(104);
-    const state={...base,phase:'seasonal_resolve',greatHall:{...base.greatHall,stewardTrust:trust}};
+    const state={...base,phase:'seasonal_resolve' as const,greatHall:{...base.greatHall,stewardTrust:trust}};
     const before=structuredClone(state), result=gameReducer(state,{type:'ADVANCE_TURN'});
     assert.equal(result.turn,state.turn+1);
     assert.equal(result.greatHall.stewardTrust,Math.max(0,trust-2)); assert.deepEqual(state,before);

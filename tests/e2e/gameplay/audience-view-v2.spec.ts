@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) for (const view of ['active', 'aftermath']) {
   test(`Load resets a mounted ${view} audience at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
-    const state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    const state = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     const raw = writeV2Save(state), errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
@@ -26,7 +26,7 @@ for (const width of [390, 1366]) for (const view of ['active', 'aftermath']) {
 }
 
 test('Pointer speech skip keeps the complete petition visible', async ({ page }) => {
-  const state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+  const state = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
   const raw = writeV2Save(state);
   await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), raw);
   await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();

@@ -1,6 +1,8 @@
+import {extraField} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
@@ -48,7 +50,7 @@ for (const value of [undefined, null, 4.5]) test(`saved market historical defaul
   assert.equal(settled.market.haggleTradesUsed, (value ?? 0) + 1);
   assert.equal(settled.inventory.grain, base.inventory.grain - 1);
   assert.equal(settled.rngState, state.rngState);
-  assert.deepEqual(settled.market.historicalExtension, { kept: true });
+  assert.deepEqual(extraField(settled.market, 'historicalExtension'), { kept: true });
   assert.doesNotThrow(() => writeV2Save(settled)); assert.equal(JSON.stringify(state), before);
 });
 test('saved market empty historical event and unknown fields retain exact bytes', () => {

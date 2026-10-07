@@ -1,5 +1,6 @@
-import assert from 'node:assert/strict';import test from 'node:test';import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';import {FORGE_SUPPLY_EVENTS,generateForgeMarketPrices} from '../../src/data/blacksmith.ts';
-const base=()=>({...createInitialState(104),phase:'management',turn:4,season:'winter'});
+import assert from 'node:assert/strict';import test from 'node:test';import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';import {FORGE_SUPPLY_EVENTS,generateForgeMarketPrices} from '../../src/data/blacksmith.ts';
+const base=()=>({...createInitialState(104),phase:'management' as const,turn:4,season:'winter' as const});
 function pending(id:string){const state=base(),event=FORGE_SUPPLY_EVENTS.find(e=>e.id===id);if(!event)throw Error('Missing event');return {...state,blacksmith:{...state.blacksmith,activeSupplyEvent:event,supplyEventTurnsLeft:event.duration}};}
 test('Forge supply acknowledgements are consumed once and preserve an elapsed disruption countdown',()=>{
  const state=pending('iron_shortage'),s={...state,blacksmith:{...state.blacksmith,supplyEventTurnsLeft:1}},action={type:'BLACKSMITH_DISMISS_SUPPLY_EVENT'},next=gameReducer(s,action);
@@ -17,7 +18,7 @@ test('Forge active supply prices double iron or halve coal consistently until ex
  }
 });
 test('Forge ancillary commands reject invalid phase/calendar, corrupted consumed values and event identities',()=>{
- const initial=base();for(const type of ['BLACKSMITH_ADVANCE_WAT','BLACKSMITH_ADVANCE_BANTER','BLACKSMITH_DISMISS_SUPPLY_EVENT','BLACKSMITH_INVEST_IRON_VEIN','BLACKSMITH_BUY_RESOURCE'])for(const patch of [{phase:'victory'},{phase:'title'},{turn:41},{year:25},{season:'spring'}]){const state={...pending('iron_vein'),...patch};assert.equal(gameReducer(state,{type,payload:{resource:'iron',quantity:1}}),state);}
+ const initial=base();for(const type of ['BLACKSMITH_ADVANCE_WAT','BLACKSMITH_ADVANCE_BANTER','BLACKSMITH_DISMISS_SUPPLY_EVENT','BLACKSMITH_INVEST_IRON_VEIN','BLACKSMITH_BUY_RESOURCE'])for(const patch of [{phase:'victory' as const},{phase:'title' as const},{turn:41},{year:25},{season:'spring' as const}]){const state={...pending('iron_vein'),...patch};assert.equal(gameReducer(state,{type,payload:{resource:'iron',quantity:1}}),state);}
  for(const [type,patch] of [['BLACKSMITH_ADVANCE_WAT',{watFactIndex:'0'}],['BLACKSMITH_ADVANCE_BANTER',{banterIndex:-1}],['BLACKSMITH_DISMISS_SUPPLY_EVENT',{usedSupplyEventIds:'bad'}],['BLACKSMITH_DISMISS_SUPPLY_EVENT',{activeSupplyEvent:{id:'unknown',effect:'royal_reward_50'}}],['BLACKSMITH_DISMISS_SUPPLY_EVENT',{activeSupplyEvent:{id:'iron_shortage',effect:'royal_reward_50'}}]] as const){const state={...initial,blacksmith:{...initial.blacksmith,...patch}};assert.equal(gameReducer(state,{type}),state);}
  for(const stock of ['0',Infinity,-1]){const state={...initial,inventory:{...initial.inventory,iron:stock}};assert.equal(gameReducer(state,{type:'BLACKSMITH_BUY_RESOURCE',payload:{resource:'iron',quantity:1}}),state);}
 });

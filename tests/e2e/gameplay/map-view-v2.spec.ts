@@ -1,7 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
 import BUILDINGS from '../../../src/data/buildings.ts';
 import {mapViewFixture} from '../../fixtures/mapView.ts';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save,type Season} from '../../../src/save/saveGame.ts';
 
 async function load(page:Page,kind:Parameters<typeof mapViewFixture>[0],season:Season='spring'){

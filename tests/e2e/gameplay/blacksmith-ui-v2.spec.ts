@@ -1,7 +1,8 @@
+import {present} from '../../gameInput.ts';
 import {test,expect,type Locator,type Page} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 import {forgePanelFixture} from '../../fixtures/forgePanel.ts';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 import {FORGEABLE_ITEMS,ITEM_CATEGORIES,getBuyerPrice,SEASONAL_BUYERS} from '../../../src/data/blacksmith.ts';
 import {getForgeResourceQuote} from '../../../src/engine/forgeAncillaryActions.ts';
@@ -33,7 +34,7 @@ for(const width of [390,1280,1366,1920])test(`Forge named navigation and readabl
 for(const width of [390,1366])for(const action of ['equip','sell','scrap','buyer'] as const)test(`Forge native ${action} confirmation ${width}`,async({page},info)=>{
  await page.setViewportSize({width,height:width===390?844:768});const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));let state=await load(page);await page.getByRole('navigation',{name:'Forge',exact:true}).getByRole('button',{name:'Armory',exact:true}).click();
  let trigger:Locator;
- if(action==='buyer'){const buyer=SEASONAL_BUYERS.find(b=>b.id==='arms_dealer');if(!buyer)throw Error('Missing buyer');const item=state.blacksmith.inventory[0];if(!item)throw Error('Missing item');const price=getBuyerPrice(buyer,item,state.blacksmith.salesThisSeason);trigger=page.getByRole('button',{name:`Dagger (${price}d)`,exact:true}).first();}
+ if(action==='buyer'){const buyer=SEASONAL_BUYERS.find(b=>b.id==='arms_dealer');if(!buyer)throw Error('Missing buyer');const item=present(state.blacksmith.inventory, "state.blacksmith.inventory")[0];if(!item)throw Error('Missing item');const price=getBuyerPrice(buyer,item,present(state.blacksmith.salesThisSeason, "state.blacksmith.salesThisSeason"));trigger=page.getByRole('button',{name:`Dagger (${price}d)`,exact:true}).first();}
  else{await page.getByRole('button',{name:'Select Fine Dagger',exact:true}).first().click();trigger=page.getByRole('button',{name:action==='equip'?'Equip':action==='sell'?'Sell':'Scrap',exact:true}).first();}
  await trigger.click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();expect(await dialog.evaluate(el=>el.matches(':modal'))).toBe(true);await expect(dialog.getByRole('heading')).toBeFocused();
  const confirm=dialog.getByRole('button',{name:action==='buyer'?'Sell':'Confirm',exact:true}),cancel=dialog.getByRole('button',{name:'Cancel',exact:true});await readable(confirm);

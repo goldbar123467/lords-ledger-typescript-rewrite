@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { advanceSynergyCounters, checkTierConditions } from '../../src/engine/synergyEngine.ts';
 import { SYNERGY_TIER_MAP } from '../../src/data/synergies.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
@@ -8,7 +9,7 @@ import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
 const maximum = Number.MAX_SAFE_INTEGER;
 test('accepted maximum sustained counters advance twice and remain saveable', () => {
-  const state = { ...base, phase: 'random_resolve', chapel: { ...base.chapel, faith: 80 },
+  const state = { ...base, phase: 'random_resolve' as const, chapel: { ...base.chapel, faith: 80 },
     greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people: 80 } },
     synergies: { ...base.synergies, highFaithTurns: maximum, highPeopleTurns: maximum } }, before = JSON.stringify(state);
   assert.equal(readV2Save(writeV2Save(state)).ok, true);

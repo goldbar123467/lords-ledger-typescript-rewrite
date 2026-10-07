@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {BARD_RIDDLES} from '../../../src/data/tavern.ts';
 import {readV2Save,writeV2Save,type GameSnapshot} from '../../../src/save/saveGame.ts';
 

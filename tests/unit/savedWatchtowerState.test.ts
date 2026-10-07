@@ -1,6 +1,9 @@
+import {extraField} from '../gameInput.ts';
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { createRandomCursor } from '../../src/engine/random.ts';
 import { createScanPlan } from '../../src/engine/watchtowerScan.ts';
 import { getMilitaryReadiness } from '../../src/engine/militaryReadiness.ts';
@@ -46,7 +49,7 @@ for (const value of [undefined, null, 4.5]) test(`historical Watchtower defaults
   const watchtower = { ...Object.fromEntries(counters.map(key => [key, value])), scannedThisSeason: null,
     scanScribesNoteSeen: null, rodericScribesNoteSeen: null, warnings: { criminalRaidBonus: null, scottishRaidBonus: 1.5,
       raidRequirementReduction: null, merchantPreview: { name: null, oldSpecialty: { kept: true } } },
-    signalLog: [{ season: 'Historical season', year: null, text: 'Historical lookout', type: null }, {}],
+    signalLog: [{ season: 'Historical season' as const, year: null, text: 'Historical lookout', type: null }, {}],
     lastScanResult: { oldRating: { kept: true } }, historicalExtension: { kept: true } };
   const state = { ...base, watchtower }, raw = writeV2Save(state), loaded = readV2Save(raw), legacy = readLegacySave(JSON.stringify(state));
   if (!loaded.ok) throw new Error(loaded.error); if (!legacy.ok) throw new Error(legacy.error);
@@ -56,8 +59,8 @@ for (const value of [undefined, null, 4.5]) test(`historical Watchtower defaults
   const next = gameReducer(loaded.state, action);
   assert.equal(next.watchtower.totalScans, (value ?? 0) + 1);
   assert.equal(next.watchtower.perfectScans, (value ?? 0) + 1);
-  assert.deepEqual(next.watchtower.signalLog.slice(0, 2), watchtower.signalLog);
-  assert.deepEqual(next.watchtower.historicalExtension, { kept: true });
+  assert.deepEqual(present(next.watchtower.signalLog, "next.watchtower.signalLog").slice(0, 2), watchtower.signalLog);
+  assert.deepEqual(extraField(next.watchtower, 'historicalExtension'), { kept: true });
   assert.notEqual(next.rngState, state.rngState); assert.strictEqual(gameReducer(next, action), next);
   assert.doesNotThrow(() => writeV2Save(next)); assert.equal(writeV2Save(loaded.state), raw);
   assert.equal(getMilitaryReadiness(loaded.state).scottishScoutBonus, 1.5);

@@ -1,3 +1,4 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import BUILDINGS from '../../src/data/buildings.ts';
@@ -8,7 +9,8 @@ import {
   getSynergyMeterEffects, getSynergyPassiveIncome, getSynergyTradePriceBonus,
   getSynergyVictoryTitle, getSynergyWoolSellBonus, hasSynergyPopulationBonus,
 } from '../../src/engine/synergyEngine.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('seven authored paths retain three ordered, unique tiers and valid building references', () => {
@@ -146,7 +148,7 @@ test('a season followed by a complete perspective flip counts and rewards synerg
   const built = gameReducer(started, { type: 'BUILD_BUILDING', payload: { buildingId: 'herb_garden' } });
   // Fixture-assisted turn-seven boundary; all subsequent transitions use production actions.
   const boundary = {
-    ...built, turn: 7, season: 'autumn', year: 2, taxRate: 'high',
+    ...built, turn: 7, season: 'autumn' as const, year: 2, taxRate: 'high',
     chapel: { ...built.chapel, faith: 62 },
     greatHall: { ...built.greatHall, meters: { ...built.greatHall.meters, people: 65 } },
     synergies: { ...built.synergies, activated: ['peoples_lord_1'], highFaithTurns: 2, highPeopleTurns: 3 },
@@ -159,7 +161,7 @@ test('a season followed by a complete perspective flip counts and rewards synerg
   assert.deepEqual([entered.synergies.highFaithTurns, entered.synergies.highPeopleTurns], [3, 4]);
   assert.equal(entered.chapel.faith, 63);
   assert.equal(entered.greatHall.meters.people, 66);
-  assert.deepEqual(entered.deferredSynergyNotifications.map((entry: { tierId: string }) => entry.tierId), ['pious_lord_1']);
+  assert.deepEqual(present(entered.deferredSynergyNotifications, "entered.deferredSynergyNotifications").map((entry: { tierId: string }) => entry.tierId), ['pious_lord_1']);
   const serialized = readV2Save(writeV2Save(entered));
   if (!serialized.ok) throw new Error(serialized.error);
   let flip = gameReducer(serialized.state, { type: 'DISMISS_FLIP_INTRO' });

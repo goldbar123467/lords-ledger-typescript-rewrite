@@ -4,9 +4,9 @@ import { selectRandomEvent, selectSeasonalEvent } from '../../src/engine/eventSe
 
 test('seasonal selection favors unused events of the requested season without mutating inputs', () => {
   const events = [
-    { id: 'spring-a', season: 'spring' },
-    { id: 'spring-b', season: 'spring' },
-    { id: 'summer-a', season: 'summer' },
+    { id: 'spring-a', season: 'spring' as const },
+    { id: 'spring-b', season: 'spring' as const },
+    { id: 'summer-a', season: 'summer' as const },
   ];
   const used = ['spring-a'];
   assert.equal(selectSeasonalEvent('spring', used, 1, events, () => 0), events[1]);

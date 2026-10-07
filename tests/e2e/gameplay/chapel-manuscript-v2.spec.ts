@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { MANUSCRIPT_SYMBOLS } from '../../../src/data/chapel.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
@@ -36,7 +36,7 @@ for (const width of [390, 1366]) {
     test.setTimeout(60_000);
     const quill = width === 1366;
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', turn: 8, year: 2, season: 'winter', activeTab: 'chapel',
+    const state = { ...base, phase: 'management' as const, turn: 8, year: 2, season: 'winter' as const, activeTab: 'chapel',
       tutorialsSeen: ['chapel'], chapel: { ...base.chapel, inventory: quill ? ['quill_ink'] : [] } };
     const errors: string[] = [];
     const flashes: string[] = [];

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const fontSize of [16, 32]) {
@@ -7,7 +7,7 @@ for (const width of [390, 1366]) {
   for (const scenario of ['weak', 'fortified', 'bonuses'] as const) {
     test(`Watchtower readiness ${scenario} at ${width}px ${fontSize === 32 ? 'enlarged' : 'normal'} matches actual military rules`, async ({ page }, testInfo) => {
       const base = createInitialState(104);
-      const state = { ...base, phase: 'management', turn: 8, season: 'winter', year: 2,
+      const state = { ...base, phase: 'management' as const, turn: 8, season: 'winter' as const, year: 2,
         activeTab: 'military', tutorialsSeen: ['military', 'map'],
         blacksmith: { ...base.blacksmith, nextItemUid: scenario === 'bonuses' ? 2 : base.blacksmith.nextItemUid,
           equipped: scenario === 'bonuses' ? [{ id: 'readiness-fixture', uid: 1,

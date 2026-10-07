@@ -1,6 +1,7 @@
+import type {GameCommand} from '../../../src/engine/gameCommands.ts';
 import { expect, test, type Page, type Locator } from '@playwright/test';
 import { FEAST_DATA } from '../../../src/data/decrees.ts';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 async function tabTo(page: Page, target: Locator) {
   for(let i=0;i<100;i++){if(await target.evaluate(e=>e===document.activeElement))return;await page.keyboard.press('Tab');}
@@ -8,7 +9,7 @@ async function tabTo(page: Page, target: Locator) {
 }
 for(const scenario of [{width:1366,height:768,root:16},{width:390,height:600,root:32}]) {
   test('Feast options expose numeric effects before selection '+scenario.width,async({page},info)=>{
-    const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
+    const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
     await page.setViewportSize(scenario);await page.emulateMedia({reducedMotion:'reduce'});
     await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},raw);
     await page.goto('/');await page.evaluate(root=>document.documentElement.style.fontSize=root+'px',scenario.root);
@@ -29,7 +30,7 @@ for(const scenario of [{width:1366,height:768,root:16},{width:390,height:600,roo
     await page.getByRole('button',{name:'Begin the Feast',exact:true}).click();
     await page.getByRole('button',{name:'Save game',exact:true}).click();
     expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(raw);
-    const action={type:'HALL_FEAST_COMPLETE',payload:{guestId:FEAST_DATA.guestOptions[0].id,entertainmentId:FEAST_DATA.entertainmentOptions[0].id,courseId:FEAST_DATA.courseOptions[0].id,seed:state.rngState}};
+    const action: GameCommand={type:'HALL_FEAST_COMPLETE',payload:{guestId:FEAST_DATA.guestOptions[0].id,entertainmentId:FEAST_DATA.entertainmentOptions[0].id,courseId:FEAST_DATA.courseOptions[0].id,seed:state.rngState}};
     const finish=page.getByRole('button',{name:'Return to Throne',exact:true});await tabTo(page,finish);await page.keyboard.press('Enter');
     await expect(page.getByText('You have already held a feast this season.',{exact:true})).toBeVisible();
     await page.getByRole('button',{name:'Save game',exact:true}).click();
@@ -39,7 +40,7 @@ for(const scenario of [{width:1366,height:768,root:16},{width:390,height:600,roo
 
 for(const width of [390,1366]) {
   test('Feast Back preserves later choices and Load resets preview '+width,async({page},info)=>{
-    const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
+    const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
     await page.setViewportSize({width,height:844});
     await page.addInitScript(raw=>localStorage.setItem('lords-ledger-v2-save',raw),raw);
     await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();
@@ -68,7 +69,7 @@ for(const width of [390,1366]) {
     await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(raw);
   });
   test('Feast pointer hold keeps short choice stationary '+width,async({page})=>{
-    const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']};
+    const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']};
     await page.setViewportSize({width,height:width===390?600:768});
     await page.addInitScript(raw=>localStorage.setItem('lords-ledger-v2-save',raw),writeV2Save(state));
     await page.goto('/');if(width===390)await page.evaluate(()=>document.documentElement.style.fontSize='32px');

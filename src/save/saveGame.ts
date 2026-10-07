@@ -31,7 +31,8 @@ import { validateHallFeastState } from '../engine/feast.ts';
 import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarketReputation } from '../engine/marketHaggle.ts';
 import { GAMBIT_MAX_ROUNDS } from '../data/tavern.ts';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
-import { isFortificationLevel, type MilitaryDefenseState, type FortificationLevels } from '../data/military.ts';
+import { isFortificationLevel, type FortificationLevels } from '../data/military.ts';
+import { validateMilitaryMetadata, type SavedMilitaryState } from './savedMilitary.ts';
 import { ALL_RESOURCES, RESOURCE_CONFIG, TAX_RATES, type GeneratedMarketPrices, type Inventory, type ResourceId as AuthoredResourceId } from '../data/economy.ts';
 export type { Inventory } from '../data/economy.ts';
 
@@ -120,7 +121,8 @@ export interface GameSnapshot extends ViewMetadata {
     aldricAdviceRemaining?: number[];
     aldricStoriesRemaining?: number[];
   };
-  military: MilitaryDefenseState;
+  military: SavedMilitaryState;
+  pyrrhicVictory?: unknown;
   chapel: ChapelSaveState;
   people: CompatiblePeopleState;
   greatHall: HallSaveState;
@@ -490,6 +492,8 @@ function validateSnapshot(value: unknown): string | null {
     if (!isFortificationLevel(track, military[track])) return `Save military.${track} is not an authored level.`;
   }
   if (!isFiniteNumber(military.morale) || military.morale < 0 || military.morale > 100) return 'Save military morale is invalid.';
+  const militaryMetadataIssue = validateMilitaryMetadata(military);
+  if (militaryMetadataIssue) return militaryMetadataIssue;
   const marketPrices = value.marketPrices;
   if (!isGeneratedMarketPrices(marketPrices)) return 'Save market prices are invalid.';
   const market = value.market;

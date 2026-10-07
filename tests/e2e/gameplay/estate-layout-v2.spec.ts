@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const width of [320, 390, 480]) {

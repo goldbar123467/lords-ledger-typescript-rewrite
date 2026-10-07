@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('stranger trade cannot accept caller prices or invent an offer', () => {
@@ -26,7 +27,7 @@ test('a seeded stranger offer persists until one canonical trade or dismissal', 
   if (loaded.ok) assert.equal(loaded.state.tavern.pendingStrangerEncounter, 'trade');
   const poor = { ...visited, denarii: 149 };
   assert.strictEqual(gameReducer(poor, { type: 'TAVERN_STRANGER_TRADE' }), poor);
-  const wrongPhase = { ...visited, phase: 'title' };
+  const wrongPhase = { ...visited, phase: 'title' as const };
   assert.strictEqual(gameReducer(wrongPhase, { type: 'TAVERN_STRANGER_TRADE' }), wrongPhase);
 
   const traded = gameReducer(visited, {

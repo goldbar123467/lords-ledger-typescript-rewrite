@@ -1,9 +1,10 @@
+import {present} from '../../gameInput.ts';
 import {test,expect} from '@playwright/test';
 import {writeFileSync} from 'node:fs';
 import {nativeZoomContext,captureNativeViewport} from '../nativeZoom.ts';
 import {forgePanelFixture} from '../../fixtures/forgePanel.ts';
 import type {ForgeSavedItem} from '../../../src/engine/forgeState.ts';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 test('Forge native zoom 200 percent long historical confirmation',async({baseURL},info)=>{
  if(typeof baseURL!=='string')throw Error('Missing isolated server URL');
@@ -11,7 +12,7 @@ test('Forge native zoom 200 percent long historical confirmation',async({baseURL
   const page=native.context.pages()[0]??await native.context.newPage(),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const original=forgePanelFixture();
   // Explicit historical-name stress fixture, not a claim of naturally authored acquisition.
-  const base={...original,blacksmith:{...original.blacksmith,inventory:original.blacksmith.inventory.map((item:ForgeSavedItem)=>({...item,name:'An older blade inherited from the northern border garrison, with its original maker’s dedication preserved across generations'}))}};
+  const base={...original,blacksmith:{...original.blacksmith,inventory:present(original.blacksmith.inventory, "original.blacksmith.inventory").map((item:ForgeSavedItem)=>({...item,name:'An older blade inherited from the northern border garrison, with its original maker’s dedication preserved across generations'}))}};
   await page.addInitScript(raw=>localStorage.setItem('lords-ledger-v2-save',raw),writeV2Save(base));await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();await expect(page.getByRole('heading',{name:'Godric',exact:true})).toBeVisible();const expected=gameReducer(base,{type:'BLACKSMITH_VISIT'});
   const before=await page.evaluate(()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio}));const zoom=await native.setZoom(2);await expect.poll(()=>page.evaluate(()=>devicePixelRatio)).toBeCloseTo(before.dpr*2,2);
   const after=await page.evaluate(()=>({width:innerWidth,height:innerHeight,dpr:devicePixelRatio,cssZoom:getComputedStyle(document.documentElement).zoom,visualScale:visualViewport?.scale}));expect(after.width).toBeCloseTo(before.width/2,0);expect(after.cssZoom).toBe('1');expect(after.visualScale).toBe(1);writeFileSync(info.outputPath('zoom.json'),JSON.stringify({zoom,before,after},null,2));

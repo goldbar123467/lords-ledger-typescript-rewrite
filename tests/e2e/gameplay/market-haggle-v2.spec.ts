@@ -1,5 +1,6 @@
+import {present} from '../../gameInput.ts';
 import { expect, test } from '@playwright/test';
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 function textContrast(foreground: string, background: string): number {
@@ -165,7 +166,7 @@ test('earned trade bonuses appear in merchant and Quick Trade sale quotes', asyn
     synergies: { ...started.synergies, activated: ['market_king_1', 'wool_baron_1', 'wool_baron_2'] },
   };
   const base = started.marketPrices.sell.wool;
-  const quote = base + 3;
+  const quote = present(base, "base") + 3;
   await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(bonusState));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -192,7 +193,7 @@ test('earned trade bonuses appear in merchant and Quick Trade sale quotes', asyn
   await expect(salt).toContainText('Preserves food');
   const saltPrice = started.marketPrices.buy.salt;
   const saltButton = salt.getByRole('button', { name: `Buy 1 Salt for ${saltPrice}d`, exact: true });
-  await expect(salt.getByRole('button', { name: `Buy 5 Salt for ${saltPrice * 5}d`, exact: true })).toBeVisible();
+  await expect(salt.getByRole('button', { name: `Buy 5 Salt for ${present(saltPrice, "saltPrice") * 5}d`, exact: true })).toBeVisible();
   await saltButton.scrollIntoViewIfNeeded();
   const saltBounds = await saltButton.boundingBox();
   expect(saltBounds?.height).toBeGreaterThanOrEqual(44);

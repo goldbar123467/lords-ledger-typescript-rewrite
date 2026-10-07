@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { createInitialState, initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { generateMarketPrices } from '../../src/data/economy.ts';
 import { INITIAL_FAMILIES } from '../../src/data/people.ts';
 

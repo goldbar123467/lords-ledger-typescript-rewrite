@@ -1,5 +1,6 @@
+import {snapshotFixture} from '../../gameInput.ts';
 import {test,expect} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';
 const decoded=readV2Save(writeV2Save(gameReducer(createInitialState(1),{type:'START_GAME',payload:{difficulty:'easy',seed:1}})));
 if(!decoded.ok)throw new Error(decoded.error);const base=decoded.state;
@@ -16,8 +17,8 @@ for(const scenario of ['visit','win','lose'] as const)test(`exact large ledger $
   await expect(page.getByText(scenario==='win'?'VICTORY':'DEFEAT',{exact:true})).toBeVisible();
   const played=gameReducer(visited,{type:'TAVERN_GAMBIT_PLAY',payload:{choice:scenario==='win'?'arrow':'sword',wager:10,seed:visited.rngState}});
   expect(played.denarii).toBe(scenario==='win'?710:690);expect(played.rngState).toBe(2143695499);
-  expected={...played,tavern:{...played.tavern,gambitTotalWins:scenario==='win'?'9007199254740992':Number.MAX_SAFE_INTEGER,gambitTotalLosses:scenario==='lose'?'9007199254740992':Number.MAX_SAFE_INTEGER,gambitNetEarnings:scenario==='win'?'9007199254741001':'-9007199254741001'}};
- }else expected={...visited,tavern:{...visited.tavern,totalVisits:'9007199254740992'}};
+  expected=snapshotFixture({...played,tavern:{...played.tavern,gambitTotalWins:scenario==='win'?'9007199254740992':Number.MAX_SAFE_INTEGER,gambitTotalLosses:scenario==='lose'?'9007199254740992':Number.MAX_SAFE_INTEGER,gambitNetEarnings:scenario==='win'?'9007199254741001':'-9007199254741001'}});
+ }else expected=snapshotFixture({...visited,tavern:{...visited.tavern,totalVisits:'9007199254740992'}});
  const expectedRaw=JSON.stringify({format:'lords-ledger',version:2,state:expected});
  await page.getByRole('button',{name:'Save game',exact:true}).click();await expect(page.getByText('Saved!',{exact:true})).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);
  expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(expectedRaw);await page.screenshot({path:info.outputPath('saved.png')});

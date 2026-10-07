@@ -1,10 +1,12 @@
-import assert from 'node:assert/strict';import test from 'node:test';import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';import {simulateEconomy} from '../../src/engine/economyEngine.ts';import {writeV2Save,readV2Save} from '../../src/save/saveGame.ts';
-function owned(itemId='plowshare',qualityScore=50){const initial=createInitialState(104);return gameReducer({...initial,phase:'management',turn:3,season:'autumn',inventoryCapacity:10000,buildings:['demesne_field']},{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId,qualityScore,completionUid:1}});}
+import {present} from '../gameInput.ts';
+import assert from 'node:assert/strict';import test from 'node:test';import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';import {simulateEconomy} from '../../src/engine/economyEngine.ts';import {writeV2Save,readV2Save} from '../../src/save/saveGame.ts';
+function owned(itemId='plowshare',qualityScore=50){const initial=createInitialState(104);return gameReducer({...initial,phase:'management' as const,turn:3,season:'autumn' as const,inventoryCapacity:10000,buildings:['demesne_field']},{type:'BLACKSMITH_FORGE_COMPLETE',payload:{itemId,qualityScore,completionUid:1}});}
 test('Deployed plowshare increases seasonal production, stored and broken tools do not',()=>{
  const state=owned(),active=gameReducer(state,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}}),plain=simulateEconomy(state,()=>0.5),boost=simulateEconomy(active,()=>0.5);assert.ok(boost.inventory.grain>plain.inventory.grain);assert.equal(plain.inventory.fish,boost.inventory.fish);const broken=owned('plowshare',0),moved=gameReducer(broken,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}});assert.equal(moved,broken);assert.equal(active.rngState,state.rngState);assert.ok(readV2Save(writeV2Save(active)).ok);
 });
 test('Deployed scythe increases farm grain and duplicate tool types do not stack',()=>{
- const state=owned('scythe'),active=gameReducer(state,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}}),plain=simulateEconomy(state,()=>0.5),boost=simulateEconomy(active,()=>0.5);assert.ok(boost.inventory.grain>plain.inventory.grain);const duplicate={...active,blacksmith:{...active.blacksmith,nextItemUid:3,equipped:[...active.blacksmith.equipped,{...active.blacksmith.equipped[0],uid:2}]}};assert.deepEqual(simulateEconomy(duplicate,()=>0.5),boost);
+ const state=owned('scythe'),active=gameReducer(state,{type:'BLACKSMITH_EQUIP_ITEM',payload:{itemUid:1}}),plain=simulateEconomy(state,()=>0.5),boost=simulateEconomy(active,()=>0.5);assert.ok(boost.inventory.grain>plain.inventory.grain);const duplicate={...active,blacksmith:{...active.blacksmith,nextItemUid:3,equipped:[...present(active.blacksmith.equipped, "active.blacksmith.equipped"),{...present(present(active.blacksmith.equipped, 'equipment')[0], 'first equipped item'),uid:2}]}};assert.deepEqual(simulateEconomy(duplicate,()=>0.5),boost);
 });
 
 import {getAgricultureBonuses, getAgricultureMultiplier} from '../../src/engine/forgeAgriculture.ts';
@@ -19,7 +21,7 @@ test('Authored rates add before seasonal whole-unit rounding, not per inventory 
  assert.deepEqual(getBuildingOutput({type:'demesne_field',condition:0,instanceId:'ruin',builtOnTurn:0},[],'autumn',bonuses),{grain:0});
 });
 test('Historical nullable quality defaults, broken tools and stored holdings',()=>{
- const state=owned(),item=state.blacksmith.inventory[0];assert.ok(item);
+ const state=owned(),item=present(state.blacksmith.inventory, "state.blacksmith.inventory")[0];assert.ok(item);
  for(const quality of [null,undefined,30,100])assert.deepEqual(getAgricultureBonuses({equipped:[{...item,qualityScore:quality}]}),{food:.05,harvest:0});
  for(const quality of [0,29,NaN,101])assert.deepEqual(getAgricultureBonuses({equipped:[{...item,qualityScore:quality}]}),{food:0,harvest:0});
  assert.deepEqual(getAgricultureBonuses(state.blacksmith),{food:0,harvest:0});

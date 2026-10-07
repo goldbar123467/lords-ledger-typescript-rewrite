@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { SAVE_KEY_V2, LEGACY_SAVE_KEY } from '../../../src/save/saveGame.ts';
 
 for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
   test(`damaged People roster blocks ${kind} load without changing slots at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'people', tutorialsSeen: ['people'], people: { ...base.people, notableFamilies: {} } };
+    const state = { ...base, phase: 'management' as const, activeTab: 'people', tutorialsSeen: ['people'], people: { ...base.people, notableFamilies: {} } };
     const legacy = JSON.stringify(state), v2 = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : null;
     const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
     await page.addInitScript(({ v2, legacy, v2Key, legacyKey }) => {

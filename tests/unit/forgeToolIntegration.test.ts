@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';import test from 'node:test';
 import {buildToolEstate,replayToolEstate,checkedSnapshot,TOOL_IDS} from '../fixtures/forgeTools.ts';
-import {gameReducer} from '../../src/engine/gameReducer.js';
+
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import {getDeployedToolIds,getChandelierPrestigeBonus,getConstructionCost} from '../../src/engine/forgeTools.ts';
 import {getAgricultureBonuses} from '../../src/engine/forgeAgriculture.ts';
 import {getBuildingOutput} from '../../src/engine/economyEngine.ts';

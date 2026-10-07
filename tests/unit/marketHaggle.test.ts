@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { FOREIGN_TRADERS, LOCAL_MERCHANTS } from '../../src/data/market.ts';
 import { marketQuickSalePrice, marketTradePrice } from '../../src/engine/marketHaggle.ts';
@@ -88,7 +90,7 @@ test('authored local and seasonal foreign trades survive pending save and settle
   });
   const loaded = readV2Save(writeV2Save(local));
   if (!loaded.ok) assert.fail(loaded.error);
-  const offered = local.market.activeHaggle.currentOffer;
+  const offered = present(local.market.activeHaggle, "local.market.activeHaggle").currentOffer;
   const settled = gameReducer(loaded.state, { type: 'HAGGLE_ACCEPT' });
   assert.equal(settled.denarii, started.denarii + offered);
   assert.equal(settled.inventory.grain, started.inventory.grain - 1);
@@ -101,7 +103,7 @@ test('authored local and seasonal foreign trades survive pending save and settle
   assert.notStrictEqual(foreign, started);
   assert.equal(readV2Save(writeV2Save(foreign)).ok, true);
   const countered = gameReducer(local, {
-    type: 'HAGGLE_COUNTER', payload: { counterPrice: local.market.activeHaggle.fairPrice },
+    type: 'HAGGLE_COUNTER', payload: { counterPrice: present(local.market.activeHaggle, "local.market.activeHaggle").fairPrice },
   });
   assert.notStrictEqual(countered, local);
   assert.equal(readV2Save(writeV2Save(countered)).ok, true);
@@ -166,9 +168,9 @@ test('every pending haggle status rejects malformed merchant reputation', () => 
     payload: { merchantId: 'edmund', resource: 'grain', quantity: 1, mode: 'sell' },
   });
   const accepted = gameReducer(pending, {
-    type: 'HAGGLE_COUNTER', payload: { counterPrice: pending.market.activeHaggle.fairPrice },
+    type: 'HAGGLE_COUNTER', payload: { counterPrice: present(pending.market.activeHaggle, "pending.market.activeHaggle").fairPrice },
   });
-  assert.equal(accepted.market.activeHaggle.status, 'accepted');
+  assert.equal(present(accepted.market.activeHaggle, "accepted.market.activeHaggle").status, 'accepted');
   const corrupted = JSON.parse(writeV2Save(accepted));
   corrupted.state.market.reputation.edmund = 'bad';
   assert.equal(readV2Save(JSON.stringify(corrupted)).ok, false);

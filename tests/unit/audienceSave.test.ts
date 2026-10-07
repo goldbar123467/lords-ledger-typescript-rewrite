@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
-const fixture = () => ({ ...createInitialState(104), phase: 'management' });
+const fixture = () => ({ ...createInitialState(104), phase: 'management' as const });
 const envelope = (state: unknown) => JSON.stringify({ format: 'lords-ledger', version: 2, state });
 function rejected(patch: Record<string, unknown>) {
   const base = fixture(), state = { ...base, greatHall: { ...base.greatHall, ...patch } };
@@ -24,9 +25,9 @@ test('audience save rejects malformed identities and trust on both readers and w
 });
 
 test('shared Hall logs reject malformed containers and consumed entry fields', () => {
-  const log = { type: 'audience', text: 'Older petitioner wording.', turn: 1, season: 'spring', year: 1, consequences: { people: 3 } };
+  const log = { type: 'audience', text: 'Older petitioner wording.', turn: 1, season: 'spring' as const, year: 1, consequences: { people: 3 } };
   for (const hallLog of [{}, 'history', [null], [{}], [{ ...log, type: 'fake' }], [{ ...log, text: {} }],
-    [{ ...log, season: 'fake' }], [{ ...log, turn: -1 }], [{ ...log, year: 0 }],
+    [{ ...log, season: 'fake' as const }], [{ ...log, turn: -1 }], [{ ...log, year: 0 }],
     [{ ...log, consequences: [] }], [{ ...log, consequences: { people: '3' } }],
     [{ ...log, consequences: { fake: 1 } }]]) rejected({ hallLog });
 });
@@ -35,8 +36,8 @@ test('Hall compatibility preserves nullish defaults, duplicate known identities,
   const base = fixture();
   const patches = [{}, { audienceResolved: null, stewardTrust: null, hallLog: null },
     { audienceResolved: ['aud_001', 'aud_001'], stewardTrust: 0.5,
-      hallLog: [{ type: 'audience', text: 'Older petitioner wording.', turn: 1, season: 'spring', year: 1, consequences: { people: 3 } },
-        { type: 'decree_revoke', text: 'Older decree wording.', turn: 1, season: 'spring', year: 1 }] }];
+      hallLog: [{ type: 'audience', text: 'Older petitioner wording.', turn: 1, season: 'spring' as const, year: 1, consequences: { people: 3 } },
+        { type: 'decree_revoke', text: 'Older decree wording.', turn: 1, season: 'spring' as const, year: 1 }] }];
   for (const patch of patches) {
     const hall: Record<string, unknown> = { ...base.greatHall, ...patch };
     if (Object.keys(patch).length === 0) { delete hall.audienceResolved; delete hall.stewardTrust; delete hall.hallLog; }
@@ -47,7 +48,7 @@ test('Hall compatibility preserves nullish defaults, duplicate known identities,
     assert.equal(writeV2Save(v2.state), raw); assert.deepEqual(state, before);
   }
   const logs = ['dispute', 'audience', 'decree', 'decree_revoke', 'council', 'feast', 'crisis', 'peak']
-    .map(type => ({ type, text: 'Older Hall wording.', turn: 1, season: 'spring', year: 1, consequences: null }));
+    .map(type => ({ type, text: 'Older Hall wording.', turn: 1, season: 'spring' as const, year: 1, consequences: null }));
   assert.ok(readV2Save(writeV2Save({ ...base, greatHall: { ...base.greatHall, hallLog: logs } })).ok);
   const resolved = gameReducer(base, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: 'aud_001', responseIndex: 0 } });
   assert.ok(readV2Save(writeV2Save(resolved)).ok);
@@ -55,7 +56,7 @@ test('Hall compatibility preserves nullish defaults, duplicate known identities,
 
 test('Hall writer rejects sparse and inherited records that would serialize to malformed logs', () => {
   const base = fixture();
-  const log = { type: 'audience', text: 'Old wording.', turn: 1, season: 'spring', year: 1 };
+  const log = { type: 'audience', text: 'Old wording.', turn: 1, season: 'spring' as const, year: 1 };
   for (const patch of [{ audienceResolved: new Array(1) }, { hallLog: new Array(1) }, { hallLog: [Object.create(log)] },
     { hallLog: [Object.defineProperty({ ...log }, 'text', { value: log.text, enumerable: false })] },
     { meters: Object.defineProperty({ ...base.greatHall.meters }, 'people', { value: 50, enumerable: false }) }]) {

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save, SAVE_KEY_V2, LEGACY_SAVE_KEY } from '../../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
 for (const count of [Number.MAX_SAFE_INTEGER, '9007199254740992']) test(`sustained counter ${count} advances by native Continue and reloads exactly`, async ({ page }, info) => {
-  const state = { ...base, phase: 'random_resolve', tutorialsSeen: ['estate', 'chronicle'], chapel: { ...base.chapel, faith: 80 },
+  const state = { ...base, phase: 'random_resolve' as const, tutorialsSeen: ['estate', 'chronicle'], chapel: { ...base.chapel, faith: 80 },
     greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people: 80 } },
     synergies: { ...base.synergies, highFaithTurns: count, highPeopleTurns: count, historicalExtension: { kept: true } } };
   const legacy = JSON.stringify(state), sentinel = writeV2Save(base), errors: string[] = [];

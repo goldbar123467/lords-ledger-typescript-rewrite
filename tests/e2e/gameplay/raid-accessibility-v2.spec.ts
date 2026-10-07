@@ -13,10 +13,10 @@ function luminance(color: string) {
 }
 for (const type of ['criminal', 'scottish']) {
   test(`${type} raid contains keyboard focus and preserves its mandatory action`, async ({ page }) => {
-    const state = { ...fixture, phase: 'raid_warning',
+    const state = { ...fixture, phase: 'raid_warning' as const,
       military: { ...fixture.military, scribesNoteSeen: Object.fromEntries(Object.keys(fixture.military.scribesNoteSeen).map(key => [key, true])) },
       raids: { ...fixture.raids, criminalScribesNoteSeen: true, scottishScribesNoteSeen: true,
-        activeRaid: { type, phase: 'warning' } } };
+        activeRaid: { type, phase: 'warning' as const } } };
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, JSON.stringify({ format: 'lords-ledger', version: 2, state }));
     await page.goto('/');
     await page.getByRole('button', { name: 'Load saved game' }).click();
@@ -58,11 +58,11 @@ for (const type of ['criminal', 'scottish']) {
 
   test(`${type} raid text and action fit enlarged narrow and short screens`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 600 });
-    const state = { ...fixture, phase: 'raid_warning', garrison: 0,
+    const state = { ...fixture, phase: 'raid_warning' as const, garrison: 0,
       military: { ...fixture.military, garrison: { levy: 0, menAtArms: 0, knights: 0 },
         scribesNoteSeen: Object.fromEntries(Object.keys(fixture.military.scribesNoteSeen).map(key => [key, true])) },
       raids: { ...fixture.raids, criminalScribesNoteSeen: true, scottishScribesNoteSeen: true,
-        activeRaid: { type, phase: 'warning' } } };
+        activeRaid: { type, phase: 'warning' as const } } };
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, JSON.stringify({ format: 'lords-ledger', version: 2, state }));
     await page.goto('/');
     await page.getByRole('button', { name: 'Load saved game' }).click();
@@ -95,8 +95,8 @@ for (const type of ['criminal', 'scottish']) {
 
   test(`${type} scrolled defense comparison fits doubled phone text`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    const state = { ...fixture, phase: 'raid_warning',
-      raids: { ...fixture.raids, activeRaid: { type, phase: 'warning' } } };
+    const state = { ...fixture, phase: 'raid_warning' as const,
+      raids: { ...fixture.raids, activeRaid: { type, phase: 'warning' as const } } };
     await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), JSON.stringify({ format: 'lords-ledger', version: 2, state }));
     await page.goto('/');
     await page.getByRole('button', { name: 'Load saved game' }).click();

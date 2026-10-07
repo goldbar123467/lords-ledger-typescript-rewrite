@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createRandomCursor } from '../../src/engine/random.ts';
 import { createScanPlan, summarizeScan } from '../../src/engine/watchtowerScan.ts';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('the same saved stream yields the same visible scan with reachable top rating', () => {
@@ -50,7 +51,8 @@ test('scan rewards are derived once from its saved seed and valid found keys', (
   const action = { type: 'WATCHTOWER_SCAN_COMPLETE', payload: { scanSeed: started.rngState, foundKeys } };
   const completed = gameReducer(started, action);
   assert.equal(completed.watchtower.scannedThisSeason, true);
-  assert.equal(completed.watchtower.lastScanResult.anomaliesFound, plan.anomalies.length);
+  const scanReport=completed.watchtower.lastScanResult;assert.ok(scanReport!==null&&typeof scanReport==='object'&&'anomaliesFound' in scanReport);
+  assert.equal(scanReport.anomaliesFound, plan.anomalies.length);
   assert.equal(completed.denarii, started.denarii + report.rating.denariiBonus);
   assert.deepEqual(completed.watchtower.warnings, report.warnings);
   assert.notEqual(completed.rngState, started.rngState);

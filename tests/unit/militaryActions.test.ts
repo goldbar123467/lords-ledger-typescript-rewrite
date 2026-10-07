@@ -4,7 +4,7 @@ import { getInitialMilitaryState, MILITARY_SCRIBES_NOTES } from '../../src/data/
 import { planMilitaryAction, type MilitaryCommandState } from '../../src/engine/militaryActions.ts';
 
 function state(): MilitaryCommandState {
-  return { phase: 'management', denarii: 500, population: 20, garrison: 5,
+  return { phase: 'management' as const, denarii: 500, population: 20, garrison: 5,
     castleLevel: 1, military: getInitialMilitaryState(), scribesNote: null };
 }
 
@@ -70,7 +70,7 @@ test('locked tracks, unavailable resources and non-management commands are no-op
   assert.equal(planMilitaryAction(before, 'RECRUIT_SOLDIERS', { count: 0.5 }), null);
   assert.equal(planMilitaryAction(before, 'DISMISS_SOLDIERS', { count: 1, soldierType: '__proto__' }), null);
   for (const type of ['RECRUIT_SOLDIERS', 'DISMISS_SOLDIERS', 'UPGRADE_FORTIFICATION'] as const) {
-    assert.equal(planMilitaryAction({ ...before, phase: 'raid_warning' }, type, { count: 1, track: 'walls' }), null);
+    assert.equal(planMilitaryAction({ ...before, phase: 'raid_warning' as const }, type, { count: 1, track: 'walls' }), null);
   }
 });
 

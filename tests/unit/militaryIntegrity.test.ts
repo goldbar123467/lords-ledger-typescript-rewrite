@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 const imported = readLegacySave(await readFile(new URL('../fixtures/legacy-normal-turn1.json', import.meta.url), 'utf8'));
 if (!imported.ok) throw new Error(imported.error);
 const base = imported.state;
 test('military commands reject non-whole quantities', () => {
-  const state = { ...createInitialState(104), phase: 'management' };
+  const state = { ...createInitialState(104), phase: 'management' as const };
   for (const type of ['RECRUIT_SOLDIERS', 'DISMISS_SOLDIERS']) {
     for (const count of [undefined, null, 0, -1, 0.5, NaN, Infinity, '1', true, Number.MAX_SAFE_INTEGER + 1]) {
       assert.equal(gameReducer(state, { type, payload: { soldierType: 'levy', count } }), state, `${type}: ${String(count)}`);
@@ -16,7 +17,7 @@ test('military commands reject non-whole quantities', () => {
   }
 });
 test('military commands reject non-authored soldier identifiers', () => {
-  const state = { ...createInitialState(104), phase: 'management' };
+  const state = { ...createInitialState(104), phase: 'management' as const };
   for (const type of ['RECRUIT_SOLDIERS', 'DISMISS_SOLDIERS']) {
     for (const soldierType of ['dragon', 'constructor', 'toString', '__proto__', ['levy'], null, 1]) {
       assert.equal(gameReducer(state, { type, payload: { soldierType, count: 1 } }), state, `${type}: ${String(soldierType)}`);

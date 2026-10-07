@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { gameReducer, initialState } from '../../../src/engine/gameReducer.js';
+import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 async function planFeast(page: Page) {
@@ -94,7 +94,7 @@ test('an accepted older save without Feast history settles without blanking the 
   const started = gameReducer(initialState, {
     type: 'START_GAME', payload: { difficulty: 'easy', seed: 17 },
   });
-  const older = structuredClone(started);
+  const older = structuredClone({...started, greatHall: {...started.greatHall}});
   delete older.greatHall.feastHistory;
   delete older.greatHall.hasFeastedThisSeason;
   await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(older));

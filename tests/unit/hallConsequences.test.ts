@@ -1,16 +1,18 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 const event = {type:'crisis',text:'Older unrest.',chronicle:'Older record.',effects:{people:-2.5}};
-const base = {...createInitialState(104),phase:'management'};
+const base = {...createInitialState(104),phase:'management' as const};
 const state = {...base,greatHall:{...base.greatHall,pendingHallEvent:event}};
 const command = {type:'HALL_DISMISS_EVENT',payload:{effects:{people:100}}};
 test('Hall dismissal rejects wrong phases and invalid consumed state without mutation',()=>{
   for(const phase of ['title','victory','gameover','raid','seasonal_resolve','random_resolve']){
     const blocked={...state,phase};assert.strictEqual(gameReducer(blocked,command),blocked,phase);
   }
-  for(const patch of [{turn:0},{turn:41},{turn:1.5},{season:'rainy'},{year:0},{year:25},{season:'winter'},{year:2},{turn:4}]){
+  for(const patch of [{turn:0},{turn:41},{turn:1.5},{season:'rainy' as const},{year:0},{year:25},{season:'winter' as const},{year:2},{turn:4}]){
     const blocked={...state,...patch};assert.strictEqual(gameReducer(blocked,command),blocked);
   }
   for(const greatHall of [null, {...state.greatHall,meters:null}, {...state.greatHall,meters:{...state.greatHall.meters,people:NaN}},
@@ -25,8 +27,8 @@ test('Hall dismissal preserves historical partial effects, logs, RNG and replay 
     assert.deepEqual(current,before);assert.equal(result.rngState,current.rngState);
     assert.equal(result.greatHall.meters.people,Math.max(0,50+(effects?.people??0)));
     assert.equal(result.greatHall.meters.treasury,Math.min(100,50+(effects?.treasury??0)));
-    assert.deepEqual(result.greatHall.hallLog.at(-1).consequences,effects??{});
-    assert.equal(result.greatHall.hallLog.at(-1).text,event.chronicle);
+    assert.deepEqual(present(present(result.greatHall.hallLog, "result.greatHall.hallLog").at(-1), "present(result.greatHall.hallLog, \"result.greatHall.hallLog\").at(-1)").consequences,effects??{});
+    assert.equal(present(present(result.greatHall.hallLog, "result.greatHall.hallLog").at(-1), "present(result.greatHall.hallLog, \"result.greatHall.hallLog\").at(-1)").text,event.chronicle);
     assert.strictEqual(gameReducer(result,command),result);
     const loaded=readV2Save(writeV2Save(result));assert.ok(loaded.ok);
     assert.strictEqual(gameReducer(loaded.state,command),loaded.state);

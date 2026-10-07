@@ -1,9 +1,9 @@
 import {expect,test} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';
 function snap(v:unknown){const r=readV2Save(writeV2Save(v));if(!r.ok)throw Error(r.error);return r.state;}
 for(const width of [390,1366])for(const scenario of ['posted','pending','forge'])test(`Shared market supply ${scenario} ${width}`,async({page},info)=>{
- const initial=createInitialState(104);let expected=snap({...initial,phase:'management',activeTab:'market',denarii:10000,tutorialsSeen:['market','forge','estate']});
+ const initial=createInitialState(104);let expected=snap({...initial,phase:'management' as const,activeTab:'market',denarii:10000,tutorialsSeen:['market','forge','estate']});
  if(scenario==='pending'){expected=snap(gameReducer(expected,{type:'HAGGLE_START',payload:{resource:'wool',quantity:5,merchantId:'agnes',mode:'buy'}}));expected=snap(gameReducer(expected,{type:'BUY_RESOURCE',payload:{resource:'wool',quantity:100,merchantId:'agnes'}}));}
  else expected=snap(gameReducer(expected,{type:'BUY_RESOURCE',payload:{resource:scenario==='forge'?'iron':'wool',quantity:99,...(scenario==='forge'?{}:{merchantId:'agnes'})}}));
  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:844});await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},writeV2Save(expected));await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();

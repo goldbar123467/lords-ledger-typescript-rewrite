@@ -1,3 +1,4 @@
+import type {GameSnapshot} from '../save/saveGame.ts';
 import {remainingMarketSupply} from "../engine/marketSupply.ts";
 import {getDeployableTool, isWorkingTool, getToolDeploymentDescription, getBrokenToolDescription} from '../engine/forgeTools.ts';
 import {countFunctionalEquipment, hasDefenseBonus} from '../engine/forgeReadiness.ts';
@@ -74,7 +75,7 @@ interface LocalForgeState {
 interface BlacksmithViewState extends ForgeBuyerState {
   readonly phase:string; readonly turn:number; readonly year:number; readonly season:ForgeSeason;
   readonly denarii:number; readonly inventory:Readonly<Inventory>;
-  readonly blacksmith:ForgeSaveState; readonly garrison:number; readonly rngState?:number; readonly market?:unknown;
+  readonly blacksmith:ForgeSaveState; readonly garrison:number; readonly rngState?:number; readonly market:GameSnapshot['market'];
 }
 interface CollectedResult {readonly item:ForgeRecipe; readonly grade:ForgingResult['grade']; readonly qualityScore:number; readonly itemUid:number}
 type RespectTier = ReturnType<typeof getGodricTier>;

@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {forgePanelFixture} from '../../fixtures/forgePanel.ts';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 import {FORGE_AMBIENT_TEXTS} from '../../../src/data/blacksmith.ts';
 

@@ -83,7 +83,7 @@ function owned(value: unknown, currentTurn: number): value is ForgeSavedItem {
  return value.cost == null || (record(value.cost) && Object.entries(value.cost).every(([key, cost]) => (key === 'gold' || FORGE_RESOURCES.some(resource => resource.key === key)) && amount(cost)));
 }
 /** Validate consumed Forge fields without changing legacy metadata, optional defaults or save bytes. */
-export function validateForgeState(value: unknown, currentTurn: unknown): string | null {
+export function validateForgeState(value: unknown, currentTurn: unknown, checkInvestmentTerms = true): string | null {
  if (!record(value) || !count(currentTurn) || currentTurn < 1 || currentTurn > 40) return 'Save Forge state is invalid.';
  for (const key of ['nextItemUid','totalItemsForged','masterworksCreated','watFactIndex','banterIndex','lastVisitTurn','salesThisSeason','supplyEventTurnsLeft']) {
   if (value[key] != null && !count(value[key])) return `Save Forge ${key} is invalid.`;
@@ -115,7 +115,16 @@ export function validateForgeState(value: unknown, currentTurn: unknown): string
  const definition = FORGE_SUPPLY_EVENTS.find(event => event.id === active.id);
  if (!definition || (active.effect !== undefined && active.effect !== definition.effect) || (active.duration != null && active.duration !== definition.duration)) return 'Save Forge supply mechanics are invalid.';
  for (const key of ['name','description','godricComment']) if (active[key] != null && typeof active[key] !== 'string') return 'Save Forge supply narrative is invalid.';
- for (const key of ['investCost','investReward'] as const) if (active[key] != null && (definition.effect !== 'iron_investment' || active[key] !== definition[key])) return 'Save Forge investment mechanics are invalid.';
+ for (const key of ['investCost','investReward'] as const) {
+  if (active[key] != null && ((typeof active[key] !== 'number' || !Number.isFinite(active[key])) || (checkInvestmentTerms &&
+      (definition.effect !== 'iron_investment' || active[key] !== definition[key])))) return 'Save Forge investment mechanics are invalid.';
+ }
  const remaining = value.supplyEventTurnsLeft ?? definition.duration;
  return count(remaining) && remaining <= definition.duration ? null : 'Save Forge supply countdown is invalid.';
+}
+
+/** Narrow planner input with the same complete known-field checks as persistence. */
+export function isForgePlannerState(value: unknown, currentTurn: number): value is ForgeSaveState {
+ // Plans derive investment terms from authored data. Persistence checks the cached terms too.
+ return validateForgeState(value, currentTurn, false) === null;
 }

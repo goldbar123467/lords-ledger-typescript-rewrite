@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { MANUSCRIPT_FACTS, SHOP_ITEMS } from '../../../src/data/chapel.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
@@ -29,7 +29,7 @@ for (const width of [390, 1366]) {
       const pattern = [0, 1, 2, 3, 4, 5];
       const fact = MANUSCRIPT_FACTS[0];
       if (!fact) throw new Error('Missing authored manuscript fact');
-      const state = { ...base, phase: 'management', activeTab: 'chapel', denarii: 0, tutorialsSeen: ['chapel'],
+      const state = { ...base, phase: 'management' as const, activeTab: 'chapel', denarii: 0, tutorialsSeen: ['chapel'],
         chapel: { ...base.chapel, view, inventory: SHOP_ITEMS.filter(item => item.id !== 'beeswax_candles').map(item => item.id),
           ...(view === 'manuscript' ? { msPhase: 'success', msRound: 4, msPattern: pattern,
             msPlayerInput: pattern, msReward: 20, msFact: fact } : {}) } };

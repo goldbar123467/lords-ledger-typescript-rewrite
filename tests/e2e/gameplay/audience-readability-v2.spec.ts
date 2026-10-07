@@ -1,9 +1,9 @@
 import { expect, test, type Page, type Locator } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 async function load(page: Page, width: number, size: number) {
   await page.setViewportSize({ width, height: 844 });
-  const raw = writeV2Save({ ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] });
+  const raw = writeV2Save({ ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] });
   await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
   await page.goto('/'); await page.evaluate(size => { document.documentElement.style.fontSize = `${size}px`; }, size);
   await page.getByRole('button', { name: 'Load saved game', exact: true }).click();

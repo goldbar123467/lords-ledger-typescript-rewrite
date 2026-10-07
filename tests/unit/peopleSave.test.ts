@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
-const fixture = () => ({ ...createInitialState(104), phase: 'management' });
+const fixture = () => ({ ...createInitialState(104), phase: 'management' as const });
 const envelope = (state: unknown) => JSON.stringify({ format: 'lords-ledger', version: 2, state });
 
 test('People save boundary rejects malformed labor and tier shapes on both readers and writer', () => {
@@ -38,8 +38,8 @@ test('People validates village events and tax history without silently deleting 
   const base = fixture();
   for (const patch of [{ villageFeed: {} }, { villageFeed: [null] }, { villageFeed: [{ text: {}, type: 'life' }] },
     { villageFeed: [{ text: 'x', type: 'fake' }] }, { taxHistory: {} }, { taxHistory: [null] },
-    { taxHistory: [{ season: 'fake', year: 1, revenue: 0 }] }, { taxHistory: [{ season: 'spring', year: 0, revenue: 0 }] },
-    { taxHistory: [{ season: 'spring', year: 1, revenue: -1 }] }]) {
+    { taxHistory: [{ season: 'fake' as const, year: 1, revenue: 0 }] }, { taxHistory: [{ season: 'spring' as const, year: 0, revenue: 0 }] },
+    { taxHistory: [{ season: 'spring' as const, year: 1, revenue: -1 }] }]) {
     const state = { ...base, people: { ...base.people, ...patch } };
     assert.equal(readV2Save(envelope(state)).ok, false);
     assert.throws(() => writeV2Save(state), /People/);
@@ -51,7 +51,7 @@ test('People earlier missing/null defaults, legal fractions and older story text
   const older = base.people.notableFamilies.map(f => ({ ...f, narrative: 'An older authored family story.' }));
   for (const people of [{}, Object.fromEntries(Object.keys(base.people).map(key => [key, null])), base.people,
     { ...base.people, laborFarming: 12.5, laborGarrison: 7.5, laborChurch: 2.5, notableFamilies: older,
-      villageFeed: [{ text: 'Older village prose.', type: 'life' }], taxHistory: [{ season: 'autumn', year: 1, revenue: 12.5 }] }]) {
+      villageFeed: [{ text: 'Older village prose.', type: 'life' }], taxHistory: [{ season: 'autumn' as const, year: 1, revenue: 12.5 }] }]) {
     const state = { ...base, people }, before = structuredClone(state);
     const raw = writeV2Save(state), v2 = readV2Save(raw), legacy = readLegacySave(JSON.stringify(state));
     assert.ok(v2.ok); assert.ok(legacy.ok);

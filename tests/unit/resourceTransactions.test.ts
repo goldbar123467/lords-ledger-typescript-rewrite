@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 
 const game = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'normal' } });
 
@@ -21,7 +23,7 @@ test('forge purchase calculates the cost from the saved price, not the action pa
   const result = gameReducer(state, { type: 'BLACKSMITH_BUY_RESOURCE', payload: { resource: 'steel', quantity: 5, totalCost: 1 } });
   assert.equal(result.denarii, state.denarii - 35);
   assert.equal(result.inventory.steel, state.inventory.steel + 5);
-  assert.equal(result.blacksmith.totalGoldInvested, state.blacksmith.totalGoldInvested + 35);
+  assert.equal(result.blacksmith.totalGoldInvested, present(state.blacksmith.totalGoldInvested, "state.blacksmith.totalGoldInvested") + 35);
   assert.equal(gameReducer(state, { type: 'BLACKSMITH_BUY_RESOURCE', payload: { resource: 'unknown', quantity: 1, totalCost: 1 } }), state);
   assert.equal(gameReducer(state, { type: 'BLACKSMITH_BUY_RESOURCE', payload: { resource: 'steel', quantity: NaN, totalCost: 1 } }), state);
 });

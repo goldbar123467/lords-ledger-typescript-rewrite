@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import {readLegacySave,readV2Save,writeV2Save} from '../../src/save/saveGame.ts';
 const decoded=readV2Save(writeV2Save(gameReducer(createInitialState(1),{type:'START_GAME',payload:{difficulty:'easy',seed:1}})));
 if(!decoded.ok)throw new Error(decoded.error);const base=decoded.state,limit=Number.MAX_SAFE_INTEGER;

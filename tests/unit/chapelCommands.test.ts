@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
+import { invokeGameReducer } from '../gameInput.ts';
 import { MORAL_DILEMMAS } from '../../src/data/chapel.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 
 function management() {
-  return { ...createInitialState(104), phase: 'management' };
+  return { ...createInitialState(104), phase: 'management' as const };
 }
 
 test('malformed tithes are atomic no-ops while finite fractional donations remain valid', () => {
@@ -72,7 +74,9 @@ test('saved dilemma effect objects cannot replace the authoritative choice', () 
   const base = management();
   const tampered = { ...dilemma, choices: [{ ...dilemma.choices[0], effects: { denarii: 10000 } }] };
   const state = { ...base, chapel: { ...base.chapel, currentDilemma: tampered } };
-  const next = gameReducer(state, { type: 'CHAPEL_RESOLVE_DILEMMA', payload: { choiceIndex: 0 } });
+  const next = invokeGameReducer(state, { type: 'CHAPEL_RESOLVE_DILEMMA', payload: { choiceIndex: 0 } });
+  assert.ok(next !== null && typeof next === 'object' && 'denarii' in next && 'chapel' in next);
   assert.equal(next.denarii, 500);
+  assert.ok(next.chapel !== null && typeof next.chapel === 'object' && 'dilemmaResult' in next.chapel);
   assert.deepEqual(next.chapel.dilemmaResult, { text: dilemma.choices[0].result, effects: dilemma.choices[0].effects });
 });

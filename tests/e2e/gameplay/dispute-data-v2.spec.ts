@@ -1,12 +1,13 @@
+import {rawGameReducer} from '../../gameInput.ts';
 import { expect, test } from '@playwright/test';
 import disputes from '../../../src/data/disputes.ts';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
 for(const width of [390,1366])test(`authored dispute ruling and history survive Save/Load at ${width}px`,async({page},info)=>{
   const dispute=disputes[0],ruling=dispute?.rulings[0];if(!dispute || !ruling)throw new Error('Missing first authored ruling');
   await page.setViewportSize({width,height:844});
-  const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
+  const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']},raw=writeV2Save(state);
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},raw);
   await page.goto('/');await page.getByRole('button',{name:'Load saved game',exact:true}).click();
@@ -29,7 +30,7 @@ for(const width of [390,1366])test(`authored dispute ruling and history survive 
   await page.getByRole('button',{name:'Save game',exact:true}).click();
   const saved=await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'));if(!saved)throw new Error('Missing dispute save');
   const loaded=readV2Save(saved);if(!loaded.ok)throw new Error(loaded.error);
-  expect(loaded.state.greatHall).toEqual(gameReducer(state,{type:'HALL_RULE_DISPUTE',payload:{disputeId:dispute.id,rulingId:ruling.id,consequences:ruling.consequences,decree:ruling.decree}}).greatHall);
+  expect(loaded.state.greatHall).toEqual(rawGameReducer(state,{type:'HALL_RULE_DISPUTE',payload:{disputeId:dispute.id,rulingId:ruling.id,consequences:ruling.consequences,decree:ruling.decree}}).greatHall);
   expect(loaded.state.greatHall.stewardTrust).toBe(52);expect(loaded.state.greatHall).toMatchObject({disputesResolved:1,rulingHistory:[{disputeId:dispute.id,rulingId:ruling.id}]});expect(loaded.state.rngState).toBe(state.rngState);
   await page.reload();await page.getByRole('button',{name:'Load saved game',exact:true}).click();await page.getByRole('button',{name:'Save game',exact:true}).click();
   expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(saved);expect(errors).toEqual([]);

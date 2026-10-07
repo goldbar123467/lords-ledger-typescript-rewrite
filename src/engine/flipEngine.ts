@@ -42,7 +42,7 @@ interface FlipTriggerState {
   garrison?: number;
   lastFlipTurn?: number;
   denarii?: number;
-  chapel?: { faith?: number; piety?: number };
+  chapel?: { faith?: number | null; piety?: number | null };
 }
 
 /** Priority order for trigger evaluation */

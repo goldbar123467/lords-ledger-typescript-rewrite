@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';
 const decoded=readV2Save(writeV2Save(gameReducer(createInitialState(1),{type:'START_GAME',payload:{difficulty:'easy',seed:1}})));
 if(!decoded.ok)throw new Error(decoded.error);const base=decoded.state;

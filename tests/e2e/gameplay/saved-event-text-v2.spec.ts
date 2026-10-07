@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import seasonal from '../../../src/data/seasonalEvents.ts';
 import { writeV2Save, SAVE_KEY_V2, LEGACY_SAVE_KEY } from '../../../src/save/saveGame.ts';
 
@@ -11,7 +11,7 @@ for (const kind of ['v2', 'legacy'] as const) for (const field of ['event note',
       options: authored.options.map((option, index) => index === 0 ? { ...option,
         ...(field === 'choice note' ? { scribesNote: { malformed: true } } : {}),
         ...(field === 'choice summary' ? { causeChainSummary: { malformed: true } } : {}) } : option) };
-    const state = { ...base, phase: 'seasonal_action', currentEvent: event };
+    const state = { ...base, phase: 'seasonal_action' as const, currentEvent: event };
     const bad = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : JSON.stringify(state);
     const v2 = kind === 'v2' ? bad : writeV2Save(base), legacy = kind === 'legacy' ? bad : JSON.stringify(base);
     const errors: string[] = [];

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import seasonal from '../../src/data/seasonalEvents.ts';
 import random from '../../src/data/randomEvents.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
@@ -53,7 +54,7 @@ test('omitted/null option notes retain the event fallback while empty notes supp
   for (const eventNote of [undefined, 'Historical event note']) for (const optionNote of [undefined, null, '']) {
     const event = { ...authored, scribesNote: eventNote,
       options: authored.options.map(option => ({ ...option, scribesNote: optionNote, causeChainSummary: null })) };
-    const state = { ...base, phase: 'seasonal_action', currentEvent: event }, raw = writeV2Save(state), loaded = readV2Save(raw);
+    const state = { ...base, phase: 'seasonal_action' as const, currentEvent: event }, raw = writeV2Save(state), loaded = readV2Save(raw);
     if (!loaded.ok) throw new Error(loaded.error);
     assert.equal(writeV2Save(loaded.state), raw);
     const next = gameReducer(loaded.state, { type: 'SELECT_SEASONAL_ACTION', payload: { optionIndex: 0 } });

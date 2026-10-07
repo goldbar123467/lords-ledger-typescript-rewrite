@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { MORAL_DILEMMAS } from '../../../src/data/chapel.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
@@ -17,7 +17,7 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 1366, height: 844
   for (const denarii of [0, 40]) {
     test(`Chapel enlarged native focus and cost ${denarii}d/${viewport.width}x${viewport.height}`, async ({ page }, info) => {
       const base = createInitialState(104);
-      const state = { ...base, denarii, phase: 'management', turn: 8, year: 2, season: 'winter',
+      const state = { ...base, denarii, phase: 'management' as const, turn: 8, year: 2, season: 'winter' as const,
         activeTab: 'chapel', tutorialsSeen: ['chapel'], chapel: { ...base.chapel,
           dilemmasCompleted: MORAL_DILEMMAS.filter(d => d.id !== 'caedmons_proposal').map(d => d.id) } };
       const errors: string[] = [];

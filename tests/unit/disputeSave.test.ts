@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import disputes from '../../src/data/disputes.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
-const fixture = () => ({ ...createInitialState(104), phase: 'management' });
-const ruling = { disputeId: 'dispute_001', rulingId: 'a', consequences: { people: 0.5 }, decree: 'Older decree.', turn: 1, season: 'spring', year: 1 };
+const fixture = () => ({ ...createInitialState(104), phase: 'management' as const });
+const ruling = { disputeId: 'dispute_001', rulingId: 'a', consequences: { people: 0.5 }, decree: 'Older decree.', turn: 1, season: 'spring' as const, year: 1 };
 function rejected(patch: Record<string, unknown>) {
   const base = fixture(), state = { ...base, greatHall: { ...base.greatHall, ...patch } }, before = structuredClone(state);
   assert.equal(readV2Save(JSON.stringify({ format: 'lords-ledger', version: 2, state })).ok, false, JSON.stringify(patch));
@@ -16,7 +17,7 @@ test('dispute saves reject malformed history, identities and consumed effects', 
     [{ ...ruling, rulingId: 'd' }], [{ ...ruling, consequences: [] }],
     [{ ...ruling, consequences: { people: '3' } }], [{ ...ruling, consequences: { fake: 3 } }],
     [{ ...ruling, decree: {} }], [{ ...ruling, turn: -1 }], [{ ...ruling, year: 0 }],
-    [{ ...ruling, season: 'fake' }]]) rejected({ rulingHistory });
+    [{ ...ruling, season: 'fake' as const }]]) rejected({ rulingHistory });
   for (const disputesResolved of [-1, 0.5, '1', {}, Number.MAX_SAFE_INTEGER + 1]) rejected({ disputesResolved });
 });
 test('dispute writer rejects nonfinite, sparse and nonserialized history fields', () => {

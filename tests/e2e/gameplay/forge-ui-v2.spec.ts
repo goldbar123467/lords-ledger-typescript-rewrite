@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 import {hitRhythm} from '../forgeRhythm.ts';
 for(const width of [390,1366,1920])for(const input of ['pointer','enter','space'] as const)

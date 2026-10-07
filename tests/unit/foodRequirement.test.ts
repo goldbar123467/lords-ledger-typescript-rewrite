@@ -1,15 +1,17 @@
+import {emptyInventory} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SEASON_CONSUMPTION_MULTIPLIERS, SEASON_FARM_MULTIPLIERS, SEASON_INFO } from '../../src/data/economy.ts';
 import { simulateEconomy } from '../../src/engine/economyEngine.ts';
 import { getSeasonFoodRequirement } from '../../src/engine/foodRequirement.ts';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 
 const cases = [
-  { difficulty: 'easy', season: 'spring', population: 22, garrison: 5, seasonal: 44, cap: 22, family: 22, total: 23 },
-  { difficulty: 'normal', season: 'spring', population: 20, garrison: 5, seasonal: 40, cap: 28, family: 28, total: 29 },
-  { difficulty: 'hard', season: 'winter', population: 18, garrison: 3, seasonal: 40, cap: 50, family: 40, total: 41 },
-  { difficulty: 'easy', season: 'winter', population: 22, garrison: 5, seasonal: 49, cap: 22, family: 22, total: 23 },
+  { difficulty: 'easy', season: 'spring' as const, population: 22, garrison: 5, seasonal: 44, cap: 22, family: 22, total: 23 },
+  { difficulty: 'normal', season: 'spring' as const, population: 20, garrison: 5, seasonal: 40, cap: 28, family: 28, total: 29 },
+  { difficulty: 'hard', season: 'winter' as const, population: 18, garrison: 3, seasonal: 40, cap: 50, family: 40, total: 41 },
+  { difficulty: 'easy', season: 'winter' as const, population: 22, garrison: 5, seasonal: 49, cap: 22, family: 22, total: 23 },
 ] as const;
 
 test('seasonal food forecast agrees with executable family and garrison consumption', () => {
@@ -54,12 +56,12 @@ test('food shortfall is reported in food units rather than an impossible family 
   });
   const state = {
     ...started,
-    season: 'winter',
+    season: 'winter' as const,
     turn: 4,
     population: 18,
     garrison: 3,
     buildings: [],
-    inventory: Object.fromEntries(Object.keys(started.inventory).map(resource => [resource, 0])),
+    inventory: emptyInventory(started.inventory),
     food: 0,
   };
   const simulated = simulateEconomy(state, () => 0.5);

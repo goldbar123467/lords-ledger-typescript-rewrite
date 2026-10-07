@@ -1,20 +1,19 @@
 import {
   SOLDIER_TYPES, MILITARY_SCRIBES_NOTES, canUpgradeFortification,
   getInitialMilitaryState, getTotalGarrison, isSoldierType,
-  type MilitaryDefenseState, type MilitaryState, type SoldierType,
+  type SoldierType,
   type FortificationTrack, type FortificationLevels,
 } from '../data/military.ts';
 import { getRecruitmentCapacity } from '../data/militaryRules.ts';
 import { isPositiveQuantity } from './transactionValidation.ts';
+import type { SavedMilitaryState } from '../save/savedMilitary.ts';
 
 export type MilitaryAction =
   | { type: 'RECRUIT_SOLDIERS' | 'DISMISS_SOLDIERS'; payload: { count: number; soldierType?: SoldierType } }
   | { type: 'UPGRADE_FORTIFICATION'; payload: { track: FortificationTrack } };
 
 /** Only bookkeeping consumed here is optional at this incremental boundary. */
-type CommandMilitaryState = MilitaryDefenseState &
-  Partial<Pick<MilitaryState, 'totalRecruitmentSpending' | 'totalFortificationSpending'>> &
-  { scribesNoteSeen?: Partial<MilitaryState['scribesNoteSeen']> };
+type CommandMilitaryState = SavedMilitaryState;
 
 export interface MilitaryCommandState {
   phase: string;

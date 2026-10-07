@@ -1,6 +1,9 @@
+import type {GameSnapshot} from '../../src/save/saveGame.ts';
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { MORAL_DILEMMAS } from '../../src/data/chapel.ts';
 import { seedLegacySnapshot } from '../../src/engine/random.ts';
@@ -9,13 +12,13 @@ import type { ChapelSaveState } from '../../src/engine/chapelState.ts';
 function fixture() {
   const base = createInitialState(104);
   const chapel: ChapelSaveState = { ...base.chapel, view: 'nave', msPhase: 'idle', msRound: 1, msMaxRound: 4 };
-  return { ...base, phase: 'management', chapel };
+  return { ...base, phase: 'management' as const, chapel };
 }
 function envelope(state: unknown) { return JSON.stringify({ format: 'lords-ledger', version: 2, state }); }
 
 test('every legal manuscript transition and Chapel choice remains exactly savable', () => {
   for (const quill of [false, true]) {
-    let state = fixture();
+    let state: GameSnapshot = fixture();
     state = { ...state, chapel: { ...state.chapel, inventory: quill ? ['quill_ink'] : [] } };
     const dispatch = (action: { type: string; payload?: { index: number } }) => {
       state = gameReducer(state, action);
@@ -58,7 +61,7 @@ test('nested ownership, meters, dialogue, pending content and logs reject malfor
     { dilemmasCompleted: ['fake'] }, { dilemmasCompleted: ['starving_widow', 'starving_widow'] },
     { piety: '30' }, { happiness: 101 }, { anselmGreeting: {} }, { titheResponse: [] },
     { titheAmount: -1 }, { spicePurchasesThisYear: 0.5 }, { view: 'fake' },
-    { gameLog: [{ text: 'x', turn: 1, season: 'fake' }] }, { gameLog: {} },
+    { gameLog: [{ text: 'x', turn: 1, season: 'fake' as const }] }, { gameLog: {} },
     { currentDilemma: { id: 'starving_widow' } }, { view: 'dilemma', currentDilemma: null },
     { dilemmaResult: { text: 'free reward', effects: { denarii: 1000 } } },
   ]) {
@@ -92,7 +95,7 @@ test('damaged manuscript recovery is explicit, isolated and preserves resources,
     assert.ok(readV2Save(writeV2Save(repaired.state)).ok);
     const restarted = gameReducer(repaired.state, { type: 'CHAPEL_MS_START' });
     assert.equal(restarted.chapel.msPhase, 'showing');
-    assert.equal(restarted.chapel.msPattern.length, 3);
+    assert.equal(present(restarted.chapel.msPattern, "restarted.chapel.msPattern").length, 3);
   }
   const damaged = { ...started, taxRate: 'fake', chapel: { ...started.chapel, msPlayerInput: [null] } };
   const blocked = readV2Save(envelope(damaged), { restartManuscript: true });

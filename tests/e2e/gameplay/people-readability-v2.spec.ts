@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
 async function loadPeople(page: Page, width: number, rootSize: number) {
   await page.setViewportSize({ width, height: 844 });
   const base = createInitialState(104);
-  const state = { ...base, phase: 'management', activeTab: 'people', tutorialsSeen: ['people'],
+  const state = { ...base, phase: 'management' as const, activeTab: 'people', tutorialsSeen: ['people'],
     people: { ...base.people, notableFamilies: base.people.notableFamilies.map(f =>
       f.id === 'miller' ? { ...f, present: false, turnsGone: 3, loyalty: 0 } : f) } };
   const raw = writeV2Save(state);

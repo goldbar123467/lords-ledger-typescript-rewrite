@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { planChapelAction } from '../../src/engine/chapelActions.ts';
-import { createInitialState } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
 import { MORAL_DILEMMAS, SHOP_ITEMS } from '../../src/data/chapel.ts';
 
 test('checked Chapel planner rejects invalid commands before drawing randomness', () => {
-  const state = { ...createInitialState(104), phase: 'management' };
+  const state = { ...createInitialState(104), phase: 'management' as const };
   const noDraw = () => { throw new Error('Rejected command consumed RNG'); };
   assert.equal(planChapelAction(state, 'CHAPEL_SET_VIEW', { view: 'unknown' }, noDraw), null);
   assert.equal(planChapelAction(state, 'CHAPEL_SET_VIEW', { view: 'dilemma' }, noDraw), null);
@@ -21,7 +21,7 @@ test('checked Chapel planner rejects invalid commands before drawing randomness'
 });
 
 test('Chapel selection draws only for new greetings, valid donations and available dilemmas', () => {
-  const base = { ...createInitialState(104), phase: 'management' };
+  const base = { ...createInitialState(104), phase: 'management' as const };
   let draws = 0;
   const random = () => { draws++; return .5; };
   const greeting = planChapelAction(base, 'CHAPEL_SET_VIEW', { view: 'anselm' }, random);

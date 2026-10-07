@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { previewFeastEvent, resolveFeast } from '../../src/engine/feast.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
@@ -33,8 +35,8 @@ test('a saved feast seed and three authored choices produce one canonical event 
   assert.deepEqual(settled.greatHall.meters,
     { people: 59, treasury: 46, church: 51, military: 50 });
   assert.equal(settled.greatHall.stewardTrust, 53);
-  assert.deepEqual(settled.greatHall.feastHistory[0], {
-    season: 'spring', year: 1,
+  assert.deepEqual(present(settled.greatHall.feastHistory, "settled.greatHall.feastHistory")[0], {
+    season: 'spring' as const, year: 1,
     totalEffects: { people: 9, treasury: -4, church: 1, military: 0 },
     guestId: 'village', entertainmentId: 'musicians', courseId: 'modest', eventId: 'proposal',
   });
@@ -65,7 +67,7 @@ test('invalid feast selections and stale draws cannot spend the saved random cur
   ]) {
     assert.strictEqual(gameReducer(started, { type: 'HALL_FEAST_COMPLETE', payload: invalid }), started);
   }
-  const blockedPhase = { ...started, phase: 'seasonal_action' };
+  const blockedPhase = { ...started, phase: 'seasonal_action' as const };
   assert.strictEqual(gameReducer(blockedPhase, { type: 'HALL_FEAST_COMPLETE', payload: valid }), blockedPhase);
 });
 
@@ -99,7 +101,7 @@ test('a validator-accepted older save without feast history can settle a feast',
   const started = gameReducer(initialState, {
     type: 'START_GAME', payload: { difficulty: 'easy', seed: 17 },
   });
-  const older = structuredClone(started);
+  const older = structuredClone({...started, greatHall: {...started.greatHall}});
   delete older.greatHall.feastHistory;
   delete older.greatHall.hasFeastedThisSeason;
   const imported = readLegacySave(JSON.stringify(older));
@@ -113,6 +115,6 @@ test('a validator-accepted older save without feast history can settle a feast',
     },
   });
   assert.equal(settled.greatHall.hasFeastedThisSeason, true);
-  assert.equal(settled.greatHall.feastHistory.length, 1);
+  assert.equal(present(settled.greatHall.feastHistory, "settled.greatHall.feastHistory").length, 1);
   assert.equal(readV2Save(writeV2Save(settled)).ok, true);
 });

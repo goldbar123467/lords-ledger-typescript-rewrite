@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 
 const seeds = [0, 1, 104, 4294967295, ...Array.from({ length: 100 }, (_, index) => index + 200)];
@@ -33,7 +34,7 @@ test('fresh games independently own their mutable inventories, garrison, familie
   first.inventory.grain += 7; first.military.garrison.levy += 1; first.greatHall.meters.people = 0;
   first.tavern.ratsPlayedThisSeason = true;
   const family = first.people.notableFamilies[0]; assert.ok(family); family.present = false;
-  first.usedSeasonalIds.push('isolation-probe'); first.watchtower.signalLog.push({ turn: 1, season: 'spring', year: 1, text: 'isolation-probe', type: 'scan' });
+  first.usedSeasonalIds.push('isolation-probe'); first.watchtower.signalLog.push({ turn: 1, season: 'spring' as const, year: 1, text: 'isolation-probe', type: 'scan' });
   assert.notEqual(first.blacksmith.inventory, second.blacksmith.inventory);
   assert.notEqual(first.chapel.msPattern, second.chapel.msPattern);
   assert.notEqual(first.marketPrices.sell, second.marketPrices.sell);

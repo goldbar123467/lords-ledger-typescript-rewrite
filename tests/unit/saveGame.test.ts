@@ -1,9 +1,10 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import seasonalEvents from '../../src/data/seasonalEvents.ts';
-import gameReducer from '../../src/engine/gameReducer.js';
+import gameReducer from '../../src/engine/gameReducer.ts';
 import { checkGameOver } from '../../src/engine/meterUtils.ts';
 
 const fixtureUrl = new URL('../fixtures/legacy-normal-turn1.json', import.meta.url);
@@ -45,7 +46,7 @@ test('a reducer-style loss reason round trips and malformed reasons are rejected
   if (!imported.ok) return;
   const reason = checkGameOver({ population: 0, bankruptcyTurns: 0, starvationTurns: 0, difficulty: 'normal' });
   assert.ok(reason);
-  const loss = { ...imported.state, phase: 'game_over', population: 0, gameOverReason: reason };
+  const loss = { ...imported.state, phase: 'game_over' as const, population: 0, gameOverReason: reason };
   const roundTrip = readV2Save(writeV2Save(loss));
   assert.equal(roundTrip.ok, true);
   if (roundTrip.ok) assert.deepEqual(roundTrip.state.gameOverReason, reason);
@@ -75,7 +76,7 @@ test('a pending event requires its original choices to continue', () => {
   const imported = readLegacySave(legacyRaw);
   assert.equal(imported.ok, true);
   if (!imported.ok) return;
-  const changed = { ...imported.state, phase: 'seasonal_action', currentEvent: null };
+  const changed = { ...imported.state, phase: 'seasonal_action' as const, currentEvent: null };
   const result = readLegacySave(JSON.stringify(changed));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.error, /pending event/i);
@@ -87,7 +88,7 @@ test('an unknown pending event ID with zero choices is rejected', () => {
   if (!imported.ok) return;
   const changed = {
     ...imported.state,
-    phase: 'seasonal_action',
+    phase: 'seasonal_action' as const,
     currentEvent: { id: 'not-a-real-event', options: [] },
   };
   const result = readLegacySave(JSON.stringify(changed));
@@ -101,7 +102,7 @@ test('a known pending event cannot lose its choices', () => {
   if (!imported.ok) return;
   const changed = {
     ...imported.state,
-    phase: 'seasonal_action',
+    phase: 'seasonal_action' as const,
     currentEvent: { id: 'spring_1', options: [] },
   };
   const result = readLegacySave(JSON.stringify(changed));
@@ -115,7 +116,7 @@ test('a known pending event rejects damaged numeric effects before play', () => 
   assert.ok(authored);
   const damaged = { ...authored, options: authored.options.map((option, index) =>
     index === 0 ? { ...option, effects: { denarii: 'damaged' } } : option) };
-  const result = readLegacySave(JSON.stringify({ ...source, phase: 'seasonal_action', currentEvent: damaged }));
+  const result = readLegacySave(JSON.stringify({ ...source, phase: 'seasonal_action' as const, currentEvent: damaged }));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.error, /event.*effect/i);
 });
@@ -126,27 +127,27 @@ test('a known pending event rejects an altered but finite authored effect', () =
   assert.ok(authored);
   const altered = { ...authored, options: authored.options.map((option, index) =>
     index === 0 ? { ...option, effects: { ...option.effects, treasury: 999999 } } : option) };
-  const result = readLegacySave(JSON.stringify({ ...source, phase: 'seasonal_action', currentEvent: altered }));
+  const result = readLegacySave(JSON.stringify({ ...source, phase: 'seasonal_action' as const, currentEvent: altered }));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.error, /event.*effect/i);
 });
 
 test('a saved flip decision requires a recognized active scene', () => {
   const source = JSON.parse(legacyRaw);
-  const missingFlip = readLegacySave(JSON.stringify({ ...source, phase: 'flip_decision', currentFlipId: null }));
+  const missingFlip = readLegacySave(JSON.stringify({ ...source, phase: 'flip_decision' as const, currentFlipId: null }));
   assert.equal(missingFlip.ok, false);
   if (!missingFlip.ok) assert.match(missingFlip.error, /pending perspective shift/i);
 
   const validFlip = readLegacySave(JSON.stringify({
     ...source,
-    phase: 'flip_decision',
+    phase: 'flip_decision' as const,
     currentFlipId: 'serf_week',
     currentFlipStats: { hunger: 60, energy: 70, family: 50 },
   }));
   assert.equal(validFlip.ok, true);
   const missingScene = readLegacySave(JSON.stringify({
     ...source,
-    phase: 'flip_decision',
+    phase: 'flip_decision' as const,
     currentFlipId: 'cyoa_lord',
     currentFlipStats: {},
     currentCyoaNodeId: null,
@@ -164,8 +165,8 @@ test('a saved raid phase requires a matching pending raid', () => {
   }
   const warning = readLegacySave(JSON.stringify({
     ...source,
-    phase: 'raid_warning',
-    raids: { ...source.raids, activeRaid: { type: 'criminal', phase: 'warning', result: null } },
+    phase: 'raid_warning' as const,
+    raids: { ...source.raids, activeRaid: { type: 'criminal', phase: 'warning' as const, result: null } },
   }));
   assert.equal(warning.ok, true);
 });
@@ -174,17 +175,17 @@ test('a reducer-produced defeated raid result remains savable with a fractional 
   const source = JSON.parse(legacyRaw);
   const warning = {
     ...source,
-    phase: 'raid_warning',
+    phase: 'raid_warning' as const,
     turn: 3,
-    season: 'autumn',
+    season: 'autumn' as const,
     garrison: 0,
     military: { ...source.military, garrison: { levy: 0, menAtArms: 0, knights: 0 } },
-    raids: { ...source.raids, activeRaid: { type: 'criminal', phase: 'warning', result: null } },
+    raids: { ...source.raids, activeRaid: { type: 'criminal', phase: 'warning' as const, result: null } },
   };
   assert.equal(readLegacySave(JSON.stringify(warning)).ok, true);
   const result = gameReducer(warning, { type: 'RAID_DEFEND' });
   assert.equal(result.phase, 'raid_result');
-  assert.equal(result.raids.activeRaid.result.defenseRatio, 10 / 18);
+  assert.equal(present(present(result.raids.activeRaid, "result.raids.activeRaid").result, "present(result.raids.activeRaid, \"result.raids.activeRaid\").result").defenseRatio, 10 / 18);
   const v2Raw = writeV2Save(result);
   const decoded = readV2Save(v2Raw);
   assert.equal(decoded.ok, true);
@@ -262,7 +263,7 @@ test('turn and season disagreement is rejected', () => {
   const imported = readLegacySave(legacyRaw);
   assert.equal(imported.ok, true);
   if (!imported.ok) return;
-  const result = readLegacySave(JSON.stringify({ ...imported.state, turn: 2, season: 'spring' }));
+  const result = readLegacySave(JSON.stringify({ ...imported.state, turn: 2, season: 'spring' as const }));
   assert.equal(result.ok, false);
   if (!result.ok) assert.match(result.error, /disagree/i);
 });

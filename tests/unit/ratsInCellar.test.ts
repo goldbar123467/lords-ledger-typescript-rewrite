@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { gameReducer, initialState } from '../../src/engine/gameReducer.js';
+import { initialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { createRandomCursor } from '../../src/engine/random.ts';
 import { planRatRun, scoreRatRun } from '../../src/engine/ratsInCellar.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';

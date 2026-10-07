@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 
 for (const [width, height, fontSize] of [[390, 600, 32], [390, 844, 16], [1366, 768, 16], [1366, 768, 32]]) {
@@ -7,7 +7,7 @@ for (const [width, height, fontSize] of [[390, 600, 32], [390, 844, 16], [1366, 
     if (width === undefined || height === undefined || fontSize === undefined) throw new Error('Missing report viewport fixture.');
     test.setTimeout(45000);
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', turn: 8, year: 2, season: 'winter', activeTab: 'military',
+    const state = { ...base, phase: 'management' as const, turn: 8, year: 2, season: 'winter' as const, activeTab: 'military',
       tutorialsSeen: ['military', 'map'], watchtower: { ...base.watchtower, scanScribesNoteSeen: true } };
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));

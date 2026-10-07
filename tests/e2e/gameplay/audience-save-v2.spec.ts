@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { readV2Save } from '../../../src/save/saveGame.ts';
 import encounters from '../../../src/data/audience.ts';
 
@@ -7,7 +7,7 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
   test(`damaged audience state blocks ${kind} load and preserves slots at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'],
+    const state = { ...base, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'],
       greatHall: { ...base.greatHall, audienceResolved: {} } };
     const legacy = JSON.stringify(state), v2 = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : null;
     const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
@@ -27,7 +27,7 @@ for (const width of [390, 1366]) for (const kind of ['v2', 'legacy']) {
   test(`compatible audience ${kind} save continues and resaves at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'],
+    const state = { ...base, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'],
       greatHall: { ...base.greatHall, audienceResolved: ['aud_001', 'aud_001'], stewardTrust: 0, hallLog: null } };
     const legacy = JSON.stringify(state), v2 = kind === 'v2' ? JSON.stringify({ format: 'lords-ledger', version: 2, state }) : null;
     await page.addInitScript(({ v2, legacy }) => {

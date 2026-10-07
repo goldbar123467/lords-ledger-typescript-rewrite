@@ -1,11 +1,11 @@
 import {expect,test}from'@playwright/test';
-import {createInitialState}from'../../../src/engine/gameReducer.js';
+import {createInitialState}from'../../../src/engine/gameReducer.ts';
 import {writeV2Save}from'../../../src/save/saveGame.ts';
 function record(value:unknown):value is Record<string,unknown>{return typeof value==='object'&&value!==null&&!Array.isArray(value);}
 for(const field of ['reputation','meterHistory'])test('damaged '+field+' is rejected before Hall rendering',async({page},info)=>{
- const state={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']};
+ const state={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']};
  const envelope:unknown=JSON.parse(writeV2Save(state));if(!record(envelope)||!record(envelope.state)||!record(envelope.state.greatHall))throw Error('Invalid fixture');
- const damage=field==='reputation'?{}:[null,{turn:0,season:'spring',year:1,meters:{people:50,treasury:50,church:50,military:50}}];
+ const damage=field==='reputation'?{}:[null,{turn:0,season:'spring' as const,year:1,meters:{people:50,treasury:50,church:50,military:50}}];
  const raw=JSON.stringify({...envelope,state:{...envelope.state,greatHall:{...envelope.state.greatHall,[field]:damage}}}),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewportSize({width:390,height:844});await page.addInitScript(raw=>localStorage.setItem('lords-ledger-v2-save',raw),raw);await page.goto('/');
  const load=page.getByRole('button',{name:'Load saved game',exact:true});
@@ -18,8 +18,8 @@ for(const field of ['reputation','meterHistory'])test('damaged '+field+' is reje
 });
 
 for(const width of [390,1366])test('historical Hall shell values survive Summary and pending event settlement '+width,async({page},info)=>{
- const base={...createInitialState(104),phase:'management',activeTab:'hall',tutorialsSeen:['hall']};
- const snapshot={turn:0,season:'winter',year:25,meters:{people:0,treasury:12.5,church:100,military:50}};
+ const base={...createInitialState(104),phase:'management' as const,activeTab:'hall',tutorialsSeen:['hall']};
+ const snapshot={turn:0,season:'winter' as const,year:25,meters:{people:0,treasury:12.5,church:100,military:50}};
  const state={...base,greatHall:{...base.greatHall,reputation:'An older campaign title',reputationTrack:'balanced',reputationScores:{balanced:2.5},meterHistory:[snapshot,snapshot],compoundFlags:{ironRule:false,olderFlag:true},pendingHallEvent:{type:'crisis',meter:'Old people caption',text:'An older unrest narrative.',chronicle:'An older unrest record.',effects:{people:-2.5}}}};
  const raw=writeV2Save(state),errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewportSize({width,height:844});await page.addInitScript(raw=>{if(!localStorage.getItem('lords-ledger-v2-save'))localStorage.setItem('lords-ledger-v2-save',raw);},raw);

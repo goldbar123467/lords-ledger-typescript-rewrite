@@ -1,16 +1,17 @@
+import {rawGameReducer} from '../../gameInput.ts';
 import { expect, test } from '@playwright/test';
 import encounters from '../../../src/data/audience.ts';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) {
   test(`zero-trust audience reward applies once across Save/Load at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
     const initial = createInitialState(104);
-    const state = { ...initial, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'], greatHall: { ...initial.greatHall, stewardTrust: 0 } };
+    const state = { ...initial, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'], greatHall: { ...initial.greatHall, stewardTrust: 0 } };
     const raw = writeV2Save(state), encounter = encounters[0];
     if (!encounter) throw new Error('Missing first audience encounter');
     const response = encounter.responses[0]; if (!response) throw new Error('Missing authored response');
-    const expected = gameReducer(state, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex: 0, consequences: response.consequences } });
+    const expected = rawGameReducer(state, { type: 'HALL_AUDIENCE_RESPOND', payload: { encounterId: encounter.id, responseIndex: 0, consequences: response.consequences } });
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
     await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();

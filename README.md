@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** App now uses checked TSX with validated state and a shared contract for all 86 main reducer commands. The main reducer implementation remains JavaScript and unchecked. Final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/`. Test/tooling migration, reducer simplification, and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -16,17 +16,19 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 ## Latest verified checkpoint
 
-App's state, dispatch, callbacks, DOM ref and story-stat projection now have checked TypeScript contracts. A temporary boundary validates unknown output from the JavaScript reducer without copying it, consuming randomness or migrating saves. Inactive prototype story IDs and unknown historical tabs render safely; their stored metadata stays intact until explicit navigation.
+The actual [main reducer](src/engine/gameReducer.ts) now checks `GameSnapshot` inputs and outputs and `GameCommand` payloads. App calls it directly; the temporary JavaScript output bridge is removed. Compatible historical defaults are retained, and consumed military metadata has runtime validation. These contracts do not establish complete external-command or phase validation.
 
-All **727 unit tests**, typecheck, lint and production build passed. Root browser verification passed five metadata regressions and 32 existing lifecycle, initialization, persistence and event-choice cases. Independent tester and grader reviews passed 14 and 12 browser cases respectively, with exact save/RNG checks, historical-default probes, compiler inspection and actual image review. These are scoped checks; final campaign and whole-interface acceptance remain pending.
+All **737 unit tests**, typecheck, lint and production build passed. Root browser verification passed **77 cases** covering affected lifecycle, persistence, choices, story, Forge and Tavern flows. Independent tester and grader runs passed **10 and 11 browser cases**, respectively, including historical saves, recruitment, paid Estate actions and story continuations. Actual images were inspected; these checks do not establish whole-interface acceptance.
 
-The preceding command foundation ([`a0d951d`](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commit/a0d951d2163ccd42939280a23df0fc5e5682e35f)) covers all 86 main reducer tags. The next section must migrate the reducer implementation itself and remove the temporary boundary. Runtime validation does not typecheck that implementation or prove complete phase/state correctness.
+Migration replay matched **28,632 complete state/save pairs across 120 seeded campaigns**, with 65 victories and 55 losses, against the preceding implementation. The grader independently matched 2,012 pairs and 26 historical-default compatibility pairs. These simple-policy comparisons check migration preservation; final campaigns and a genuine browser-driven 40-turn victory on the completed build remain required.
+
+**Open defect: G-RM01.** Invalid seasonal choice indices can advance the phase without applying a choice. This reproduces in both the baseline and migrated reducer. Fixing that guard is the next corrective section.
 
 ## Current progress
 
 | Area | Included in the checkpoint | Remaining work |
 | --- | --- | --- |
-| Domain logic | Typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Migrate the main reducer and remaining helpers; finish action and state contracts |
+| Domain logic | Checked main reducer and typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Simplify reducer orchestration; finish runtime action and state validation |
 | Content definitions | Typed resource, building, Market, decree, military, raid, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Complete registry cross-reference and runtime audits |
 | React interface | Checked App shell and typed management and interaction views, including Estate, Map, Chronicle, Tavern, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Complete interface review and remaining phase/state contracts |
 | Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete remaining nested subsystem validation and whole-game deterministic replay checks |
@@ -49,7 +51,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-One source JavaScript file remains: `src/engine/gameReducer.js`. The latest recorded census counts 44,963 production lines versus the original 45,347, a reduction of 384 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,114 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,027 production lines versus the original 45,347, a reduction of 320 lines; this section adds 64 production lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,438 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -120,7 +122,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Migrate the main reducer implementation to checked TypeScript, simplify orchestration, and remove the temporary boundary. Complete remaining state and command validation.
+1. Fix G-RM01 invalid choice-index transitions, simplify the checked reducer's orchestration, and complete remaining state and command validation.
 2. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
 4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.

@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save} from '../../../src/save/saveGame.ts';
 import type {GambitWeapon} from '../../../src/engine/tavernGambit.ts';
 

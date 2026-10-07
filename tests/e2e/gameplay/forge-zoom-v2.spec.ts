@@ -3,7 +3,7 @@ import {writeFileSync} from 'node:fs';
 import {nativeZoomContext,captureNativeViewport} from '../nativeZoom.ts';
 import {hitRhythm} from '../forgeRhythm.ts';
 import {focusCollect} from '../forgeFocus.ts';
-import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../../src/engine/gameReducer.ts';
 import {writeV2Save} from '../../../src/save/saveGame.ts';
 test('Forge pointer play at native browser zoom 200 percent',async({baseURL},info)=>{
  if(typeof baseURL!=='string')throw Error('Missing isolated server URL');

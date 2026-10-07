@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import seasonal from '../../src/data/seasonalEvents.ts';
 import random from '../../src/data/randomEvents.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
@@ -15,7 +16,7 @@ test('all authored event choices preserve complete transitions, saves, input and
       for (const event of events) for (let optionIndex = 0; optionIndex < event.options.length; optionIndex++) {
         const state = { ...base, phase: kind === 'seasonal' ? 'seasonal_action' : 'random_event',
           currentEvent: kind === 'seasonal' ? event : null, currentRandomEvent: kind === 'random' ? event : null,
-          causeChain: [0, 1, 2, 3].map(turn => ({ turn, season: 'winter', year: -0.5, summary: 'Historical ' + turn })) };
+          causeChain: [0, 1, 2, 3].map(turn => ({ turn, season: 'winter' as const, year: -0.5, summary: 'Historical ' + turn })) };
         const before = JSON.stringify(state);
         const next = gameReducer(state, { type: kind === 'seasonal' ? 'SELECT_SEASONAL_ACTION' : 'SELECT_RANDOM_RESPONSE', payload: { optionIndex } });
         assert.equal(JSON.stringify(state), before); assert.equal(next.rngState, state.rngState);

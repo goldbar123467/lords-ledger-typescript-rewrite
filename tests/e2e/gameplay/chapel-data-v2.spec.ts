@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { createInitialState } from '../../../src/engine/gameReducer.js';
+import { createInitialState } from '../../../src/engine/gameReducer.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 import { MORAL_DILEMMAS } from '../../../src/data/chapel.ts';
 
 for (const width of [390, 1366]) {
   test(`Chapel authored tithe, shop and dilemma survive save at ${width}px`, async ({ page }, info) => {
     const base = createInitialState(104);
-    const state = { ...base, phase: 'management', turn: 8, year: 2, season: 'winter', activeTab: 'chapel',
+    const state = { ...base, phase: 'management' as const, turn: 8, year: 2, season: 'winter' as const, activeTab: 'chapel',
       tutorialsSeen: ['chapel'], chapel: { ...base.chapel,
         dilemmasCompleted: MORAL_DILEMMAS.filter(dilemma => dilemma.id !== 'starving_widow').map(dilemma => dilemma.id) } };
     const errors: string[] = [];

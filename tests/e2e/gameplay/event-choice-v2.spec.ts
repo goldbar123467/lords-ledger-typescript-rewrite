@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import seasonal from '../../../src/data/seasonalEvents.ts';
 import random from '../../../src/data/randomEvents.ts';
 import { readV2Save, writeV2Save, SAVE_KEY_V2 } from '../../../src/save/saveGame.ts';

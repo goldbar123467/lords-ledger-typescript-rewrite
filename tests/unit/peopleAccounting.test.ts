@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getInitialTiers, reconcileTiers, PEOPLE_TIPS } from '../../src/data/people.ts';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 test('Initial and reconciled social tiers conserve every small population', () => {
@@ -23,7 +24,7 @@ test('Initial and reconciled social tiers conserve every small population', () =
 
 test('Real starvation transition keeps tier counts equal to remaining population', () => {
   const base = createInitialState(104);
-  const state = { ...base, phase: 'management', population: 4, food: 0, buildings: [], garrison: 0, taxRate: 'crushing',
+  const state = { ...base, phase: 'management' as const, population: 4, food: 0, buildings: [], garrison: 0, taxRate: 'crushing',
     inventory: Object.fromEntries(Object.keys(base.inventory).map(key => [key, 0])),
     people: { ...base.people, tiers: { serfs: 1, freemen: 1, skilled: 2 } },
     military: { ...base.military, garrison: { levy: 0, menAtArms: 0, knights: 0 } } };

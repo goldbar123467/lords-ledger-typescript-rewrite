@@ -1,10 +1,11 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
 import { expect, test } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) for (const walls of [1, 3]) {
   test(`People labor wording stays accurate with walls${walls} at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 });
-    let state = { ...createInitialState(104), phase: 'management', activeTab: 'people', tutorialsSeen: ['people'] };
+    let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, activeTab: 'people', tutorialsSeen: ['people'] };
     if (walls === 3) for (let i = 0; i < 2; i++) state = gameReducer(state, { type: 'UPGRADE_FORTIFICATION', payload: { track: 'walls' } });
     expect(state.military.walls).toBe(walls);
     if (walls === 3) expect(state.denarii).toBe(130);

@@ -1,6 +1,8 @@
+import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { ALL_FLIPS } from '../../src/engine/flipEngine.ts';
 
@@ -9,7 +11,7 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
     const started = gameReducer(createInitialState(17),
       { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
     // Characterization fixture at a real boundary, followed only by production commands.
-    const boundary = { ...started, turn: 7, season: 'autumn', year: 2, taxRate,
+    const boundary = { ...started, turn: 7, season: 'autumn' as const, year: 2, taxRate,
       tavern: { ...started.tavern, gambitRoundsThisSeason: 3, ratsPlayedThisSeason: true },
       watchtower: { ...started.watchtower, scannedThisSeason: true },
       blacksmith: { ...started.blacksmith, salesThisSeason: 2 },
@@ -19,7 +21,7 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
     assert.equal(entered.phase, 'flip_intro');
     assert.equal(entered.currentFlipId, flipId);
     assert.equal(entered.greatHall.stewardTrust, 48);
-    assert.deepEqual(entered.greatHall.meterHistory.map((entry: { turn: number }) => entry.turn), [7]);
+    assert.deepEqual(present(entered.greatHall.meterHistory, "entered.greatHall.meterHistory").map((entry: { turn: number }) => entry.turn), [7]);
     assert.equal(entered.tavern.gambitRoundsThisSeason, 0);
     assert.equal(entered.tavern.ratsPlayedThisSeason, false);
     assert.equal(entered.watchtower.scannedThisSeason, false);
@@ -61,7 +63,7 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
 
 function knightSummary(options: number[] = [0, 0, 0, 0]) {
   const started = gameReducer(createInitialState(17), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
-  const boundary = { ...started, turn: 19, season: 'autumn', year: 5, garrison: 6,
+  const boundary = { ...started, turn: 19, season: 'autumn' as const, year: 5, garrison: 6,
     military: { ...started.military, garrison: { levy: 6, menAtArms: 0, knights: 0 } },
     perspectiveFlips: Object.fromEntries(Object.keys(ALL_FLIPS).filter(id => id !== 'cyoa_knight').map(id => [id, true])),
     raids: { ...started.raids, lastRaidTurn: 19 },
@@ -134,5 +136,5 @@ test('returning from a saved story does not count an additional bankruptcy seaso
   assert.equal(next.denarii, 0);
   assert.equal(next.bankruptcyTurns, 6);
   assert.equal(next.phase, 'game_over');
-  assert.equal(next.gameOverReason.type, 'bankruptcy');
+  assert.equal(present(next.gameOverReason, "next.gameOverReason").type, 'bankruptcy');
 });

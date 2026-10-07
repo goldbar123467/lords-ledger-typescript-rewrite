@@ -1,16 +1,17 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
 import { expect, test } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { DECREE_OPTIONS, COUNCIL_TOPICS } from '../../../src/data/decrees.ts';
 import { readV2Save, writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) for (const start of [0, 3]) {
   test('Council keeps voted context including final topic at ' + width + ' starting ' + start, async ({ page }, info) => {
-    let state = { ...createInitialState(104), phase: 'management', turn: 4, season: 'winter', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, turn: 4, season: 'winter' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     for (const topic of COUNCIL_TOPICS.slice(0, start)) state = gameReducer(state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: topic.options[0].id } });
     const raw = writeV2Save(state), errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
     await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
-    let expected = state;
+    let expected: GameSnapshot = state;
     for (const topic of COUNCIL_TOPICS.slice(start)) {
       const option = topic.options[0];
       await page.getByRole('button', { name: 'Council', exact: true }).click();
@@ -34,7 +35,7 @@ for (const width of [390, 1366]) for (const start of [0, 3]) {
 }
 for (const width of [390, 1366]) {
   test('decree issue revoke and seasonal cap survive Save/Load at ' + width, async ({ page }, info) => {
-    const state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] }, raw = writeV2Save(state), first = DECREE_OPTIONS[0], second = DECREE_OPTIONS[1];
+    const state = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] }, raw = writeV2Save(state), first = DECREE_OPTIONS[0], second = DECREE_OPTIONS[1];
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, raw);
     await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
@@ -71,7 +72,7 @@ for (const width of [390, 1366]) {
 }
 
 for (const width of [390, 1366]) test('early Council relock preserves completed vote aftermath at ' + width, async ({ page }, info) => {
-  const base = createInitialState(104), initial = { ...base, phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'], greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people: 71 } } };
+  const base = createInitialState(104), initial = { ...base, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'], greatHall: { ...base.greatHall, meters: { ...base.greatHall.meters, people: 71 } } };
   const prior = COUNCIL_TOPICS[0], road = COUNCIL_TOPICS[1], topic = COUNCIL_TOPICS[2], option = topic.options[2];
   let state = gameReducer(initial, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: prior.id, optionId: prior.options[0].id } });
   state = gameReducer(state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: road.id, optionId: road.options[2].id } });

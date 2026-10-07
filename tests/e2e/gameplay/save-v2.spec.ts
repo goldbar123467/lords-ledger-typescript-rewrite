@@ -109,7 +109,7 @@ test('an unknown saved inventory key cannot change hidden storage capacity', asy
 test('a fabricated pending event cannot strand the player after import', async ({ page }) => {
   const invalid = JSON.stringify({
     ...JSON.parse(fixture),
-    phase: 'seasonal_action',
+    phase: 'seasonal_action' as const,
     currentEvent: { id: 'not-a-real-event', options: [] },
   });
   await page.addInitScript(({ key, raw }) => localStorage.setItem(key, raw), { key: legacyKey, raw: invalid });
@@ -127,7 +127,7 @@ test('damaged effects on a known pending event are rejected before a choice', as
   if (!authored) throw new Error('Missing spring_1 fixture definition');
   const damaged = { ...authored, options: authored.options.map((option, index) =>
     index === 0 ? { ...option, effects: { denarii: 'damaged' } } : option) };
-  const raw = JSON.stringify({ ...source, phase: 'seasonal_action', currentEvent: damaged });
+  const raw = JSON.stringify({ ...source, phase: 'seasonal_action' as const, currentEvent: damaged });
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: legacyKey, value: raw });
   await page.goto('/');
   await page.getByRole('button', { name: 'Import old save' }).click();
@@ -143,7 +143,7 @@ test('an altered numeric effect on a known event cannot change the authored cost
   if (!authored) throw new Error('Missing spring_1 fixture definition');
   const altered = { ...authored, options: authored.options.map((option, index) =>
     index === 0 ? { ...option, effects: { ...option.effects, treasury: 999999 } } : option) };
-  const raw = JSON.stringify({ ...source, phase: 'seasonal_action', currentEvent: altered });
+  const raw = JSON.stringify({ ...source, phase: 'seasonal_action' as const, currentEvent: altered });
   await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), { key: legacyKey, value: raw });
   await page.goto('/');
   await page.getByRole('button', { name: 'Import old save' }).click();
@@ -212,7 +212,7 @@ test('a mid-season 2.0 save retains its pending choice after reload', async ({ p
   await expect(page.getByText('Saved!', { exact: true })).toBeVisible();
   const saved = await page.evaluate(key => localStorage.getItem(key), currentKey);
   expect(saved).not.toBeNull();
-  expect(JSON.parse(saved ?? 'null')).toMatchObject({ version: 2, state: { phase: 'seasonal_action', turn: 1 } });
+  expect(JSON.parse(saved ?? 'null')).toMatchObject({ version: 2, state: { phase: 'seasonal_action' as const, turn: 1 } });
   await page.reload();
   await page.getByRole('button', { name: 'Load saved game' }).click();
   await expect(options).toBeVisible();

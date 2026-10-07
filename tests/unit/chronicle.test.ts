@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';
+import { createInitialState } from '../../src/engine/gameReducer.ts';
+import { rawGameReducer as gameReducer } from '../gameInput.ts';
 import {readV2Save,readLegacySave,writeV2Save} from '../../src/save/saveGame.ts';
 import {isSavedChronicle} from '../../src/engine/chronicle.ts';
 
@@ -32,12 +33,12 @@ test('Chronicle validation rejects sparse arrays and nonfinite or structured met
  }
 });
 test('null-prototype data records and empty Chronicle wording retain compatible bytes',()=>{
- const record:Record<string,unknown>=Object.assign(Object.create(null),{text:'',type:'older kind',season:'older season',year:0,turn:-1});
+ const record:Record<string,unknown>=Object.assign(Object.create(null),{text:'',type:'older kind',season:'older season' as const,year:0,turn:-1});
  const state={...initial(),chronicle:[record]};assert.equal(isSavedChronicle(state.chronicle),true);
  const raw=writeV2Save(state),loaded=readV2Save(raw);assert.ok(loaded.ok);assert.equal(writeV2Save(loaded.state),raw);assert.equal(record.text,'');
 });
 test('historical Chronicle wording, unknown keys and optional metadata round trip literally',()=>{
- const chronicle=[{text:'An older entry.'},{text:'Unknown season and kind.',season:'flood season',year:2.5,type:'constructor',turn:null,annotation:{scribe:'Older hand'}},{text:'Prototype caption.',type:'__proto__',season:null,year:null}];
+ const chronicle=[{text:'An older entry.'},{text:'Unknown season and kind.',season:'flood season' as const,year:2.5,type:'constructor',turn:null,annotation:{scribe:'Older hand'}},{text:'Prototype caption.',type:'__proto__',season:null,year:null}];
  const state={...initial(),chronicle},before=structuredClone(state),raw=writeV2Save(state),result=readV2Save(raw);
  assert.ok(result.ok);assert.deepEqual(result.state,state);assert.deepEqual(state,before);assert.equal(writeV2Save(result.state),raw);
 });

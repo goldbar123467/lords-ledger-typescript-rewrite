@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import BUILDINGS from '../../../src/data/buildings.ts';
 import {readV2Save,writeV2Save,type GameSnapshot} from '../../../src/save/saveGame.ts';
 

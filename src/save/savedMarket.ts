@@ -18,6 +18,9 @@ export interface SavedMarketState extends Partial<Record<typeof MARKET_COUNTER_K
   activeMarketEvent?: SavedMarketEvent | null;
   usedMarketEventIds?: string[] | null;
   marketScribesNoteSeen?: boolean | null; reputationScribesNoteSeen?: boolean | null;
+  /** Legacy metadata is copied/compared, never used as numeric authority. */
+  lastTradedSeason?: unknown;
+  currentForeignTrader?: unknown;
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

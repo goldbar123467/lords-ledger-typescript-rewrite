@@ -1,10 +1,11 @@
+import type {GameSnapshot} from '../../../src/save/saveGame.ts';
 import { expect, test } from '@playwright/test';
-import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.js';
+import { createInitialState, gameReducer } from '../../../src/engine/gameReducer.ts';
 import { COUNCIL_TOPICS, DECREE_OPTIONS } from '../../../src/data/decrees.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 for (const width of [390, 1366]) {
   test('Council displays numeric effects before selecting at ' + width, async ({ page }, info) => {
-    const state = { ...createInitialState(104), turn: 4, season: 'winter', phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    const state = { ...createInitialState(104), turn: 4, season: 'winter' as const, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(state));
     await page.goto('/'); await page.getByRole('button', { name: 'Load saved game', exact: true }).click();
@@ -18,7 +19,7 @@ for (const width of [390, 1366]) {
     }
   });
   test('exhausted decree quota permits reading but prevents sealing at ' + width, async ({ page }, info) => {
-    let state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     for (const decree of DECREE_OPTIONS.slice(0, 2)) {
       state = gameReducer(state, { type: 'HALL_ISSUE_DECREE', payload: { decreeId: decree.id } });
       state = gameReducer(state, { type: 'HALL_REVOKE_DECREE', payload: { decreeId: decree.id } });
@@ -40,7 +41,7 @@ for (const width of [390, 1366]) {
 
 for (const scenario of [{ width: 1366, height: 768, root: 16 }, { width: 390, height: 600, root: 32 }]) {
   test('all Council choices preserve content and native keyboard geometry ' + scenario.width, async ({ page }, info) => {
-    const state = { ...createInitialState(104), turn: 4, season: 'winter', phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    const state = { ...createInitialState(104), turn: 4, season: 'winter' as const, phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     await page.setViewportSize(scenario); await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.addInitScript(raw => { if (!localStorage.getItem('lords-ledger-v2-save')) localStorage.setItem('lords-ledger-v2-save', raw); }, writeV2Save(state));
     await page.goto('/'); await page.evaluate(root => document.documentElement.style.fontSize = root + 'px', scenario.root);
@@ -72,7 +73,7 @@ for (const scenario of [{ width: 1366, height: 768, root: 16 }, { width: 390, he
     await expect(page.getByText(/All available matters have been settled/)).toBeVisible();
   });
   test('all decrees remain fully readable without changing the exhausted save ' + scenario.width, async ({ page }, info) => {
-    let state = { ...createInitialState(104), phase: 'management', activeTab: 'hall', tutorialsSeen: ['hall'] };
+    let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
     for (const decree of DECREE_OPTIONS.slice(0, 2)) {
       state = gameReducer(state, { type: 'HALL_ISSUE_DECREE', payload: { decreeId: decree.id } });
       state = gameReducer(state, { type: 'HALL_REVOKE_DECREE', payload: { decreeId: decree.id } });

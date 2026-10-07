@@ -1,6 +1,6 @@
 /** Legal domain commands with prescribed completion results, not played minigames. */
 import assert from 'node:assert/strict';
-import {createInitialState,gameReducer} from '../../src/engine/gameReducer.js';
+import {createInitialState,gameReducer} from '../../src/engine/gameReducer.ts';
 import {FORGEABLE_ITEMS,FORGE_RESOURCES,type ForgeResourceId} from '../../src/data/blacksmith.ts';
 import type {DeployableToolId} from '../../src/engine/forgeTools.ts';
 import {readV2Save,writeV2Save,type GameSnapshot} from '../../src/save/saveGame.ts';

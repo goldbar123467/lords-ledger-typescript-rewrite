@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-import {gameReducer} from '../../../src/engine/gameReducer.js';
+import {gameReducer} from '../../../src/engine/gameReducer.ts';
 import {readV2Save,writeV2Save,type GameSnapshot} from '../../../src/save/saveGame.ts';
 
 async function save(page:Page,state:GameSnapshot){await page.getByRole('button',{name:'Save game',exact:true}).click();expect(await page.evaluate(()=>localStorage.getItem('lords-ledger-v2-save'))).toBe(writeV2Save(state));}

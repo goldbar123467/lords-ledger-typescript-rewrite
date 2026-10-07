@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createInitialState} from '../../src/engine/gameReducer.js';
+import {createInitialState} from '../../src/engine/gameReducer.ts';
 import {getTotalBuildingUpkeep} from '../../src/engine/economyEngine.ts';
 import {readLegacySave,readV2Save,writeV2Save} from '../../src/save/saveGame.ts';
 
 const building=()=>({instanceId:'waiver-probe',type:'coal_pit',condition:100,builtOnTurn:0});
-const fixture=(entry:unknown)=>({...createInitialState(104),phase:'management',buildings:[entry]});
+const fixture=(entry:unknown)=>({...createInitialState(104),phase:'management' as const,buildings:[entry]});
 
 test('raw legacy and v2 readers reject malformed upkeep waivers without changing bytes',()=>{
  for(const freeUpkeep of ['false','true',0,1,null,{},[]]){
