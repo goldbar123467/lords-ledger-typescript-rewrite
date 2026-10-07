@@ -16,7 +16,7 @@ The project retains React, Vite, Tailwind CSS, and its DOM interface. CSS, HTML,
 
 ## Current implementation
 
-The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing has a separate checked owner, but the main reducer and orchestration still need decomposition.
+The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing and Marta/Aldric companion actions have separate checked owners. Companion selection, offer resolution, receipts, and Chronicle updates now share orchestration while preserving all eight distinct authored offers. The main reducer and remaining orchestration still need decomposition.
 
 Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
@@ -37,13 +37,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Root configurations (`49ce34f`) | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
 | Headless driver (`75631db`) | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
 | Browser driver (`13ca781`) | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
-| QA diagnostics | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
+| QA diagnostics (`fbd8c8f`) | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
+| Companion consolidation | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | An inherited missing-history save defect remains open: selecting an offer from an accepted save with omitted companion history can produce an unsavable state. This checkpoint preserves behavior; it does not establish complete save closure |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **45,003 lines**, versus 45,347 at baseline. The QA diagnostics checkpoint's inclusive subtotal was **80,407 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,877 lines**, versus 45,347 at baseline. Companion consolidation removed 126 net production lines, including its new domain module; line totals also reflect formatting. The companion checkpoint's inclusive subtotal was **80,314 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -63,7 +64,7 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The QA dia
 
 ## Next rewrite sections
 
-1. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
+1. Repair missing companion histories that become unsavable after offer selection, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

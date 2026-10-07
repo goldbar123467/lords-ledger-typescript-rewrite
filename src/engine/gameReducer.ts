@@ -48,8 +48,7 @@ import { addTavernLedgerInteger } from "./tavernLedger.ts";
 import { planRatRun, scoreRatRun } from "./ratsInCellar.ts";
 import { rollStrangerEncounter, strangerTradeTerms } from "./tavernEncounter.ts";
 import { isBardContent, isBardSolvedIds, nextBardContent } from "./tavernBard.ts";
-import { isCompanionContent, nextCompanionContent } from "./tavernCompanion.ts";
-import { getRecruitmentCapacity } from "../data/militaryRules.ts";
+import {reduceCompanionAction} from "./tavernCompanionActions.ts";
 import { resolveFeast } from "./feast.ts";
 import { haggleMerchant, isActiveHaggle, isHaggleCounterPrice, isMarketReputation, marketSaleProceeds, marketQuickSalePrice, marketTradePrice, openingHaggleOffer } from "./marketHaggle.ts";
 
@@ -81,7 +80,7 @@ import {
 } from "../data/military.ts";
 import {remainingMarketSupply,consumeMarketSupply} from "./marketSupply.ts";
 import { HAGGLE_CONFIG, REPUTATION_CONFIG, LOCAL_MERCHANTS, FOREIGN_TRADERS } from "../data/market.ts";
-import { ALDRIC_TRAINING_OFFERS, BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS, MARTA_OFFERS } from "../data/tavern.ts";
+import { BARD_RIDDLES, BARD_STATE_COMMENTS, GAMBIT_MAX_ROUNDS } from "../data/tavern.ts";
 import { computeReputation, computeCompoundFlags, CRISIS_EVENTS, PEAK_EVENTS } from "../data/greatHall.ts";
 import { getInitialPeopleState } from "../data/people.ts";
 
@@ -1728,256 +1727,16 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     }
 
     // -----------------------------------------------------------------------
-    // MARTA THE MERCHANT
-    // -----------------------------------------------------------------------
-
-    case "TAVERN_MARTA_NEXT": {
-      if (state.phase !== "management") return state;
-      const tavern = state.tavern ?? {};
-      const current = tavern.martaCurrentContent;
-      if (current?.type === "offer" && current.resolution === null &&
-          MARTA_OFFERS.find(offer => offer.id === current.offerId)?.canAccept(state)) return state;
-      const next = nextCompanionContent(
-        "marta", random, tavern.martaOffersUsed ?? [],
-        tavern.martaAdviceRemaining ?? [], tavern.martaStoriesRemaining ?? [],
-      );
-      if (!next) return state;
-      return {
-        ...state,
-        tavern: {
-          ...tavern,
-          martaCurrentContent: next.content,
-          martaAdviceRemaining: next.adviceRemaining,
-          martaStoriesRemaining: next.storiesRemaining,
-        },
-      };
-    }
-
-    case "TAVERN_MARTA_SCRIBES_NOTE_SEEN": {
-      return {
-        ...state,
-        tavern: { ...state.tavern, martaScribesNoteSeen: true },
-      };
-    }
-
-    case "TAVERN_MARTA_ACCEPT_OFFER": {
-      if (state.phase !== "management") return state;
-      const { offerId } = action.payload ?? {};
-      const prevTm = state.tavern ?? {};
-      const current = prevTm.martaCurrentContent;
-      if (!isCompanionContent("marta", current) || current?.type !== "offer" ||
-          current.offerId !== offerId || current.resolution !== null) return state;
-      if ((prevTm.martaOffersUsed ?? []).includes(offerId)) return state;
-
-      const baseTavern: GameSnapshot['tavern'] = {
-        ...prevTm,
-        martaOffersUsed: [...(prevTm.martaOffersUsed ?? []), offerId],
-        martaCurrentContent: { ...current, resolution: "accepted" },
-      };
-
-      switch (offerId) {
-        case "bulk_wool": {
-          if ((state.inventory?.wool ?? 0) < 5) return state;
-          const newInv = { ...state.inventory, wool: state.inventory.wool - 5 };
-          return {
-            ...state,
-            denarii: state.denarii + 40,
-            inventory: newInv,
-            food: getTotalFood(newInv),
-            tavern: baseTavern,
-            chronicle: addChronicle(state.chronicle, "Marta brokered a Flemish wool deal: sold 5 wool for 40d.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "spice_investment": {
-          if (state.denarii < 75) return state;
-          return {
-            ...state,
-            denarii: state.denarii - 75,
-            tavern: { ...baseTavern, martaSpiceInvestment: true },
-            chronicle: addChronicle(state.chronicle, "Invested 75d in Marta\u2019s spice shipment. Returns expected next season.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "trade_route_tip": {
-          if (state.denarii < 30) return state;
-          // Find best-priced trade good
-          const tradeGoods = ["wool", "cloth", "honey", "herbs", "ale"] as const;
-          let bestGood = "cloth";
-          let bestPrice = 0;
-          for (const good of tradeGoods) {
-            const price = state.marketPrices?.sell?.[good] ?? 0;
-            if (price > bestPrice) {
-              bestPrice = price;
-              bestGood = good;
-            }
-          }
-          const tipText = `Marta whispers: "${bestGood.charAt(0).toUpperCase() + bestGood.slice(1)} fetches ${bestPrice}d at market right now. Best rate I\u2019ve seen."`;
-          return {
-            ...state,
-            denarii: state.denarii - 30,
-            tavern: baseTavern,
-            chronicle: addChronicle(state.chronicle, tipText, state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "storage_deal": {
-          if (state.denarii < 50) return state;
-          if (prevTm.martaStoragePurchased) return state;
-          return {
-            ...state,
-            denarii: state.denarii - 50,
-            inventoryCapacity: (state.inventoryCapacity ?? 300) + 20,
-            tavern: { ...baseTavern, martaStoragePurchased: true },
-            chronicle: addChronicle(state.chronicle, "Marta arranged storage expansion. Inventory capacity +20.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        default:
-          return state;
-      }
-    }
-
-    case "TAVERN_MARTA_DECLINE_OFFER": {
-      if (state.phase !== "management") return state;
-      const { offerId: declinedMartaId } = action.payload ?? {};
-      const prevTmd = state.tavern ?? {};
-      const current = prevTmd.martaCurrentContent;
-      if (!isCompanionContent("marta", current) || current?.type !== "offer" ||
-          current.offerId !== declinedMartaId || current.resolution !== null) return state;
-      if ((prevTmd.martaOffersUsed ?? []).includes(declinedMartaId)) return state;
-      return {
-        ...state,
-        tavern: {
-          ...prevTmd,
-          martaOffersUsed: [...(prevTmd.martaOffersUsed ?? []), declinedMartaId],
-          martaCurrentContent: { ...current, resolution: "declined" },
-        },
-        chronicle: addChronicle(state.chronicle, "You declined Marta\u2019s trade offer.", state.season, state.year, state.turn, "action"),
-      };
-    }
-
-    // -----------------------------------------------------------------------
-    // OLD ALDRIC THE VETERAN
-    // -----------------------------------------------------------------------
-
-    case "TAVERN_ALDRIC_NEXT": {
-      if (state.phase !== "management") return state;
-      const tavern = state.tavern ?? {};
-      const current = tavern.aldricCurrentContent;
-      if (current?.type === "offer" && current.resolution === null &&
-          ALDRIC_TRAINING_OFFERS.find(offer => offer.id === current.offerId)?.canAccept(state)) return state;
-      const next = nextCompanionContent(
-        "aldric", random, tavern.aldricOffersUsed ?? [],
-        tavern.aldricAdviceRemaining ?? [], tavern.aldricStoriesRemaining ?? [],
-      );
-      if (!next) return state;
-      return {
-        ...state,
-        tavern: {
-          ...tavern,
-          aldricCurrentContent: next.content,
-          aldricAdviceRemaining: next.adviceRemaining,
-          aldricStoriesRemaining: next.storiesRemaining,
-        },
-      };
-    }
-
-    case "TAVERN_ALDRIC_SCRIBES_NOTE_SEEN": {
-      return {
-        ...state,
-        tavern: { ...state.tavern, aldricScribesNoteSeen: true },
-      };
-    }
-
-    case "TAVERN_ALDRIC_ACCEPT_OFFER": {
-      if (state.phase !== "management") return state;
-      const { offerId: aldricOfferId } = action.payload ?? {};
-      const prevTa2 = state.tavern ?? {};
-      const current = prevTa2.aldricCurrentContent;
-      if (!isCompanionContent("aldric", current) || current?.type !== "offer" ||
-          current.offerId !== aldricOfferId || current.resolution !== null) return state;
-      if ((prevTa2.aldricOffersUsed ?? []).includes(aldricOfferId)) return state;
-
-      const baseAldricTavern: GameSnapshot['tavern'] = {
-        ...prevTa2,
-        aldricOffersUsed: [...(prevTa2.aldricOffersUsed ?? []), aldricOfferId],
-        aldricCurrentContent: { ...current, resolution: "accepted" },
-      };
-
-      switch (aldricOfferId) {
-        case "basic_drill": {
-          if (state.denarii < 30 || (state.garrison ?? 0) === 0) return state;
-          return {
-            ...state,
-            denarii: state.denarii - 30,
-            tavern: { ...baseAldricTavern, aldricDrillActive: 3 },
-            chronicle: addChronicle(state.chronicle, "Old Aldric drilled the garrison. Defense readiness improved for 3 seasons.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "wall_inspection": {
-          if (state.denarii < 20) return state;
-          const garrison = state.garrison ?? 0;
-          const castleLvl = state.castleLevel ?? 1;
-          const defCount = (state.defenseUpgrades ?? []).length;
-          let report;
-          if (castleLvl === 1 && garrison < 5) {
-            report = "Aldric\u2019s report: Your defenses are dire. A wooden palisade and fewer than 5 men? Upgrade your castle and recruit immediately.";
-          } else if (castleLvl < 3 && defCount === 0) {
-            report = "Aldric\u2019s report: Stone walls would serve you better, and you\u2019ve no defensive installations. Consider a moat or arrow slits.";
-          } else if (garrison < 8) {
-            report = "Aldric\u2019s report: Your walls are adequate, but you need more men. A castle without soldiers is just an expensive barn.";
-          } else {
-            report = "Aldric\u2019s report: Your defenses are sound. Maintain garrison strength and upgrade when resources allow.";
-          }
-          return {
-            ...state,
-            denarii: state.denarii - 20,
-            tavern: baseAldricTavern,
-            chronicle: addChronicle(state.chronicle, report, state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "recruit_referral": {
-          if (state.denarii < 40 || getRecruitmentCapacity(state, "menAtArms") < 1) return state;
-          const refMil = state.military ?? getInitialMilitaryState(state.garrison ?? 0);
-          const refGarrison = { ...refMil.garrison, menAtArms: (refMil.garrison.menAtArms || 0) + 1 };
-          return {
-            ...state,
-            denarii: state.denarii - 40,
-            garrison: getTotalGarrison(refGarrison),
-            military: { ...refMil, garrison: refGarrison },
-            tavern: baseAldricTavern,
-            chronicle: addChronicle(state.chronicle, "Aldric recruited a seasoned man-at-arms for the garrison.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        case "war_story_lesson": {
-          if ((state.garrison ?? 0) === 0) return state;
-          return {
-            ...state,
-            population: state.population + 2,
-            tavern: baseAldricTavern,
-            chronicle: addChronicle(state.chronicle, "Aldric told war stories to the garrison. Morale spread through the village. Population +2.", state.season, state.year, state.turn, "action"),
-          };
-        }
-        default:
-          return state;
-      }
-    }
-
-    case "TAVERN_ALDRIC_DECLINE_OFFER": {
-      if (state.phase !== "management") return state;
-      const { offerId: declinedAldricId } = action.payload ?? {};
-      const prevTad = state.tavern ?? {};
-      const current = prevTad.aldricCurrentContent;
-      if (!isCompanionContent("aldric", current) || current?.type !== "offer" ||
-          current.offerId !== declinedAldricId || current.resolution !== null) return state;
-      if ((prevTad.aldricOffersUsed ?? []).includes(declinedAldricId)) return state;
-      return {
-        ...state,
-        tavern: {
-          ...prevTad,
-          aldricOffersUsed: [...(prevTad.aldricOffersUsed ?? []), declinedAldricId],
-          aldricCurrentContent: { ...current, resolution: "declined" },
-        },
-        chronicle: addChronicle(state.chronicle, "You declined Aldric\u2019s offer.", state.season, state.year, state.turn, "action"),
-      };
-    }
+    // Companion content, offer authority and settlement have one domain owner.
+    case "TAVERN_MARTA_NEXT":
+    case "TAVERN_MARTA_SCRIBES_NOTE_SEEN":
+    case "TAVERN_MARTA_ACCEPT_OFFER":
+    case "TAVERN_MARTA_DECLINE_OFFER":
+    case "TAVERN_ALDRIC_NEXT":
+    case "TAVERN_ALDRIC_SCRIBES_NOTE_SEEN":
+    case "TAVERN_ALDRIC_ACCEPT_OFFER":
+    case "TAVERN_ALDRIC_DECLINE_OFFER":
+      return reduceCompanionAction(state, action, random);
 
     // -----------------------------------------------------------------------
     // CHAPEL ACTIONS
