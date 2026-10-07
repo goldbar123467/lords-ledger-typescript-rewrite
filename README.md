@@ -32,7 +32,8 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Campaign driver (`56e53b7`) | 36 browser cases passed, including four native 40-turn victories and two famine losses followed by restart | Driver choices were unseeded; final completed-build campaign checks remain |
 | Market assertions (`bdc587d`) | 23 browser cases passed; native paid trades check state changes and exact save/reload bytes | Fresh grain trades do not establish all pricing and interface rules |
 | Visual audit (`607903d`) | Focused regressions passed; full visual suite: 50 passes and 13 failures | All 13 failures are missing Windows baselines; no new goldens were approved |
-| QA migration (`973def9`) | Typecheck, lint, and four diagnostic cases passed; independent reviews accepted typing and artifact isolation | Permissive error budgets, optional construction, and logging-only checks still require correction |
+| QA migration (`973def9`) | Typecheck, lint, and four diagnostic cases passed; independent reviews accepted typing and artifact isolation | Its scope covered typing/artifacts; assertion defects were addressed in the later QA correction |
+| QA assertion correction | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
@@ -55,8 +56,8 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The inclus
 
 ## Next rewrite sections
 
-1. Correct QA progress, error, and paid-construction assertions, including legitimate ending handling.
-2. Migrate `vite.config.js`, `eslint.config.js`, `playtest.js`, and `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
+1. Migrate `vite.config.js`, `eslint.config.js`, `playtest.js`, and `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
+2. Strengthen remaining QA transport filtering and report emission on early failures.
 3. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
 4. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 5. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.

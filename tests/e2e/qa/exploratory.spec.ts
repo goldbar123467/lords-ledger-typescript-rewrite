@@ -4,13 +4,15 @@
  * screenshots for UI review and logs any runtime errors.
  */
 
-import { test } from "@playwright/test";
-import { startGame, navigateToTab, dismissOverlay, playOneTurn } from "../helpers.ts";
+import { test, expect } from "@playwright/test";
+import { startGame, navigateToTab, dismissOverlay } from "../helpers.ts";
 // Import the authoritative tab list so spec tours stay in sync with the UI.
 // A rename in data/tabs.ts automatically flows into this spec rather than
 // silently breaking on stale labels (B-40). Importing the data module
 // keeps this independent of the React view and its JSX.
+import {playQaTurn} from '../qaProgress.ts';
 import { TAB_CONFIG } from "../../../src/data/tabs.ts";
+import {writeFileSync} from 'node:fs';
 
 test.describe("Exploratory QA cycle", () => {
   test.describe.configure({ timeout: 120_000 });
@@ -41,15 +43,18 @@ test.describe("Exploratory QA cycle", () => {
     // Go back to Estate, simulate 3 turns, capture
     await navigateToTab(page, "Estate");
     for (let i = 0; i < 3; i++) {
-      await playOneTurn(page);
+      expect(await playQaTurn(page, {}), `Exploratory turn ${i + 1} failed to continue`).toBe(true);
       await page.screenshot({ path: info.outputPath(`after-turn-${i + 1}.png`), fullPage: true });
     }
 
-    await info.attach('exploratory-errors', {body: JSON.stringify(errors, null, 2), contentType: 'application/json'});
+    const errorsPath = info.outputPath('exploratory-errors.json');
+    writeFileSync(errorsPath, JSON.stringify(errors, null, 2));
+    await info.attach('exploratory-errors', {path: errorsPath, contentType: 'application/json'});
 
     // Report errors via console.log for log inspection
     if (errors.length) {
       console.log("EXPLORATORY_ERRORS:", JSON.stringify(errors, null, 2));
     }
+    expect(errors).toEqual([]);
   });
 });

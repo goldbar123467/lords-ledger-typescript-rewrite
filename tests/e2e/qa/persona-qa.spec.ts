@@ -7,8 +7,9 @@
  */
 
 import {test, expect, type Page, type TestInfo} from '@playwright/test';
-import {startGame, dismissOverlay, playOneTurn, type TurnDiagnostic, type TurnExitReason} from '../helpers.ts';
+import {startGame, dismissOverlay, type TurnDiagnostic, type TurnExitReason} from '../helpers.ts';
 import {writeFileSync} from 'node:fs';
+import {playQaTurn, saveQaSnapshot} from '../qaProgress.ts';
 
 type Persona = 'Noob' | 'Avg' | 'Goat';
 interface QaError {type: 'pageerror' | 'console'; msg: string;}
@@ -111,14 +112,14 @@ test.describe("Persona QA", () => {
       const tab = tabs[Math.floor(Math.random() * tabs.length)];
       if (tab === undefined) throw new Error('Random tab index is out of bounds.');
       const btn = page.locator(`button[aria-label*="${tab}"]`).first();
-      if (await btn.isVisible({ timeout: 500 }).catch(() => false)) {
-        await btn.click();
-        await page.waitForTimeout(200);
-        await dismissOverlay(page);
-      }
+      await expect(btn).toBeVisible();
+      await btn.click();
+      await page.waitForTimeout(200);
+      await dismissOverlay(page);
       const diag: TurnDiagnostic = {};
-      const ok = await playOneTurn(page, diag);
+      const ok = await playQaTurn(page, diag);
       if (!ok) {
+        if (diag.reason === 'game_over' || diag.reason === 'victory') break;
         const snapshot = await captureStateSnapshot(page);
         bugs.push({
           persona: "Noob",
@@ -134,7 +135,8 @@ test.describe("Persona QA", () => {
 
     await page.screenshot({ path: info.outputPath('qa-noob.png'), fullPage: true });
     await record({ persona: "Noob", errors, bugs }, info, runStart);
-    expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(5);
+    expect(errors).toEqual([]);
+    expect(bugs).toEqual([]);
   });
 
   test("Avg Gamer — builds and simulates", async ({ page }, info) => {
@@ -148,25 +150,35 @@ test.describe("Persona QA", () => {
     await startGame(page, "normal");
     const bugs: PersonaBug[] = [];
 
-    // Try to build a Strip Farm
-    const estate = page.locator('button[aria-label*="Estate"]').first();
-    if (await estate.isVisible({ timeout: 1000 }).catch(() => false)) await estate.click();
-    await page.waitForTimeout(300);
+    // A real paid farm is required before the management profile begins.
+    await page.getByRole('button', {name: /Estate tab/}).click();
     await dismissOverlay(page);
-    const build = page.getByText("Strip Farm", { exact: false }).first();
-    if (await build.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await build.click().catch(() => {});
-      await page.waitForTimeout(200);
-      const buildBtn = page.locator("button").filter({ hasText: /^Build$/ }).first();
-      if (await buildBtn.isVisible({ timeout: 500 }).catch(() => false)) {
-        await buildBtn.click().catch(() => {});
-      }
-    }
-
+    const beforeBuild = await saveQaSnapshot(page);
+    const farmsBefore = beforeBuild.state.buildings.filter(building =>
+      (typeof building === 'string' ? building : building.type) === 'strip_farm');
+    expect(farmsBefore).toHaveLength(0);
+    const build = page.getByTestId('build-card-strip_farm').getByRole('button', {name: 'Build (80d)', exact: true});
+    await expect(build).toBeEnabled();
+    await build.click();
+    await dismissOverlay(page);
+    const built = await saveQaSnapshot(page);
+    expect(built.state.denarii).toBe(beforeBuild.state.denarii - 80);
+    expect(built.state.buildings).toHaveLength(beforeBuild.state.buildings.length + 1);
+    const farm = built.state.buildings.find(building =>
+      (typeof building === 'string' ? building : building.type) === 'strip_farm');
+    if (!farm || typeof farm === 'string' || !farm.instanceId) throw new Error('Paid farm instance is missing.');
+    expect(farm.condition).toBe(100);
+    expect(built.state.rngState).toBe(beforeBuild.state.rngState);
+    await expect(page.getByTestId(`built-building-${farm.instanceId}`)).toBeVisible();
+    await page.screenshot({path: info.outputPath('paid-farm.png'), animations: 'disabled'});
+    await page.reload();
+    await page.getByRole('button', {name: 'Load saved game', exact: true}).click();
+    expect((await saveQaSnapshot(page)).raw).toBe(built.raw);
     for (let i = 0; i < 8; i++) {
       const diag: TurnDiagnostic = {};
-      const ok = await playOneTurn(page, diag);
+      const ok = await playQaTurn(page, diag);
       if (!ok) {
+        if (diag.reason === 'game_over' || diag.reason === 'victory') break;
         const snapshot = await captureStateSnapshot(page);
         bugs.push({
           persona: "Avg",
@@ -182,7 +194,8 @@ test.describe("Persona QA", () => {
 
     await page.screenshot({ path: info.outputPath('qa-avg.png'), fullPage: true });
     await record({ persona: "Avg", errors, bugs }, info, runStart);
-    expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(3);
+    expect(errors).toEqual([]);
+    expect(bugs).toEqual([]);
   });
 
   test("Goat Gamer — methodical full playthrough attempt", async ({ page }, info) => {
@@ -195,8 +208,9 @@ test.describe("Persona QA", () => {
 
     for (let i = 0; i < 12; i++) {
       const diag: TurnDiagnostic = {};
-      const ok = await playOneTurn(page, diag);
+      const ok = await playQaTurn(page, diag);
       if (!ok) {
+        if (diag.reason === 'game_over' || diag.reason === 'victory') break;
         const snapshot = await captureStateSnapshot(page);
         bugs.push({
           persona: "Goat",
@@ -212,6 +226,7 @@ test.describe("Persona QA", () => {
 
     await page.screenshot({ path: info.outputPath('qa-goat.png'), fullPage: true });
     await record({ persona: "Goat", errors, bugs }, info, runStart);
-    expect(errors.filter(e => e.type === "pageerror").length).toBeLessThan(3);
+    expect(errors).toEqual([]);
+    expect(bugs).toEqual([]);
   });
 });

@@ -12,6 +12,8 @@ and evidence gates. Rewrite sections are committed on the independent
 - Config: `playwright.config.ts` (Chromium and gameplay projects, isolated Vite server on 127.0.0.1:5182 with no reuse).
 - Helpers: `tests/e2e/helpers.ts` — `startGame()`, `navigateToTab()`,
   `playOneTurn()`, `dismissOverlay()`, `dismissTutorial()`.
+- QA progression: `tests/e2e/qaProgress.ts` verifies native saved calendar
+  movement after continued turns and native ending UI without attempting a terminal Save.
 - Existing specs:
   - `tests/e2e/gameplay/*.spec.ts` — gameplay / flow
   - `tests/e2e/visual/*.spec.ts` — screenshot / Unicode / icon audits
@@ -33,26 +35,35 @@ and evidence gates. Rewrite sections are committed on the independent
 ## Personas (3 roles)
 
 ### 1. Noob
+
 - Current driver: Easy start, up to six turns, random Estate/Map/Market/Military/
-  People/Chapel visits and shared turn progression.
+  People/Chapel visits with mandatory selected controls and checked turn progression.
 - Intended review: novice exploration without crashes or blocked progression.
 
 ### 2. Avg Gamer
-- Current driver: Normal start, optional Strip Farm attempt and up to eight turns.
-- Its old exact `Build` selector can miss the current cost-labelled action;
-  the diagnostic test does not prove that construction happened.
+
+- Current driver: Normal start, mandatory paid 80d Strip Farm purchase and up to eight turns.
+- It verifies exact cash payment, one new owned farm at condition 100, unchanged
+  RNG, the native built card, and exact saved-byte reload before seasonal play.
 - Intended review: paid economy construction and ordinary seasonal management.
 
 ### 3. Goat Gamer
+
 - Current driver: Hard start and up to twelve turns using shared turn progression.
 - It does not implement an optimal strategy or run a full forty-turn campaign.
 - Intended review: difficult campaigns, strategic play and natural synergy acquisition.
 
-The current persona assertions allow fewer than five Noob or three Avg/Goat page
-errors and do not reject recorded progression bugs. Exploratory QA logs/attaches
-errors and ignores the turn-helper result. Transport filtering can exclude genuine
-resource failures. Treat these as diagnostic policies pending repair; a green
-execution is not strict QA acceptance.
+Each persona now rejects collected errors and recorded progression bugs. Exploratory
+QA requires all three turns to continue and persists its error JSON before rejecting
+collected errors. Normal progression must save the next turn, season and year;
+recognized endings require native outcome controls and final-resource UI. Terminal
+screens cannot save, so the stored pre-turn snapshot is not final state evidence.
+
+`tests/e2e/qa/qa-progress.spec.ts` covers phone/desktop managed victory and famine
+transitions plus a deliberately blocked Simulate action. These are fixture regressions,
+not natural campaigns. Transport filtering can still exclude genuine resource failures;
+exceptions before report emission can still prevent a findings file. Random persona
+choices and short 6/8/12 bounds do not establish deterministic replay or full QA acceptance.
 
 ## Bug Logging Format (backlog.md)
 
