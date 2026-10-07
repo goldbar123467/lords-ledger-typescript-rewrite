@@ -102,7 +102,7 @@ export function reduceMarketAction(state: GameSnapshot, action: GameCommand, ran
           quantity > remainingMarketSupply(state.market, state.turn, resource))) return state;
       const reputation = state.market?.reputation?.[merchantId] ?? 50;
       const currentOffer = openingHaggleOffer(fairPrice, merchant.difficulty, mode, reputation);
-      const fill = Math.min(quantity, mode === 'sell' ? (state.inventory[resource] || 0) : quantity);
+      const fill = Math.min(quantity, mode === 'sell' ? Math.floor(state.inventory[resource] || 0) : quantity);
       if (fill <= 0) return state;
       return {...state, market: {...state.market, activeHaggle: {
         merchantId, mode, resource, quantity: fill, fairPrice, currentOffer, playerCounter: null,

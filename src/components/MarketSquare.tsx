@@ -7,6 +7,7 @@
  */
 
 import {remainingMarketSupply} from "../engine/marketSupply.ts";
+import {isPositiveQuantity} from '../engine/transactionValidation.ts';
 import type { SavedMarketEvent, SavedMarketState } from '../save/savedMarket.ts';
 import type {ForgeSaveState} from "../engine/forgeState.ts";
 import { useState, useMemo, useLayoutEffect } from "react";
@@ -434,8 +435,16 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
       : marketTradePrice(marketPrices, state.season, merchant.id, resource, tradeMode)) || 0;
   }
 
+  function haggleQuantityLimit(resource: MarketResource, tradeMode: HaggleMode) {
+    return Math.min(1_000_000, tradeMode === 'sell' ? Math.floor(inventory[resource] || 0)
+      : Math.min(remainingMarketSupply(state.market, state.turn, resource),
+        Math.floor(denarii / (getEffectivePrice(resource, 'buy') || 1))));
+  }
+
+  const maxQuantity = selectedResource && mode ? haggleQuantityLimit(selectedResource, mode) : 0;
+
   function startHaggle() {
-    if (!selectedResource || !mode || quantity <= 0) return;
+    if (!selectedResource || !mode || !isPositiveQuantity(quantity) || quantity > maxQuantity) return;
     dispatch({
       type: "HAGGLE_START",
       payload: { merchantId: merchant.id, resource: selectedResource, quantity, mode },
@@ -585,13 +594,14 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                         <span className="text-sm font-semibold" style={{ color: "#c8b090" }}>{cfg.label}</span>
                         <span className="text-xs ml-2" style={{ color: "#6a5a42" }}>({qty} in stock)</span>
                         {isPremium && <span className="text-xs ml-1" style={{ color: "#c4a24a" }}>{"\u2605"} Premium</span>}
+                        {qty > 0 && qty < 1 && <p className="text-sm" style={{color: '#c8b090'}}>Haggling needs 1 whole unit. Sell the remainder with Quick Trade.</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold" title="Quick sale price including earned bonuses" style={{ fontFamily: "Cinzel, serif", color: "#64ad50" }}>{price}d</span>
-                      {!noHaggling && qty > 0 && (
+                      {!noHaggling && qty >= 1 && (
                         <button
-                          onClick={() => { setSelectedResource(resource); setQuantity(Math.min(5, qty)); }}
+                          onClick={() => { setSelectedResource(resource); setQuantity(Math.min(5, haggleQuantityLimit(resource, 'sell'))); }}
                           className="px-3 py-1.5 rounded text-xs font-bold uppercase"
                           style={{
                             fontFamily: "Cinzel, serif",
@@ -722,24 +732,23 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
               <h5 className="text-sm font-bold mb-2" style={{ fontFamily: "Cinzel, serif", color: "#c4a24a" }}>
                 Haggle: {resourceConfig[selectedResource]?.label}
               </h5>
-              <div className="flex items-center gap-3 mb-3">
+              <div role="group" aria-label="Haggle quantity controls" className="flex items-center gap-3 mb-3">
                 <span className="text-xs" style={{ color: "#a89070" }}>Quantity:</span>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    aria-label="Decrease haggle quantity"
+                    disabled={quantity <= 1 || maxQuantity < 1}
+                    onClick={() => setQuantity(Math.min(maxQuantity, Math.max(1, quantity - 1)))}
                     className="w-8 h-8 rounded text-sm font-bold"
                     style={{ backgroundColor: "#231e16", border: "1px solid #6a5a42", color: "#c8b090", cursor: "pointer" }}
                   >
                     -
                   </button>
-                  <span className="w-10 text-center font-bold" style={{ fontFamily: "Cinzel, serif", color: "#e8c44a" }}>{quantity}</span>
+                  <span data-testid="haggle-quantity" className="w-10 text-center font-bold" style={{ fontFamily: "Cinzel, serif", color: "#e8c44a" }}>{quantity}</span>
                   <button
-                    onClick={() => {
-                      const max = mode === "sell"
-                        ? (state.inventory[selectedResource] || 0)
-                        : Math.min(remainingMarketSupply(state.market,state.turn,selectedResource),Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1)));
-                      setQuantity(Math.min(max, quantity + 1));
-                    }}
+                    aria-label="Increase haggle quantity"
+                    disabled={quantity >= maxQuantity || maxQuantity < 1}
+                    onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
                     className="w-8 h-8 rounded text-sm font-bold"
                     style={{ backgroundColor: "#231e16", border: "1px solid #6a5a42", color: "#c8b090", cursor: "pointer" }}
                   >
@@ -749,12 +758,8 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
                 {[1, 5, 10].map(amt => (
                   <button
                     key={amt}
-                    onClick={() => {
-                      const max = mode === "sell"
-                        ? (state.inventory[selectedResource] || 0)
-                        : Math.min(remainingMarketSupply(state.market,state.turn,selectedResource),Math.floor(denarii / (getEffectivePrice(selectedResource, "buy") || 1)));
-                      setQuantity(Math.min(max, amt));
-                    }}
+                    disabled={maxQuantity < 1}
+                    onClick={() => setQuantity(Math.min(maxQuantity, amt))}
                     className="px-2 py-1 rounded text-xs"
                     style={{ backgroundColor: "#231e16", border: "1px solid #6a5a42", color: "#a89070", cursor: "pointer" }}
                   >
@@ -765,13 +770,17 @@ function MerchantStall({ merchant, isForeign, state, dispatch, onBack, marketEve
               <p className="text-xs mb-3" style={{ color: "#6a5a42" }}>
                 Haggle reference: {marketTradePrice(marketPrices, state.season, merchant.id, selectedResource, mode) ?? 0}d each {"\u2022"} Total: {(marketTradePrice(marketPrices, state.season, merchant.id, selectedResource, mode) ?? 0) * quantity}d
               </p>
+              {quantity > maxQuantity && <p role="status" className="text-sm mb-3" style={{color: '#c8b090'}}>
+                {maxQuantity < 1 ? 'No whole units are available for this bargain. Cancel to change the trade.'
+                  : `Only ${maxQuantity} whole ${maxQuantity === 1 ? 'unit is' : 'units are'} available. Choose a smaller quantity.`}
+              </p>}
               {mode === "sell" && getEffectivePrice(selectedResource, mode) > (marketTradePrice(marketPrices, state.season, merchant.id, selectedResource, mode) ?? 0) && (
                 <p className="text-xs mb-3" style={{ color: "#a89070" }}>Quick sale includes your earned trade bonuses; haggling begins at the seasonal quote.</p>
               )}
               <div className="flex gap-2">
                 <button
                   onClick={startHaggle}
-                  disabled={quantity<=0||(mode==="buy"&&quantity>remainingMarketSupply(state.market,state.turn,selectedResource))}
+                  disabled={!isPositiveQuantity(quantity) || quantity > maxQuantity}
                   className="flex-1 py-2 rounded text-sm font-bold uppercase tracking-wider"
                   style={{
                     fontFamily: "Cinzel, serif",
@@ -1100,7 +1109,7 @@ function QuickTradeView({ state, onSell, onBuy, onBack }: {
                       style={{ fontFamily: "Cinzel, serif", backgroundColor: qty >= amt ? "#4a8a3a" : "#2a2318", border: qty >= amt ? "1px solid #2a5a2a" : "1px solid #3a3228", color: qty >= amt ? "#e8c44a" : "#6a5a42", cursor: qty >= amt ? "pointer" : "not-allowed" }}
                     >{amt}</button>
                   ))}
-                  <button disabled={qty <= 0} onClick={() => onSell(resource, qty)}
+                  <button disabled={qty <= 0} onClick={() => onSell(resource, Math.ceil(qty))}
                     aria-label={`Sell all ${qty} ${cfg?.label || resource} for ${marketSaleProceeds(basePrice, qty, resource, state.blacksmith)}d`}
                     className="market-quick-action min-w-[44px] min-h-[44px] px-2 py-1 rounded text-xs font-semibold"
                     style={{ fontFamily: "Cinzel, serif", backgroundColor: qty > 0 ? "#4a8a3a" : "#2a2318", border: qty > 0 ? "1px solid #2a5a2a" : "1px solid #3a3228", color: qty > 0 ? "#e8c44a" : "#6a5a42", cursor: qty > 0 ? "pointer" : "not-allowed" }}

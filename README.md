@@ -40,13 +40,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | QA diagnostics (`fbd8c8f`) | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
 | Companion consolidation (`b9d43c5`) | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | Selecting an offer from an accepted save with omitted history could produce an unsavable state. The next checkpoint fixes that inherited defect; complete save closure remains unproved |
 | Companion history correction (`8f866b1`) | 779 unit tests, typecheck, lint, and build passed; both native regressions failed before and passed after. Independent tester passed four browser cases and 46 write/read/resave cases; grader verified existing-state parity, closure and no-op behavior | G-CA01 is closed for both companions. Successful selection initializes omitted history without changing existing receipts or RNG behavior; broader runtime, interface and campaign gates remain |
-| Market consolidation | 781 unit tests, typecheck, lint, build and 16 browser cases passed; 40,672 old/new state results and 37,552 save outputs matched. Independent tester passed 11 browser cases; both reviewers accepted bounded preservation | G-MA01 remains open: fractional stock can create an unsavable fractional pending bargain. Posted fractional fills remain supported; full Market, runtime and interface acceptance is pending |
+| Market consolidation (`d76f593`) | 781 unit tests, typecheck, lint, build and 16 browser cases passed; 40,672 old/new state results and 37,552 save outputs matched. Independent tester passed 11 browser cases; both reviewers accepted bounded preservation | The inherited fractional pending-bargain defect found here is fixed in the next checkpoint; full Market, runtime and interface acceptance remains pending |
+| Fractional Market correction | 783 unit tests, typecheck, lint, build and eight browser cases passed at phone/laptop sizes. Independent tester passed nine cases; grader passed four and verified admitted-state save closure | G-MA01/G-MA02 are closed within scope. Bargains use whole units, fractional leftovers remain sellable, and stale quantity choices cannot start a deal. Wider numeric, UI and campaign gates remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,734 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines, including its new domain module; line totals also reflect comments and formatting. Its inclusive subtotal was **80,400 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,743 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; the fractional correction added nine. Line totals also reflect comments and formatting. The current inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -66,7 +67,7 @@ Production text measured **44,734 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Repair fractional pending-haggle quantity and save closure while preserving posted fractional fills, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
+1. Audit raid/event continuation and terminal command guards next, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
