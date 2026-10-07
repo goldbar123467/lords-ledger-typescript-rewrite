@@ -16,6 +16,7 @@ import type { SavedWatchtowerState } from '../save/savedWatchtower.ts';
 import type { ChapelSaveState } from './chapelState.ts';
 import type { ForgeSaveState } from './forgeState.ts';
 import type { HallSaveState } from './hallAudienceState.ts';
+import type { AudienceReceipts } from './audienceActions.ts';
 
 export interface CauseChainEntry {
   turn: number; season: Season; year: number; summary: string;
@@ -59,9 +60,9 @@ export interface InitialMarketState {
 type InitialFields<T, Nullable extends keyof T> = {
   [K in keyof Required<T>]: K extends Nullable ? Required<T>[K] : NonNullable<T[K]>;
 };
-// The response receipt is created only after Henrik's audience, not at construction.
-type InitialHallState = InitialFields<Omit<HallSaveState, 'henrikWelcome'>, 'reputationTrack' | 'pendingHallEvent'>
-  & Pick<HallSaveState, 'henrikWelcome'>;
+// Response receipts are created only after their audiences, not at construction.
+type InitialHallState = InitialFields<Omit<HallSaveState, keyof AudienceReceipts>, 'reputationTrack' | 'pendingHallEvent'>
+  & AudienceReceipts;
 type InitialChapelState = InitialFields<ChapelSaveState,
   'anselmGreeting' | 'caedmonGreeting' | 'currentDilemma' | 'dilemmaResult' | 'titheResponse' | 'msActiveSymbol' | 'msFact'>;
 type InitialForgeState = InitialFields<ForgeSaveState, 'marketPrices' | 'activeSupplyEvent'>;

@@ -5,6 +5,7 @@ import encounters from '../data/audience.ts';
 import disputes, { type DisputeId, type DisputeRuling } from '../data/disputes.ts';
 import { SEASON_INFO } from '../data/economy.ts';
 import type { HallMeterEffects } from '../data/decrees.ts';
+import {audienceReceipts, type AudienceReceipts} from './audienceActions.ts';
 
 const meterKeys = ['people', 'treasury', 'church', 'military'] as const;
 const logTypes = ['dispute', 'audience', 'decree', 'decree_revoke', 'council', 'feast', 'crisis', 'peak'] as const;
@@ -19,11 +20,9 @@ export interface HallLogEntry {
   consequences?: Partial<HallMeterEffects> | null;
 }
 /** Consumed audience/log fields only. Other Hall domains are validated separately. */
-export interface HallAudienceSaveState {
+export interface HallAudienceSaveState extends AudienceReceipts {
   meters: HallMeterEffects;
   audienceResolved?: string[] | null;
-  /** The recorded Henrik response permitted trade; omitted older responses are unknown. */
-  henrikWelcome?: boolean | null;
   stewardTrust?: number | null;
   hallLog?: HallLogEntry[] | null;
 }
@@ -75,7 +74,7 @@ function logEntry(value: unknown): boolean {
 /** Reject damaged consumed shapes without canonicalizing historical optional defaults. */
 export function validateHallAudienceState(value: unknown): string | null {
   if (!record(value)) return 'Save Great Hall state is invalid.';
-  if (!serializedField(value, 'meters') || ['audienceResolved', 'henrikWelcome', 'stewardTrust', 'hallLog'].some(key =>
+  if (!serializedField(value, 'meters') || ['audienceResolved', ...audienceReceipts.map(entry => entry.field), 'stewardTrust', 'hallLog'].some(key =>
       key in value && !serializedField(value, key))) return 'Save Great Hall serialized fields are invalid.';
   const meters = value.meters;
   if (!record(meters) || !meterKeys.every(key => serializedField(meters, key) &&
@@ -85,10 +84,13 @@ export function validateHallAudienceState(value: unknown): string | null {
   if (resolved != null && !dense(resolved, id => typeof id === 'string' && audienceIds.has(id))) {
     return 'Save Great Hall audience history is invalid.';
   }
-  if (value.henrikWelcome != null && (typeof value.henrikWelcome !== 'boolean' ||
-      !Array.isArray(resolved) || !resolved.includes('aud_002') ||
-      value.henrikWelcome !== (record(value.compoundFlags) && value.compoundFlags.welcomedHenrik === true))) {
-    return 'Save Great Hall Henrik receipt is invalid.';
+  for (const receipt of audienceReceipts) {
+    const decision = value[receipt.field];
+    if (decision != null && (typeof decision !== 'boolean' ||
+        !Array.isArray(resolved) || !resolved.includes(receipt.encounterId) ||
+        decision !== (record(value.compoundFlags) && value.compoundFlags[receipt.flag] === true))) {
+      return `Save Great Hall ${receipt.field} receipt is invalid.`;
+    }
   }
   const trust = value.stewardTrust;
   if (trust != null && (!finite(trust) || trust < 0 || trust > 100)) return 'Save Great Hall steward trust is invalid.';

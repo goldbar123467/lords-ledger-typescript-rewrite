@@ -8,6 +8,7 @@
 
 import type { HallMeterEffects } from './decrees.ts';
 import type { HallLogEntry } from '../engine/hallAudienceState.ts';
+import {audienceReceipts, type AudienceReceipts} from '../engine/audienceActions.ts';
 
 type MeterId = keyof HallMeterEffects;
 const reputationTrackIds = ['merciful', 'stern', 'wealthy', 'pious', 'militant', 'balanced'] as const;
@@ -31,8 +32,7 @@ export interface HallDialogueState {
   };
 }
 export interface HallPitchState {
-  greatHall?: {
-    henrikWelcome?: boolean | null;
+  greatHall?: AudienceReceipts & {
     meters?: HallMeterEffects | null;
     rulingHistory?: readonly HallRuling[] | null;
     disputesResolved?: number | null;
@@ -519,12 +519,13 @@ export const COMPOUND_RULES = [
 export type CompoundFlag = typeof COMPOUND_RULES[number]['flag'];
 
 export function computeCompoundFlags(rulingHistory: readonly HallRuling[] | null | undefined,
-  henrikWelcome?: boolean | null): Partial<Record<CompoundFlag, true>> {
+  receipts: Readonly<AudienceReceipts> = {}): Partial<Record<CompoundFlag, true>> {
   const history = rulingHistory ?? [];
   const flags: Partial<Record<CompoundFlag, true>> = {};
   for (const rule of COMPOUND_RULES) {
-    const active = rule.flag === 'welcomedHenrik' && typeof henrikWelcome === 'boolean'
-      ? henrikWelcome : history.length > 0 && rule.check(history);
+    const receipt = audienceReceipts.find(entry => entry.flag === rule.flag);
+    const decision = receipt ? receipts[receipt.field] : undefined;
+    const active = typeof decision === 'boolean' ? decision : history.length > 0 && rule.check(history);
     if (active) {
       flags[rule.flag] = true;
     }
@@ -588,7 +589,7 @@ export function exportPitchData(state: HallPitchState, prestige: 0 | 3 = 0) {
     hallLog: hall.hallLog || [],
 
     // Compound consequences achieved
-    compoundFlags: computeCompoundFlags(history, hall.henrikWelcome),
+    compoundFlags: computeCompoundFlags(history, hall),
   };
 }
 

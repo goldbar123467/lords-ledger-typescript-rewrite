@@ -58,7 +58,7 @@ import { planMilitaryAction } from './militaryActions.ts';
 import { isPositivePrice } from "./transactionValidation.ts";
 import { planChapelAction } from "./chapelActions.ts";
 import { planPeopleAction } from "./peopleActions.ts";
-import { planAudienceResponse } from "./audienceActions.ts";
+import { planAudienceResponse, type AudienceReceipts } from "./audienceActions.ts";
 import {getConstructionCost} from './forgeTools.ts';
 import BUILDINGS from "../data/buildings.ts";
 import {
@@ -711,7 +711,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       };
 
       // Phase 5: Recompute compound flags
-      const advanceCompoundFlags = computeCompoundFlags(prevHallAdvance.rulingHistory || [], prevHallAdvance.henrikWelcome);
+      const advanceCompoundFlags = computeCompoundFlags(prevHallAdvance.rulingHistory || [], prevHallAdvance);
 
       // Phase 5: Check for crisis/peak events at season boundary
       const advMeters = prevHallAdvance.meters || { people: 50, treasury: 50, church: 50, military: 50 };
@@ -1146,7 +1146,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const newTrust = Math.max(0, Math.min(100, (prevHall.stewardTrust ?? 50) + trustDelta));
 
       // Phase 5: Compound flags and hall log
-      const newCompoundFlags = computeCompoundFlags(newHistory, prevHall.henrikWelcome);
+      const newCompoundFlags = computeCompoundFlags(newHistory, prevHall);
       const disputeLogEntry: HallLogEntry = {
         type: "dispute",
         text: `Ruled on dispute: "${decree}"`,
@@ -1216,13 +1216,13 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const plan = planAudienceResponse(state, action.payload);
       if (!plan) return state;
       const prevHall = state.greatHall;
-      let henrikPatch: Pick<HallSaveState, 'henrikWelcome' | 'compoundFlags'> = {};
-      if (plan.encounterId === 'aud_002') {
-        const henrikWelcome = plan.consequences.treasury > 0;
+      let receiptPatch: AudienceReceipts & Pick<HallSaveState, 'compoundFlags'> = {};
+      if (plan.receipt) {
+        const {field, flag, value} = plan.receipt;
         const compoundFlags = {...prevHall.compoundFlags};
-        if (henrikWelcome) compoundFlags.welcomedHenrik = true;
-        else delete compoundFlags.welcomedHenrik;
-        henrikPatch = {henrikWelcome, compoundFlags};
+        if (value) compoundFlags[flag] = true;
+        else delete compoundFlags[flag];
+        receiptPatch = {[field]: value, compoundFlags};
       }
 
       // Phase 5: Hall log
@@ -1241,7 +1241,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
           audienceResolved: [...(prevHall.audienceResolved ?? []), plan.encounterId],
           stewardTrust: plan.stewardTrust,
           hallLog: [...(prevHall.hallLog || []), audLogEntry],
-          ...henrikPatch,
+          ...receiptPatch,
         },
         chronicle: addChronicle(
           state.chronicle,
