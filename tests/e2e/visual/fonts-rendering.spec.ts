@@ -68,7 +68,10 @@ test.describe("Font Loading", () => {
 
     const hasGoogleFonts = await page.evaluate(() => {
       const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
-      return links.some((link) => link.href.includes("fonts.googleapis.com"));
+      return links.some((link) => {
+        if (!(link instanceof HTMLLinkElement)) throw new TypeError('Expected a stylesheet link.');
+        return link.href.includes("fonts.googleapis.com");
+      });
     });
 
     expect(hasGoogleFonts).toBe(true);
@@ -108,7 +111,8 @@ test.describe("Font Visual Snapshots", () => {
     const labelFont = await page.evaluate(() => {
       const labels = document.querySelectorAll(".font-heading");
       if (labels.length === 0) return null;
-      return window.getComputedStyle(labels[0]).fontFamily;
+      const first = labels.item(0);
+      return first ? window.getComputedStyle(first).fontFamily : null;
     });
 
     expect(labelFont).toContain("Cinzel");

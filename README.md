@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/` or `tests/e2e/gameplay/`. All 131 gameplay spec files are TypeScript. Eight visual/QA test files and four root configuration/playtest scripts still use JavaScript. Reducer simplification and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/`, `tests/e2e/gameplay/` or `tests/e2e/visual/`. All 131 gameplay specs and six visual spec files are TypeScript. Two QA test files and four root configuration/playtest scripts still use JavaScript. Reducer simplification and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -15,6 +15,8 @@ An incremental rewrite of The Lord's Ledger, a React game about managing a medie
 The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. CSS, HTML, JSON, and media remain in their native formats.
 
 ## Latest verified checkpoint
+
+The six visual specs now have checked DOM, scanner and report contracts. Typecheck and lint pass; all 13 Linux golden images retain their exact bytes under the renamed snapshot directories. Independent reviews accept the typing scope. **The visual suite still fails: 40 passes and 14 failures**, comprising 13 missing Windows baselines and an inherited inactive-tab color expectation (**G-VT01**). The inherited Unicode scanner also overcounts supplementary emoji (**G-VT02**). No baselines were generated or assertions weakened; these findings and full visual acceptance remain open.
 
 The final eight JavaScript gameplay specs now have checked Playwright, resource, diagnostic and playthrough-result contracts. That migration passed typecheck, lint and **45 focused browser cases**, with 718 tests discovered across 130 files. Independent tester and grader reviews accept this migration scope. Shipping source and all nine production assets are unchanged; this section does not claim a new unit-suite or production-build run.
 
@@ -68,7 +70,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,913 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,974 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -139,9 +141,9 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Finish the eight visual/QA tests and four root JavaScript scripts, then remove the temporary JavaScript compiler allowance.
+1. Correct the inherited visual-test palette and Unicode scanner issues; finish two QA tests and four root JavaScript scripts, then remove the temporary JavaScript compiler allowance.
 2. Continue decomposing season and subsystem orchestration, and complete remaining state and command validation.
-3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
+3. Complete nested save validation, deterministic replay, interface and accessibility review, approved platform visual baselines, and production-code reduction.
 4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
 
 ## Rewrite records

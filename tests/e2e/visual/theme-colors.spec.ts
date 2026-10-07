@@ -50,6 +50,7 @@ test.describe("Title Screen Theme", () => {
     });
 
     expect(cardStyles).not.toBeNull();
+    if (!cardStyles) throw new Error('Title card styles are missing.');
     expect(cardStyles.bg).toBe(THEME.bgDark);
     expect(cardStyles.borderColor).toBe(THEME.gold);
   });
@@ -133,12 +134,14 @@ test.describe("Management Phase Theme", () => {
     // At least one tab should be active
     const activeTab = tabStyles.find((t) => t.isActive);
     expect(activeTab, "should have an active tab").toBeTruthy();
+    if (!activeTab) throw new Error('Active tab styles are missing.');
     expect(activeTab.color).toBe(THEME.gold);
     expect(activeTab.bg).toBe(THEME.bgCard);
 
     // Inactive tabs should use dark tan
     const inactiveTab = tabStyles.find((t) => !t.isActive);
     expect(inactiveTab, "should have inactive tabs").toBeTruthy();
+    if (!inactiveTab) throw new Error('Inactive tab styles are missing.');
     expect(inactiveTab.color).toBe(THEME.tanDark);
   });
 
@@ -157,6 +160,7 @@ test.describe("Management Phase Theme", () => {
     });
 
     expect(btnStyles).not.toBeNull();
+    if (!btnStyles) throw new Error('Season button styles are missing.');
     expect(btnStyles.color).toBe(THEME.goldBright);
     expect(btnStyles.borderColor).toBe(THEME.gold);
     // Background should be a gradient containing royal red tones
@@ -168,7 +172,10 @@ test.describe("Management Phase Theme", () => {
       // Resource stats have inline border-bottom styling
       const stats = document.querySelectorAll("[style*='border-bottom']");
       return Array.from(stats)
-        .map((el) => el.style.borderBottom || el.style.borderBottomColor)
+        .map((el) => {
+          if (!(el instanceof HTMLElement) && !(el instanceof SVGElement)) throw new TypeError('Expected an element with inline styles.');
+          return el.style.borderBottom || el.style.borderBottomColor;
+        })
         .filter(Boolean);
     });
 

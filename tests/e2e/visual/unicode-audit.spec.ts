@@ -6,7 +6,7 @@
  * Captures screenshots of each screen for visual reference.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   waitForFonts,
   startGame,
@@ -50,10 +50,19 @@ const PROSE_EXCLUDE = new Set([
  * Scans the page for Unicode characters used as visual icons.
  * Returns an array of { char, codePoint, context, tagName, x, y }.
  */
-async function scanForUnicodeIcons(page) {
+interface UnicodeFinding {
+  char: string; codePoint: string; unicodeName: string; context: string;
+  tagName: string; className: string; x: number; y: number; visible: boolean;
+}
+interface IconSummary {
+  char: string; codePoint: string; name: string;
+  locations: {screen: string; context: string; tag: string}[];
+}
+
+async function scanForUnicodeIcons(page: Page): Promise<UnicodeFinding[]> {
   return page.evaluate((excludeList) => {
-    const results = [];
-    const seen = new Map(); // track unique char+context combos
+    const results: UnicodeFinding[] = [];
+    const seen = new Map<string, boolean>(); // track unique char+context combos
 
     // Walk all text nodes in the document
     const walker = document.createTreeWalker(
@@ -76,6 +85,7 @@ async function scanForUnicodeIcons(page) {
       // Scan for non-ASCII characters in icon ranges
       for (let i = 0; i < text.length; i++) {
         const cp = text.codePointAt(i);
+        if (cp === undefined) throw new Error('Missing code point within text bounds.');
         const char = String.fromCodePoint(cp);
 
         // Skip basic ASCII and Latin-1 prose characters
@@ -84,7 +94,7 @@ async function scanForUnicodeIcons(page) {
         if (excludeList.includes(char)) continue;
 
         // Check if this char is inside an SVG or an <img> (already replaced)
-        let el = parent;
+        let el: Element | null = parent;
         let insideSvgOrImg = false;
         while (el) {
           if (el.tagName === "SVG" || el.tagName === "svg" || el.tagName === "IMG") {
@@ -125,7 +135,7 @@ async function scanForUnicodeIcons(page) {
 }
 
 // Map of code points to descriptive names for the report
-const UNICODE_NAMES = {
+const UNICODE_NAMES: Readonly<Partial<Record<string, string>>> = {
   "U+2022": "Bullet •",
   "U+2042": "Asterism ⁂",
   "U+2020": "Dagger †",
@@ -197,9 +207,9 @@ const UNICODE_NAMES = {
 };
 
 test.describe("Unicode Asset Audit", () => {
-  const allFindings = {};
+  const allFindings: Partial<Record<string, UnicodeFinding[]>> = {};
 
-  test("Title Screen — scan Unicode icons", async ({ page }) => {
+  test("Title Screen — scan Unicode icons", async ({ page }, info) => {
     await page.goto("/");
     await page.waitForSelector("text=The Lord's Ledger", { timeout: 15_000 });
     await page.waitForSelector("text=Normal", { timeout: 5_000 });
@@ -212,7 +222,7 @@ test.describe("Unicode Asset Audit", () => {
       await page.waitForTimeout(500);
     }
 
-    await page.screenshot({ path: "test-results/unicode-audit/title-screen.png", fullPage: true });
+    await page.screenshot({ path: info.outputPath('title-screen.png'), fullPage: true });
     const findings = await scanForUnicodeIcons(page);
     allFindings["Title Screen"] = findings;
 
@@ -227,7 +237,7 @@ test.describe("Unicode Asset Audit", () => {
   const TABS = ["Estate", "Map", "Market", "Military", "People", "Hall", "Chapel", "Forge", "Chronicle"];
 
   for (const tab of TABS) {
-    test(`${tab} Tab — scan Unicode icons`, async ({ page }) => {
+    test(`${tab} Tab — scan Unicode icons`, async ({ page }, info) => {
       await page.goto("/");
       await startGame(page);
       await waitForFonts(page);
@@ -269,7 +279,7 @@ test.describe("Unicode Asset Audit", () => {
       await page.waitForTimeout(300);
 
       await page.screenshot({
-        path: `test-results/unicode-audit/${tab.toLowerCase()}-tab.png`,
+        path: info.outputPath(`${tab.toLowerCase()}-tab.png`),
         fullPage: true,
       });
 
@@ -307,10 +317,10 @@ test.describe("Unicode Asset Audit", () => {
     // This test runs last — it does a full scan of all screens in sequence
     // and produces the definitive list
 
-    const allIcons = new Map(); // codePoint -> { char, name, locations[] }
+    const allIcons = new Map<string, IconSummary>(); // codePoint -> { char, name, locations[] }
 
     // Helper to collect
-    const collect = (screenName, findings) => {
+    const collect = (screenName: string, findings: readonly UnicodeFinding[]) => {
       for (const f of findings) {
         if (!allIcons.has(f.codePoint)) {
           allIcons.set(f.codePoint, {
@@ -320,7 +330,9 @@ test.describe("Unicode Asset Audit", () => {
             locations: [],
           });
         }
-        allIcons.get(f.codePoint).locations.push({
+        const icon = allIcons.get(f.codePoint);
+        if (!icon) throw new Error('Collected icon summary is missing.');
+        icon.locations.push({
           screen: screenName,
           context: f.context.substring(0, 50),
           tag: f.tagName,
