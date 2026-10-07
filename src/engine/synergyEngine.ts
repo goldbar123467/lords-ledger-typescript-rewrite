@@ -12,6 +12,10 @@ import {
 } from "../data/synergies.ts";
 import type { SynergyTierDefinition, SynergyConditions, SynergyTierId } from "../data/synergies.ts";
 import { getBuildingType } from "./buildingActions.ts";
+import {addChronicle, type SavedChronicleEntry} from './chronicle.ts';
+import type {SavedSynergyState} from '../save/savedSynergy.ts';
+import type {SynergyNotification} from './initialGameStateTypes.ts';
+import type {EconomySeason} from './foodRequirement.ts';
 import { addTavernLedgerInteger as addExactInteger, isTavernLedgerInteger as isExactInteger, type TavernLedgerInteger as ExactInteger } from './tavernLedger.ts';
 
 type SynergyBuilding = string | { type: string };
@@ -189,6 +193,32 @@ export function checkSynergies(state: SynergyState): SynergyTierId[] {
   }
 
   return newlyActivated;
+}
+
+/** Construct activation receipts; each caller owns counter and reward timing. */
+export function activateSynergies(state: SynergyState, previous: SavedSynergyState,
+  chronicle: SavedChronicleEntry[], season: EconomySeason, year: number, turn: number) {
+  const ids = checkSynergies(state);
+  const synergies = ids.length > 0
+    ? {...previous, activated: [...(previous.activated ?? []), ...ids]} : previous;
+  const notifications: SynergyNotification[] = [];
+  for (const tierId of ids) {
+    const entry = SYNERGY_TIER_MAP[tierId];
+    if (entry?.tier.chronicle) {
+      chronicle = addChronicle(chronicle, entry.tier.chronicle, season, year, turn, 'event');
+    }
+    notifications.push({
+      tierId,
+      tier: entry?.tier.tier ?? 1,
+      title: entry?.tier.title ?? '',
+      description: entry?.tier.description ?? '',
+      pathName: entry?.path.name ?? '',
+      pathIcon: entry?.path.icon ?? '',
+      pathColor: entry?.path.color ?? '#b8860b',
+      scribesNote: entry?.tier.scribesNote ?? null,
+    });
+  }
+  return {ids, synergies, chronicle, notifications};
 }
 
 /**

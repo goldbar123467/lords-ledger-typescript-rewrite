@@ -8,8 +8,7 @@ import {MAX_GARRISON} from '../data/economy.ts';
 import {removeFromGarrison} from '../data/military.ts';
 import {MAX_TURNS, turnToSeasonYear} from './gameCalendar.ts';
 import {addChronicle} from './chronicle.ts';
-import {checkSynergies, applySynergyMeterEffects} from './synergyEngine.ts';
-import {SYNERGY_TIER_MAP} from '../data/synergies.ts';
+import {activateSynergies, applySynergyMeterEffects} from './synergyEngine.ts';
 
 const MAX_CAUSE_CHAIN = 4;
 
@@ -239,31 +238,10 @@ export function reduceFlipAction(state: GameSnapshot, action: GameCommand, rando
       // ADVANCE_TURN already counted this completed season before the flip.
       const flipUpdatedSynergies = state.synergies ?? {};
       const flipStateForSynergyCheck = { ...newState, synergies: flipUpdatedSynergies };
-      const flipNewSynergyIds = checkSynergies(flipStateForSynergyCheck);
-      let flipSynergiesAfterCheck = flipUpdatedSynergies;
-      const flipSynNotifications = [];
-      if (flipNewSynergyIds.length > 0) {
-        flipSynergiesAfterCheck = {
-          ...flipUpdatedSynergies,
-          activated: [...(flipUpdatedSynergies.activated ?? []), ...flipNewSynergyIds],
-        };
-        for (const tierId of flipNewSynergyIds) {
-          const entry = SYNERGY_TIER_MAP[tierId];
-          if (entry?.tier.chronicle) {
-            nextChronicle = addChronicle(nextChronicle, entry.tier.chronicle, flipSeason, flipYear, turn, "event");
-          }
-          flipSynNotifications.push({
-            tierId,
-            tier: entry?.tier.tier ?? 1,
-            title: entry?.tier.title ?? "",
-            description: entry?.tier.description ?? "",
-            pathName: entry?.path.name ?? "",
-            pathIcon: entry?.path.icon ?? "",
-            pathColor: entry?.path.color ?? "#b8860b",
-            scribesNote: entry?.tier.scribesNote ?? null,
-          });
-        }
-      }
+      const {ids: flipNewSynergyIds, synergies: flipSynergiesAfterCheck,
+        chronicle: activationChronicle, notifications: flipSynNotifications} =
+        activateSynergies(flipStateForSynergyCheck, flipUpdatedSynergies, nextChronicle, flipSeason, flipYear, turn);
+      nextChronicle = activationChronicle;
 
       const flipBonuses = applySynergyMeterEffects(
         state.greatHall?.meters ?? { people: 50, treasury: 50, church: 50, military: 50 },

@@ -65,8 +65,7 @@ import {
   EMPTY_INVENTORY, generateMarketPrices, DIFFICULTY_CONFIGS,
 } from "../data/economy.ts";
 import { checkFlipTriggers, getInitialFlipStats } from "./flipEngine.ts";
-import { checkSynergies, advanceSynergyCounters, applySynergyMeterEffects } from "./synergyEngine.ts";
-import { SYNERGY_TIER_MAP } from "../data/synergies.ts";
+import { activateSynergies, advanceSynergyCounters, applySynergyMeterEffects } from "./synergyEngine.ts";
 import { resolveRaid, buildRaidChronicleText } from "./raidEngine.ts";
 import { RAID_TYPES } from "../data/raids.ts";
 import {
@@ -764,36 +763,8 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
 
       // Check for newly activated synergies
       const stateForSynergyCheck = { ...state, synergies: updatedSynergies };
-      const newSynergyIds = checkSynergies(stateForSynergyCheck);
-
-      let synergiesAfterCheck = updatedSynergies;
-      let synChronicle = nextChronicle;
-      const synNotifications = [];
-
-      if (newSynergyIds.length > 0) {
-        synergiesAfterCheck = {
-          ...updatedSynergies,
-          activated: [...(updatedSynergies.activated ?? []), ...newSynergyIds],
-        };
-        for (const tierId of newSynergyIds) {
-          const entry = SYNERGY_TIER_MAP[tierId];
-          if (entry?.tier.chronicle) {
-            synChronicle = addChronicle(
-              synChronicle, entry.tier.chronicle, nextSeason, nextYear, nextTurn, "event",
-            );
-          }
-          synNotifications.push({
-            tierId,
-            tier: entry?.tier.tier ?? 1,
-            title: entry?.tier.title ?? "",
-            description: entry?.tier.description ?? "",
-            pathName: entry?.path.name ?? "",
-            pathIcon: entry?.path.icon ?? "",
-            pathColor: entry?.path.color ?? "#b8860b",
-            scribesNote: entry?.tier.scribesNote ?? null,
-          });
-        }
-      }
+      const {synergies: synergiesAfterCheck, chronicle: synChronicle, notifications: synNotifications} =
+        activateSynergies(stateForSynergyCheck, updatedSynergies, nextChronicle, nextSeason, nextYear, nextTurn);
 
       const advanceBonuses = applySynergyMeterEffects(
         advanceHall.meters, advanceChapel.faith ?? 50, synergiesAfterCheck.activated ?? [],
