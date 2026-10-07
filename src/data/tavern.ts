@@ -37,6 +37,7 @@ export type TavernContentLine = string | ((state:TavernAdviceState)=>string);
 export interface CompanionOffer {
  readonly id:string; readonly title:string; readonly description:string; readonly warning?:string;
  readonly costText:string; readonly rewardText:string; readonly cantAcceptText:string;
+ readonly cantAcceptReason?: (state:CompanionOfferState)=>string;
  readonly canAccept:(state:CompanionOfferState)=>boolean;
 }
 interface ConditionalText {
@@ -319,6 +320,9 @@ export const MARTA_OFFERS = [
     rewardText: "+20 inventory capacity",
     canAccept: (s) => s.denarii >= 50 && !(s.tavern?.martaStoragePurchased),
     cantAcceptText: "You\u2019ve already expanded your storage through my contact.",
+    cantAcceptReason: (s) => s.tavern?.martaStoragePurchased
+      ? "You\u2019ve already expanded your storage through my contact."
+      : "You need 50d to expand your storage.",
   },
 ] as const satisfies readonly CompanionOffer[];
 

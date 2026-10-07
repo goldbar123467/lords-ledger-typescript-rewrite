@@ -19,12 +19,7 @@ function SpeechBubble({ children, animKey }: { children: ReactNode; animKey?: nu
   return (
     <div
       key={animKey}
-      className="quill-appear rounded-lg border-2 p-4 mt-3"
-      style={{
-        backgroundColor: "#2a2010",
-        borderColor: "#c4a24a",
-        boxShadow: "inset 0 2px 8px rgba(0, 0, 0, 0.3)",
-      }}
+      className="conversation-speech quill-appear rounded-lg border-2 p-4 mt-3"
     >
       {children}
     </div>
@@ -34,14 +29,7 @@ function SpeechBubble({ children, animKey }: { children: ReactNode; animKey?: nu
 function BardPortrait() {
   return (
     <div
-      className="flex items-center justify-center rounded-lg border-2 mx-auto"
-      style={{
-        width: 80,
-        height: 80,
-        borderColor: "#c4a24a",
-        backgroundColor: "#1a1610",
-        boxShadow: "0 0 12px rgba(196, 162, 74, 0.2)",
-      }}
+      className="conversation-portrait flex items-center justify-center rounded-lg border-2 mx-auto"
     >
       <span
         style={{
@@ -108,7 +96,7 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }: BardsCo
         {visibleContent.repeat && (
           <p
             className="text-xs mb-2 italic"
-            style={{ color: "#8a7a5a", fontFamily: "Crimson Text, serif" }}
+            style={{ color: "#dbc7a8", fontFamily: "Crimson Text, serif" }}
           >
             Have I told you this one? No matter. It bears repeating.
           </p>
@@ -184,32 +172,8 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }: BardsCo
                 key={option}
                 onClick={() => handleRiddleAnswer(option)}
                 disabled={selectedOption !== null}
-                className="w-full text-left px-4 py-3 rounded-md border-2 cursor-pointer min-h-[44px]"
-                style={{
-                  backgroundColor: bg,
-                  borderColor: border,
-                  color: textColor,
-                  fontFamily: "Crimson Text, serif",
-                  transition: "all 200ms ease",
-                  opacity:
-                    riddleResult !== null &&
-                    option !== riddle.answer &&
-                    option !== selectedOption
-                      ? 0.5
-                      : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (riddleResult === null) {
-                    e.currentTarget.style.backgroundColor = "#2a2318";
-                    e.currentTarget.style.borderColor = "#c4a24a";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (riddleResult === null) {
-                    e.currentTarget.style.backgroundColor = "#1a1610";
-                    e.currentTarget.style.borderColor = "#6a5a42";
-                  }
-                }}
+                className="w-full text-left px-4 py-3 rounded-md border-2 cursor-pointer min-h-[44px] conversation-button conversation-answer"
+                style={riddleResult === null ? undefined : {backgroundColor: bg, borderColor: border, color: textColor}}
               >
                 {option}
               </button>
@@ -253,12 +217,7 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }: BardsCo
 
   return (
     <div
-      className="rounded-lg border-2 p-4 sm:p-5 max-w-xl mx-auto"
-      style={{
-        backgroundColor: "#1a1610",
-        borderColor: "#8a7a3a",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
-      }}
+      className="tavern-conversation rounded-lg border-2 p-4 sm:p-5 max-w-xl mx-auto"
     >
       {/* Header */}
       <h3
@@ -288,46 +247,16 @@ export default function BardsCorner({ state, onNext, onAnswer, onBack }: BardsCo
       {body}
 
       {/* Actions */}
-      <div className="flex gap-3 mt-4">
+      <div className="conversation-actions mt-4">
         <button
           onClick={reroll}
-          className="flex-1 px-4 py-3 rounded-md border-2 cursor-pointer font-semibold text-sm min-h-[44px]"
-          style={{
-            backgroundColor: "#231e16",
-            borderColor: "#c4a24a",
-            color: "#c4a24a",
-            fontFamily: "Cinzel, serif",
-            transition: "all 200ms ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#2d2619";
-            e.currentTarget.style.borderColor = "#e8c44a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#231e16";
-            e.currentTarget.style.borderColor = "#c4a24a";
-          }}
+          className="flex-1 px-4 py-3 rounded-md border-2 cursor-pointer font-semibold text-sm min-h-[44px] conversation-button conversation-talk"
         >
           Tell me more...
         </button>
         <button
           onClick={onBack}
-          className="flex-1 px-4 py-3 rounded-md border-2 cursor-pointer font-semibold text-sm min-h-[44px]"
-          style={{
-            backgroundColor: "#1a1610",
-            borderColor: "#6a5a42",
-            color: "#a89070",
-            fontFamily: "Cinzel, serif",
-            transition: "all 200ms ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#2a2318";
-            e.currentTarget.style.borderColor = "#a89070";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#1a1610";
-            e.currentTarget.style.borderColor = "#6a5a42";
-          }}
+          className="flex-1 px-4 py-3 rounded-md border-2 cursor-pointer font-semibold text-sm min-h-[44px] conversation-button conversation-leave"
         >
           Leave
         </button>

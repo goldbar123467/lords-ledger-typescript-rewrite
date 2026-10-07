@@ -1,5 +1,4 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
 import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save, type GameSnapshot } from '../../../src/save/saveGame.ts';
 
@@ -44,17 +43,16 @@ for (const companion of [
   });
 }
 
-test('Marta displays and resumes the seeded storage offer before one canonical purchase', async ({ page }) => {
+test('Marta displays and resumes the seeded storage offer before one canonical purchase', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 1366, height: 768 });
   await openSeededCompanion(page, 'Marta the Merchant');
   await expect(page.getByRole('heading', { name: 'Storage Expansion' })).toBeVisible();
-  await mkdir('artifacts/v2/companions-browser', { recursive: true });
   await expect(page.locator('.quill-appear').last()).toHaveCSS('opacity', '1');
-  await page.screenshot({ path: 'artifacts/v2/companions-browser/marta-offer-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('marta-offer-1366x768.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/companions-browser/marta-offer-390x844.png' });
+  await page.screenshot({ path: info.outputPath('marta-offer-390x844.png') });
   for (const name of ['Accept', 'Decline']) {
     const box = await page.getByRole('button', { name, exact: true }).boundingBox();
     expect(box?.height).toBeGreaterThanOrEqual(44);
@@ -92,7 +90,7 @@ test('Marta displays and resumes the seeded storage offer before one canonical p
   expect(errors).toEqual([]);
 });
 
-test('Aldric shows the authored free lesson and settles it once on mobile', async ({ page }) => {
+test('Aldric shows the authored free lesson and settles it once on mobile', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 390, height: 844 });
@@ -100,11 +98,10 @@ test('Aldric shows the authored free lesson and settles it once on mobile', asyn
   await expect(page.getByRole('heading', { name: 'Garrison Morale' })).toBeVisible();
   await expect(page.getByText('+2 families (morale draws settlers)')).toBeVisible();
   await expect(page.locator('.quill-appear').last()).toHaveCSS('opacity', '1');
-  await mkdir('artifacts/v2/companions-browser', { recursive: true });
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.screenshot({ path: 'artifacts/v2/companions-browser/aldric-offer-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('aldric-offer-1366x768.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/companions-browser/aldric-offer-390x844.png' });
+  await page.screenshot({ path: info.outputPath('aldric-offer-390x844.png') });
   for (const name of ['Accept', 'Decline']) {
     const box = await page.getByRole('button', { name, exact: true }).boundingBox();
     expect(box?.height).toBeGreaterThanOrEqual(44);

@@ -2046,3 +2046,28 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .rats-result-stats > div { min-width: 0; overflow-wrap: anywhere; }
 .rats-hud { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
 @media(prefers-reduced-motion:reduce) { .rats-game *, .rats-game .rat-appear { animation: none !important; transition: none !important; } }
+
+/* Tavern conversations: authored choices stay in their controllers; controls share reading styles. */
+.tavern-conversation { --conversation-panel: #1a1610; --conversation-border: #8a7a3a; --conversation-accent: #f4d77f; --conversation-talk: #231e16; --conversation-talk-hover: #2d2619; --conversation-talk-hover-border: #e8c44a; --conversation-disabled: #151008; --conversation-disabled-border: #8a7a5a; --conversation-leave-border: #6a5a42; --conversation-leave-hover: #2a2318; background: var(--conversation-panel); border-color: var(--conversation-border); box-shadow: var(--conversation-shadow,0 4px 20px rgba(0,0,0,.4)); }
+.tavern-conversation .text-xs, .tavern-conversation .text-sm { font-size: 1rem; line-height: 1.55; }
+.conversation-speech { background: #2a2010; border-color: #c4a24a; box-shadow: inset 0 2px 8px rgba(0,0,0,.3); }
+.conversation-portrait { width: 80px; height: 80px; border-color: #c4a24a; background: #1a1610; box-shadow: 0 0 12px rgba(196,162,74,.2); }
+.conversation-button { font: 1rem/1.5 'Cinzel',serif; color: #dbc7a8; cursor: pointer; transition: background-color 200ms ease,border-color 200ms ease; }
+.tavern-conversation .conversation-button { min-height: 44px; }
+.conversation-button:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+.conversation-talk { background: var(--conversation-talk); border-color: var(--conversation-border); color: var(--conversation-accent); }
+.conversation-talk:not(:disabled):hover { background: var(--conversation-talk-hover); border-color: var(--conversation-talk-hover-border); }
+.conversation-talk:disabled { background: var(--conversation-disabled); border-color: var(--conversation-disabled-border); border-style: dashed; color: #dbc7a8; opacity: 1; cursor: not-allowed; }
+.conversation-leave { background: var(--conversation-panel); border-color: var(--conversation-leave-border); }
+.conversation-leave:hover { background: var(--conversation-leave-hover); border-color: #dbc7a8; }
+.conversation-accept { background: var(--conversation-accept); border: 1px solid var(--conversation-accept-border); color: #fff; }
+.conversation-accept:hover { background: var(--conversation-accept-hover); }
+.conversation-decline { background: #1a1208; border: 1px solid #3a3020; color: #c8b090; }
+.conversation-note-button { background: #2a3a1a; border: 1px solid #4a6a3a; }
+.conversation-answer { background: #1a1610; border-color: #6a5a42; color: #c8b090; font-family: 'Crimson Text',serif; }
+.conversation-answer:not(:disabled):hover { background: #2a2318; border-color: #c4a24a; }
+.conversation-answer:disabled { opacity: 1; border-style: dashed; cursor: default; }
+.conversation-actions, .conversation-offer-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.conversation-actions button { min-width: min(100%,9rem); max-width: 100%; }
+.conversation-offer-actions button { max-width: 100%; }
+@media(prefers-reduced-motion:reduce) { .tavern-conversation * { animation: none !important; transition: none !important; } }

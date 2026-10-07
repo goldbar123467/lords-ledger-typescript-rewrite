@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
 import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
-test('a seeded Bard riddle rewards one answer and resumes without a second reward', async ({ page }) => {
+test('a seeded Bard riddle rewards one answer and resumes without a second reward', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -22,10 +21,9 @@ test('a seeded Bard riddle rewards one answer and resumes without a second rewar
   await expect(page.getByText(/I have cities but no houses/)).toBeVisible();
   await expect(page.locator('.tavern-enter')).toHaveCount(0);
   await expect(page.locator('.quill-appear').last()).toHaveCSS('opacity', '1');
-  await mkdir('artifacts/v2/bard-browser', { recursive: true });
-  await page.screenshot({ path: 'artifacts/v2/bard-browser/riddle-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('riddle-1366x768.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/bard-browser/riddle-390x844.png' });
+  await page.screenshot({ path: info.outputPath('riddle-390x844.png') });
   await page.getByRole('button', { name: 'Save game' }).click();
   const pendingRaw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
   if (!pendingRaw) throw new Error('Pending Bard riddle did not save.');
@@ -60,7 +58,7 @@ test('a seeded Bard riddle rewards one answer and resumes without a second rewar
   const rewardBox = await page.getByText('+10 denarii').boundingBox();
   expect(rewardBox).not.toBeNull();
   if (rewardBox) expect(rewardBox.y + rewardBox.height).toBeLessThanOrEqual(844);
-  await page.screenshot({ path: 'artifacts/v2/bard-browser/solved-390x844.png' });
+  await page.screenshot({ path: info.outputPath('solved-390x844.png') });
   await page.getByRole('button', { name: 'Save game' }).click();
   const raw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
   if (!raw) throw new Error('Bard answer did not save.');
@@ -107,7 +105,7 @@ test('a seeded Bard riddle rewards one answer and resumes without a second rewar
   await page.getByRole('button', { name: /The Bard's Corner/ }).click();
   await expect(page.locator('.tavern-enter')).toHaveCount(0);
   await expect(page.locator('.quill-appear').last()).toHaveCSS('opacity', '1');
-  await page.screenshot({ path: 'artifacts/v2/bard-browser/reentered-390x844.png' });
+  await page.screenshot({ path: info.outputPath('reentered-390x844.png') });
   await page.getByRole('button', { name: 'Save game' }).click();
   const reenteredRaw = await page.evaluate(() => localStorage.getItem('lords-ledger-v2-save'));
   if (!reenteredRaw) throw new Error('Reentered Bard content did not save.');

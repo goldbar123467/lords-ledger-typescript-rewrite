@@ -27,7 +27,6 @@ interface Palette {
   talkHoverBorder: string;
   talkDisabled: string;
   talkDisabledBorder: string;
-  talkDisabledColor: string;
   leaveBorder: string;
 }
 
@@ -62,16 +61,16 @@ const COMPANIONS: Record<CompanionId, CompanionConfig> = {
     advice: MARTA_MARKET_TIPS, stories: MARTA_TRADE_STORIES, offers: MARTA_OFFERS,
     longWarProse: false,
     palette: {
-      panel: '#0e1a1a', border: '#1a5a5a', accent: '#3a9a8a',
+      panel: '#0e1a1a', border: '#1a5a5a', accent: '#82c9b9',
       panelShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
       speech: '#1a2a2a', speechShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.3)',
       portrait: '#0e1a1a', portraitShadow: '0 0 12px rgba(26, 90, 90, 0.3)',
-      subtitle: '#6a8a7a', intro: '#a89070',
+      subtitle: '#dbc7a8', intro: '#dbc7a8',
       accept: 'linear-gradient(135deg, #1a5a5a 0%, #0e3a3a 50%, #1a5a5a 100%)',
       acceptHover: 'linear-gradient(135deg, #2a7a6a 0%, #1a5a5a 50%, #2a7a6a 100%)',
       acceptBorder: '#2a7a6a',
       talk: '#0e2020', talkHover: '#1a3030', talkHoverBorder: '#2a7a6a',
-      talkDisabled: '#0a1010', talkDisabledBorder: '#1a3030', talkDisabledColor: '#2a4a4a',
+      talkDisabled: '#0a1010', talkDisabledBorder: '#1a3030',
       leaveBorder: '#3a4a4a',
     },
   },
@@ -85,20 +84,33 @@ const COMPANIONS: Record<CompanionId, CompanionConfig> = {
     advice: ALDRIC_MILITARY_COUNSEL, stories: ALDRIC_WAR_STORIES,
     offers: ALDRIC_TRAINING_OFFERS, longWarProse: true,
     palette: {
-      panel: '#120808', border: 'var(--royal-red, #8b1a1a)', accent: '#c44a4a',
+      panel: '#120808', border: 'var(--royal-red, #8b1a1a)', accent: '#ef9b85',
       panelShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
       speech: '#1a0e0e', speechShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.4)',
       portrait: '#120808', portraitShadow: '0 0 12px rgba(139, 26, 26, 0.3)',
-      subtitle: '#8a6a5a', intro: '#8a7060',
+      subtitle: '#dbc7a8', intro: '#dbc7a8',
       accept: 'linear-gradient(135deg, var(--royal-red, #8b1a1a) 0%, #4a0a0a 50%, var(--royal-red, #8b1a1a) 100%)',
       acceptHover: 'linear-gradient(135deg, #c44a4a 0%, #6a1a1a 50%, #c44a4a 100%)',
       acceptBorder: '#c44a4a',
       talk: '#1a0e0e', talkHover: '#2a1010', talkHoverBorder: '#c44a4a',
-      talkDisabled: '#0a0505', talkDisabledBorder: '#3a1010', talkDisabledColor: '#4a2020',
+      talkDisabled: '#0a0505', talkDisabledBorder: '#3a1010',
       leaveBorder: '#4a3030',
     },
   },
 };
+
+function conversationStyle(palette: Palette): CSSProperties & { [name: `--conversation-${string}`]: string } {
+  return {
+    '--conversation-panel': palette.panel, '--conversation-border': palette.border,
+    '--conversation-accent': palette.accent, '--conversation-shadow': palette.panelShadow,
+    '--conversation-accept': palette.accept, '--conversation-accept-hover': palette.acceptHover,
+    '--conversation-accept-border': palette.acceptBorder,
+    '--conversation-talk': palette.talk, '--conversation-talk-hover': palette.talkHover,
+    '--conversation-talk-hover-border': palette.talkHoverBorder,
+    '--conversation-disabled': palette.talkDisabled, '--conversation-disabled-border': palette.talkDisabledBorder,
+    '--conversation-leave-border': palette.leaveBorder, '--conversation-leave-hover': palette.speech,
+  };
+}
 
 export interface TavernCompanionProps {
   kind: CompanionId;
@@ -182,20 +194,16 @@ function OfferCard({ offer, state, accepted, onAccept, onDecline, config }: {
         </p>
       ) : !canAccept ? (
         <p className="text-sm italic" style={{ color: '#a89070', fontFamily: 'Crimson Text, serif' }}>
-          {offer.cantAcceptText}
+          {offer.cantAcceptReason?.(state) ?? offer.cantAcceptText}
         </p>
       ) : (
-        <div className="flex gap-2">
-          <button onClick={() => onAccept(offer.id)} className="px-4 py-2 rounded text-sm font-bold"
-            style={{ minHeight: 44, background: palette.accept, color: '#e8c44a',
-              border: `1px solid ${palette.acceptBorder}`, cursor: 'pointer' }}
-            onMouseEnter={event => { event.currentTarget.style.background = palette.acceptHover; }}
-            onMouseLeave={event => { event.currentTarget.style.background = palette.accept; }}>
+        <div className="conversation-offer-actions">
+          <button onClick={() => onAccept(offer.id)} className="px-4 py-2 rounded text-sm font-bold conversation-button conversation-accept"
+            >
             Accept
           </button>
-          <button onClick={() => onDecline(offer.id)} className="px-4 py-2 rounded text-sm"
-            style={{ minHeight: 44, backgroundColor: '#1a1208', color: '#c8b090',
-              border: '1px solid #3a3020', cursor: 'pointer' }}>
+          <button onClick={() => onDecline(offer.id)} className="px-4 py-2 rounded text-sm conversation-button conversation-decline"
+            >
             Decline
           </button>
         </div>
@@ -269,9 +277,8 @@ export default function TavernCompanion({ kind, state, onNext, onAcceptOffer,
   }
 
   return (
-    <div className="rounded-lg border-2 p-4 sm:p-5 max-w-xl mx-auto"
-      style={{ backgroundColor: palette.panel, borderColor: palette.border,
-        boxShadow: palette.panelShadow }}>
+    <div className="tavern-conversation rounded-lg border-2 p-4 sm:p-5 max-w-xl mx-auto"
+      style={conversationStyle(palette)}>
       <h3 className="text-center text-lg sm:text-xl font-bold mb-1"
         style={{ fontFamily: 'Cinzel, serif', color: palette.accent }}>{config.title}</h3>
       <p className="text-center text-xs italic mb-3"
@@ -286,46 +293,19 @@ export default function TavernCompanion({ kind, state, onNext, onAcceptOffer,
             style={{ color: '#8a9a6a', fontFamily: 'Cinzel, serif' }}>Scribe{"'"}s Note</h4>
           <p className="text-sm leading-relaxed italic"
             style={{ color: '#a8a080', fontFamily: 'Crimson Text, serif' }}>{config.scribesNote}</p>
-          <button onClick={dismissScribesNote} className="mt-2 px-3 py-1 rounded text-xs"
-            style={{ minHeight: 44, backgroundColor: '#2a3a1a', color: '#8a9a6a',
-              border: '1px solid #4a6a3a', cursor: 'pointer' }}>I understand</button>
+          <button onClick={dismissScribesNote} className="mt-2 px-3 py-1 rounded text-xs conversation-button conversation-note-button"
+            >I understand</button>
         </div>
       )}
       <div className="decorative-rule" style={{ color: palette.border }}>{'\u25C6'}</div>
       {body}
-      <div className="flex gap-3 mt-4">
+      <div className="conversation-actions mt-4">
         <button onClick={reroll} disabled={talkDisabled}
-          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px]"
-          style={{ backgroundColor: talkDisabled ? palette.talkDisabled : palette.talk,
-            borderColor: talkDisabled ? palette.talkDisabledBorder : palette.border,
-            color: talkDisabled ? palette.talkDisabledColor : palette.accent,
-            fontFamily: 'Cinzel, serif', transition: 'all 200ms ease',
-            cursor: talkDisabled ? 'not-allowed' : 'pointer' }}
-          onMouseEnter={event => {
-            if (!talkDisabled) {
-              event.currentTarget.style.backgroundColor = palette.talkHover;
-              event.currentTarget.style.borderColor = palette.talkHoverBorder;
-            }
-          }}
-          onMouseLeave={event => {
-            if (!talkDisabled) {
-              event.currentTarget.style.backgroundColor = palette.talk;
-              event.currentTarget.style.borderColor = palette.border;
-            }
-          }}>Talk Again</button>
+          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px] conversation-button conversation-talk"
+          >Talk Again</button>
         <button onClick={onBack}
-          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px]"
-          style={{ backgroundColor: palette.panel, borderColor: palette.leaveBorder,
-            color: palette.subtitle, fontFamily: 'Cinzel, serif',
-            transition: 'all 200ms ease', cursor: 'pointer' }}
-          onMouseEnter={event => {
-            event.currentTarget.style.backgroundColor = palette.speech;
-            event.currentTarget.style.borderColor = palette.subtitle;
-          }}
-          onMouseLeave={event => {
-            event.currentTarget.style.backgroundColor = palette.panel;
-            event.currentTarget.style.borderColor = palette.leaveBorder;
-          }}>Leave</button>
+          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px] conversation-button conversation-leave"
+          >Leave</button>
       </div>
     </div>
   );
