@@ -33,9 +33,9 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Market assertions (`bdc587d`) | 23 browser cases passed; native paid trades check state changes and exact save/reload bytes | Fresh grain trades do not establish all pricing and interface rules |
 | Visual audit (`607903d`) | Focused regressions passed; full visual suite: 50 passes and 13 failures | All 13 failures are missing Windows baselines; no new goldens were approved |
 | QA migration (`973def9`) | Typecheck, lint, and four diagnostic cases passed; independent reviews accepted typing and artifact isolation | Its scope covered typing/artifacts; assertion defects were addressed in the later QA correction |
-| QA assertion correction | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
-| Root configurations | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
-| Headless driver | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
+| QA assertion correction (`9b3c2a8`) | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
+| Root configurations (`49ce34f`) | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
+| Headless driver (`75631db`) | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
@@ -60,7 +60,7 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The headle
 
 ## Next rewrite sections
 
-1. Repair and migrate `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
+1. Finish repairing and migrating the root browser playtest from `playwright-playtest.js` to checked TypeScript, preserving all six personas. Replace stale controls, verify actual turn progression and terminal outcomes, propagate failed interactions, and isolate each run's reports and screenshots. Remove the temporary JavaScript compiler allowance only after the complete executable body passes strict checks and focused browser verification.
 2. Strengthen remaining QA transport filtering and report emission on early failures.
 3. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
 4. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
@@ -70,7 +70,7 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The headle
 
 Follow [AGENTS.md](AGENTS.md). Each bounded section includes implementation, appropriate checks, actual image inspection when presentation changes, independent review, and updated evidence.
 
-**Commit after every loop or section before starting the next one.** Keep corrections in separate commits on this repository's `main`. A checkpoint records progress; it does not declare the rewrite complete.
+**Commit after every loop or section before starting the next one.** Update this README with each section's verified status, remaining limits, and next action, alongside the detailed evidence records. Keep corrections in separate commits on this repository's `main`. A checkpoint records progress; it does not declare the rewrite complete.
 
 The original history is retained through baseline `47570f9`, the rewrite checkpoint `ee66330`, and repository-initialization merge `9b561d9`. See the [commit history](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commits/main/).
 
