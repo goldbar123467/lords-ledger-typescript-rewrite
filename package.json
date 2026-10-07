@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
+    "lint": "node --experimental-strip-types node_modules/eslint/bin/eslint.js --flag unstable_native_nodejs_ts_config .",
     "typecheck": "tsc --project tsconfig.json",
     "test:unit": "node --experimental-strip-types --test tests/unit/*.test.ts",
     "preview": "vite preview",
