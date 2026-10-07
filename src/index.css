@@ -189,7 +189,7 @@ button:active:not(:disabled) {
   transition: transform 150ms ease, box-shadow 150ms ease;
 }
 
-.tavern-card:hover {
+.tavern-card:not(:disabled):hover {
   transform: translateY(-2px);
   box-shadow: 0 0 16px rgba(196, 162, 74, 0.25);
 }
@@ -1886,3 +1886,18 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .chronicle-entry svg { display: inline-block; margin-right: .35rem; color: var(--chronicle-tone); }
 .chronicle-date { color: #f4d77f; font-size: .95rem; font-weight: 600; margin-right: .4rem; }
 .chronicle-hint { color: #dbc7a8; font-style: italic; margin: 0; padding: .75rem 1rem; text-align: center; font-size: 1rem; line-height: 1.6; }
+
+.tavern-station { width: 100%; padding: 1rem; border: 2px solid; border-radius: .5rem; background: #1a1208; color: #f4e2c5; text-align: center; cursor: pointer; }
+.tavern-station:disabled { opacity: 1; background: #151008; border-style: dashed; cursor: not-allowed; }
+.tavern-station:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+.tavern-station-icon { display: block; margin-bottom: .5rem; color: #f4d77f; font-size: 2rem; line-height: 1; }
+.tavern-station h3 { margin: 0; color: #f4d77f; font: 700 1rem/1.5 'Cinzel', serif; text-transform: uppercase; letter-spacing: .025em; }
+.tavern-station p { margin: .25rem 0 0; color: #dbc7a8; font: italic 1rem/1.55 'Crimson Text', serif; }
+.tavern-wall { margin-top: .75rem; padding: .75rem; border: 1px solid #8a7a5a; border-radius: .5rem; background: linear-gradient(135deg,#120e08 25%,#1a1208 50%,#120e08 75%); color: #dbc7a8; }
+.tavern-wall h4 { margin: 0 0 .5rem; text-align: center; color: #f4d77f; font: 700 1rem/1.5 'Cinzel', serif; text-transform: uppercase; letter-spacing: .04em; }
+.tavern-graffiti, .tavern-wall-milestone { margin: 0; font: .95rem/1.6 monospace; overflow-wrap: anywhere; }
+.tavern-graffiti--large { font-size: 1.05rem; letter-spacing: .08em; }
+.tavern-graffiti--struck { text-decoration: line-through; }
+.tavern-wall-notice { margin: 0; color: #f4e2c5; font: italic 1rem/1.6 'Crimson Text', serif; }
+.tavern-wall-milestone { font-weight: 700; }
+@media(prefers-reduced-motion:reduce) { .tavern-enter { animation: none; } .tavern-station { transition: none; } .tavern-station:not(:disabled):hover { transform: none; } }

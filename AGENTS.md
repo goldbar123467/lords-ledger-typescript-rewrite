@@ -31,7 +31,7 @@ Verified runtime at the latest executable checkpoint: Node 22.23.2 / npm 10.9.8.
 | Browser installation | `npx playwright install chromium` |
 | Seeded headless run | `node --experimental-strip-types playtest.ts 100 1 normal` |
 
-`playwright.config.ts` starts its own isolated strict-port Vite server, defaults to port 5182, supports `LL_TEST_PORT`, and does not reuse a server. For long campaigns prefer a verified production build/preview and an isolated artifact configuration. Verify actual worktree/build/served bytes before use; don't silently connect to another checkout. Use explicit workers/retries and isolated browser storage. Discovery is not execution: the current discovery is 834 tests in 149 files, not 834 passes.
+`playwright.config.ts` starts its own isolated strict-port Vite server, defaults to port 5182, supports `LL_TEST_PORT`, and does not reuse a server. For long campaigns prefer a verified production build/preview and an isolated artifact configuration. Verify actual worktree/build/served bytes before use; don't silently connect to another checkout. Use explicit workers/retries and isolated browser storage. Discovery is not execution: the current discovery is 838 tests in 150 files, not 838 passes.
 
 ## Source and ownership map
 

@@ -111,49 +111,16 @@ function TavernHeader({ subtitle }: Readonly<{ subtitle: string }>) {
   );
 }
 
-function StationCard({ station, disabled, disabledText, onClick }: Readonly<{
-  station: TavernStation; disabled: boolean; disabledText: string; onClick: () => void;
+function StationCard({station,disabled,disabledText,onClick}:Readonly<{
+  station:TavernStation;disabled:boolean;disabledText:string;onClick:()=>void;
 }>) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="tavern-card rounded-lg p-4 text-center cursor-pointer border-2 w-full"
-      style={{
-        backgroundColor: disabled ? "#151008" : "#1a1208",
-        borderColor: disabled ? "#3a3020" : station.borderColor,
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
-    >
-      <div
-        className="text-3xl mb-2"
-        style={{ color: disabled ? "#5a4a30" : "#c4a24a", lineHeight: 1 }}
-      >
-        {station.icon}
-      </div>
-      <h3
-        className="font-bold text-sm uppercase tracking-wide"
-        style={{
-          fontFamily: "Cinzel, serif",
-          color: disabled ? "#5a4a30" : "#c4a24a",
-        }}
-      >
-        {station.title}
-      </h3>
-      <p
-        className="text-xs mt-1 italic"
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          color: disabled ? "#4a3a20" : "#8a7a5a",
-        }}
-      >
-        {disabled ? disabledText : station.subtitle}
-      </p>
-    </button>
-  );
+  return <button onClick={onClick} disabled={disabled} className="tavern-card tavern-station"
+    style={{borderColor:disabled?'#8a7a5a':station.borderColor}}>
+    <span className="tavern-station-icon" aria-hidden="true">{station.icon}</span>
+    <h3>{station.title}</h3>
+    <p>{disabled?disabledText:station.subtitle}</p>
+  </button>;
 }
-
 function TavernWall({ state, onStashClick }: Readonly<{
   state: Readonly<GameSnapshot>; onStashClick: () => void;
 }>) {
@@ -177,35 +144,14 @@ function TavernWall({ state, onStashClick }: Readonly<{
   }, [tavern.totalVisits]);
 
   return (
-    <div
-      onFocus={keepReadingFocusVisible}
-      className="rounded-lg border p-3 mt-3"
-      style={{
-        backgroundColor: "#120e08",
-        borderColor: "#3a3020",
-        backgroundImage:
-          "linear-gradient(135deg, #120e08 25%, #1a1208 50%, #120e08 75%)",
-      }}
-    >
-      <h4
-        className="text-xs font-bold uppercase tracking-widest text-center mb-2"
-        style={{ color: "#6a5a42", fontFamily: "Cinzel, serif" }}
-      >
-        The Wall
-      </h4>
-
+    <div onFocus={keepReadingFocusVisible} className="tavern-wall">
+      <h4>The Wall</h4>
       <div className="space-y-1">
         {/* Static graffiti */}
         {staticGraffiti.map((g, i) => (
           <p
             key={`static-${i}`}
-            className={g.large ? "text-sm" : "text-xs"}
-            style={{
-              fontFamily: "monospace",
-              color: "#5a4a30",
-              textDecoration: g.strikethrough ? "line-through" : "none",
-              letterSpacing: g.large ? "2px" : "0.5px",
-            }}
+            className={`tavern-graffiti${g.large?' tavern-graffiti--large':''}${g.strikethrough?' tavern-graffiti--struck':''}`}
           >
             {g.text} {g.icon && <span style={{ marginLeft: "4px" }}>{g.icon}</span>}
           </p>
@@ -215,8 +161,7 @@ function TavernWall({ state, onStashClick }: Readonly<{
         {dynamicMessages.map((msg, i) => (
           <p
             key={`dyn-${i}`}
-            className="text-xs italic"
-            style={{ fontFamily: "Crimson Text, serif", color: "#8a6a3a" }}
+            className="tavern-wall-notice"
           >
             {msg}
           </p>
@@ -226,8 +171,7 @@ function TavernWall({ state, onStashClick }: Readonly<{
         {milestoneGraffiti.map((msg, i) => (
           <p
             key={`mile-${i}`}
-            className="text-xs font-bold"
-            style={{ fontFamily: "monospace", color: "#6a5a42" }}
+            className="tavern-wall-milestone"
           >
             {msg}
           </p>
