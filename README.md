@@ -16,7 +16,7 @@ The project retains React, Vite, Tailwind CSS, and its DOM interface. CSS, HTML,
 
 ## Current implementation
 
-The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing, Marta/Aldric companion actions, and Market actions have separate checked owners. Companion selection and resolution preserve all eight authored offers. Posted and negotiated trades share payment, inventory, food, supply and spice-faith settlement while retaining distinct fill rules, labels and bargain receipts. The main reducer and remaining orchestration still need decomposition.
+The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing, companion actions, Market actions, and flip lifecycle actions have separate checked owners. Companion selection and resolution preserve all eight authored offers. Posted and negotiated trades share settlement while retaining distinct fill rules and bargain receipts. Flip cleanup shares a fresh seven-field reset; estate consequences, ending priority and saved RNG remain atomic. The main reducer and remaining orchestration still need decomposition.
 
 Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
@@ -44,13 +44,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Fractional Market correction (`c443190`) | 783 unit tests, typecheck, lint, build and eight browser cases passed at phone/laptop sizes. Independent tester passed nine cases; grader passed four and verified admitted-state save closure | G-MA01/G-MA02 are closed within scope. Bargains use whole units, fractional leftovers remain sellable, and stale quantity choices cannot start a deal. Wider numeric, UI and campaign gates remain |
 | Phase continuation correction (`d85d82b`) | 787 unit tests, typecheck, lint, build and nine focused browser cases passed. Independent tester passed two browser cases and 361 state/save comparisons; grader passed 16 unit groups and 180 comparisons | G-PC01 is closed for premature calendar advancement. Historical seasonal-resolution saves still continue normally. Same-phase CYOA choices are new decisions; complete phase/provenance and final campaign checks remain |
 | Browser fixture protocol (`5324590`) | Typecheck, lint and all 29 affected browser cases passed; independent tester passed five cases. Grader verified all 129 matcher calls and 93 selectors unchanged | Seven fixture sites now resolve the empty random stage before advancing. This repairs test setup after the phase guard; production bytes are unchanged. Managed fixtures are not acquired campaigns |
-| Flip-choice input correction | 789 unit tests, typecheck, lint, build and seven focused browser cases passed. Independent tester passed four cases; both reviewers verified malformed-input rejection and valid-choice state/save/RNG preservation | G-FO01 is closed within raw index validation. Only numeric, nonnegative safe-integer indices can select available options; this does not establish contextual CYOA ownership or all narrative paths |
+| Flip-choice input correction (`96ff0a1`) | 789 unit tests, typecheck, lint, build and seven focused browser cases passed. Independent tester passed four cases; both reviewers verified malformed-input rejection and valid-choice state/save/RNG preservation | G-FO01 is closed within raw index validation. Only numeric, nonnegative safe-integer indices can select available options; this does not establish contextual CYOA ownership or all narrative paths |
+| Flip lifecycle consolidation | 789 unit tests, typecheck, lint, build and 32 focused browser cases passed. Independent tester matched 7,172 save roundtrips across all nine stories and passed four browser cases; grader verified expanded case bodies and fresh-array ownership | Main reducer: 1,946 to 1,646 lines; new owner: 304 lines. Five reset literals and two recovery paths share cleanup, but total production text increased by four. Managed story fixtures are not campaigns |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,744 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; the fractional correction added nine, the phase guard changed no line count, and flip index validation added one. Line totals also reflect comments and formatting. At the fractional Market checkpoint, the inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,748 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, and flip lifecycle extraction added four. Line totals also reflect comments and formatting. At the fractional Market checkpoint, the inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -70,7 +71,7 @@ Production text measured **44,744 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Consolidate repeated flip lifecycle handling and continue state, command, save, arithmetic, and replay validation. Contextual CYOA ownership remains unproved; no native stale-choice defect has been reproduced.
+1. Consolidate duplicated synergy activation, notification and chronicle construction while retaining each caller's reward timing. Continue state, command, save, arithmetic, and replay validation. Contextual CYOA ownership remains unproved; no native stale-choice defect has been reproduced.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
