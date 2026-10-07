@@ -85,15 +85,19 @@ test('a legal tithe and season unlock Pious tier one and apply its faith reward 
   const started = gameReducer(createInitialState(17),
     { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
   const built = gameReducer(started, { type: 'BUILD_BUILDING', payload: { buildingId: 'herb_garden' } });
-  const low = gameReducer(gameReducer(built,
-    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+  const lowSimulated = gameReducer(built,
+    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
+  const low = gameReducer(gameReducer(lowSimulated,
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   assert.ok(!low.synergies.activated.includes('pious_lord_1'));
   assert.equal(low.chapel.faith, 50);
 
   const tithed = gameReducer(built, { type: 'CHAPEL_PAY_TITHE', payload: { amount: 50 } });
   assert.equal(tithed.chapel.faith, 62);
-  const high = gameReducer(gameReducer(tithed,
-    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+  const highSimulated = gameReducer(tithed,
+    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
+  const high = gameReducer(gameReducer(highSimulated,
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   assert.ok(high.synergies.activated.includes('pious_lord_1'));
   assert.equal(high.synergies.highFaithTurns, 1);
   assert.equal(high.chapel.faith, 63);
@@ -154,7 +158,8 @@ test('a season followed by a complete perspective flip counts and rewards synerg
     synergies: { ...built.synergies, activated: ['peoples_lord_1'], highFaithTurns: 2, highPeopleTurns: 3 },
   };
   const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-  const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+  const entered = gameReducer(gameReducer(simulated,
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   assert.equal(entered.phase, 'flip_intro');
   assert.equal(entered.currentFlipId, 'serf_week');
   assert.equal(entered.turn, 8);

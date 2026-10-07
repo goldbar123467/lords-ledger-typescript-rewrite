@@ -17,7 +17,8 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
       blacksmith: { ...started.blacksmith, salesThisSeason: 2 },
     };
     const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-    const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+    const entered = gameReducer(gameReducer(simulated,
+      { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
     assert.equal(entered.phase, 'flip_intro');
     assert.equal(entered.currentFlipId, flipId);
     assert.equal(entered.greatHall.stewardTrust, 48);
@@ -69,7 +70,8 @@ function knightSummary(options: number[] = [0, 0, 0, 0]) {
     raids: { ...started.raids, lastRaidTurn: 19 },
   };
   const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-  let current = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+  let current = gameReducer(gameReducer(simulated,
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   assert.equal(current.currentFlipId, 'cyoa_knight');
   current = gameReducer(current, { type: 'DISMISS_FLIP_INTRO' });
   for (const optionIndex of options) current = gameReducer(current, { type: 'SELECT_FLIP_OPTION', payload: { optionIndex } });

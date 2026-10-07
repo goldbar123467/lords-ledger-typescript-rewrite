@@ -40,7 +40,7 @@ test('all 16 authored disputes become reachable as completed cases leave the que
       const result=gameReducer(current,{type:command.type,payload:{disputeId:next.id,rulingId:next.rulings[0].id}});
       assert.notStrictEqual(result,current);seen.add(next.id);current=result;
     }
-    current=gameReducer({...current,phase:'seasonal_resolve' as const},{type:'ADVANCE_TURN'});
+    current=gameReducer({...current,phase:'random_resolve' as const},{type:'ADVANCE_TURN'});
   }
   assert.equal(seen.size,16);assert.equal(present(current.greatHall.rulingHistory, "current.greatHall.rulingHistory").length,16);assert.equal(current.greatHall.disputesResolved,16);
 });

@@ -99,7 +99,7 @@ test('saved replay guards and seasonal reset preserve active decree rules', () =
   const voted = gameReducer(base, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: option.id } });
   const loadedVote = readV2Save(writeV2Save(voted)); assert.ok(loadedVote.ok);
   assert.equal(gameReducer(loadedVote.state, { type: 'HALL_COUNCIL_VOTE', payload: { topicId: topic.id, optionId: option.id, consequences: option.consequences } }), loadedVote.state);
-  const next = gameReducer({ ...issued, phase: 'seasonal_resolve' as const }, { type: 'ADVANCE_TURN' });
+  const next = gameReducer({ ...issued, phase: 'random_resolve' as const }, { type: 'ADVANCE_TURN' });
   assert.equal(next.greatHall.decreeSlotsUsed, 0); assert.deepEqual(next.greatHall.activeDecrees, [decree.id]);
   const fresh = gameReducer({ ...next, phase: 'management' as const }, { type: 'HALL_ISSUE_DECREE', payload: { decreeId: DECREE_OPTIONS[1]?.id } });
   assert.equal(fresh.greatHall.decreeSlotsUsed, 1);

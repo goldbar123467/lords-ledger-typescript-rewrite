@@ -646,7 +646,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     case "ADVANCE_TURN": {
       const { phase, turn, chronicle } = state;
 
-      if (phase !== "random_resolve" && phase !== "seasonal_resolve") return state;
+      if (phase !== "random_resolve") return state;
 
       // Victory check
       if (turn >= MAX_TURNS) {

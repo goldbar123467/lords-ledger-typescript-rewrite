@@ -20,7 +20,7 @@ The application calls the checked main reducer directly. Its command contract co
 
 Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
-Gameplay corrections cover invalid choice indices and difficulty values, donation arithmetic, sustained-counter overflow, paid Market assertions, and raid progression in browser drivers. Detailed migration and compatibility evidence belongs in the [migration ledger](docs/v2/migration-ledger.md) and [verification notes](docs/v2/verification.md).
+Gameplay corrections cover invalid choice indices and difficulty values, donation arithmetic, sustained-counter overflow, fractional Market trades, and raid progression in browser drivers. Calendar advancement now requires the random-event stage to be resolved; it cannot skip a pending seasonal continuation. Detailed migration and compatibility evidence belongs in the [migration ledger](docs/v2/migration-ledger.md) and [verification notes](docs/v2/verification.md).
 
 ## Verified checkpoints and limits
 
@@ -41,13 +41,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Companion consolidation (`b9d43c5`) | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | Selecting an offer from an accepted save with omitted history could produce an unsavable state. The next checkpoint fixes that inherited defect; complete save closure remains unproved |
 | Companion history correction (`8f866b1`) | 779 unit tests, typecheck, lint, and build passed; both native regressions failed before and passed after. Independent tester passed four browser cases and 46 write/read/resave cases; grader verified existing-state parity, closure and no-op behavior | G-CA01 is closed for both companions. Successful selection initializes omitted history without changing existing receipts or RNG behavior; broader runtime, interface and campaign gates remain |
 | Market consolidation (`d76f593`) | 781 unit tests, typecheck, lint, build and 16 browser cases passed; 40,672 old/new state results and 37,552 save outputs matched. Independent tester passed 11 browser cases; both reviewers accepted bounded preservation | The inherited fractional pending-bargain defect found here is fixed in the next checkpoint; full Market, runtime and interface acceptance remains pending |
-| Fractional Market correction | 783 unit tests, typecheck, lint, build and eight browser cases passed at phone/laptop sizes. Independent tester passed nine cases; grader passed four and verified admitted-state save closure | G-MA01/G-MA02 are closed within scope. Bargains use whole units, fractional leftovers remain sellable, and stale quantity choices cannot start a deal. Wider numeric, UI and campaign gates remain |
+| Fractional Market correction (`c443190`) | 783 unit tests, typecheck, lint, build and eight browser cases passed at phone/laptop sizes. Independent tester passed nine cases; grader passed four and verified admitted-state save closure | G-MA01/G-MA02 are closed within scope. Bargains use whole units, fractional leftovers remain sellable, and stale quantity choices cannot start a deal. Wider numeric, UI and campaign gates remain |
+| Phase continuation correction | 787 unit tests, typecheck, lint, build and nine focused browser cases passed. Independent tester passed two browser cases and 361 state/save comparisons; grader passed 16 unit groups and 180 comparisons | G-PC01 is closed for premature calendar advancement. Historical seasonal-resolution saves still continue normally. Same-phase CYOA choices are new decisions; complete phase/provenance and final campaign checks remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,743 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; the fractional correction added nine. Line totals also reflect comments and formatting. The current inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,743 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; the fractional correction added nine and the phase guard changes no production line count. Line totals also reflect comments and formatting. At the fractional Market checkpoint, the inclusive subtotal was **80,633 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -67,7 +68,7 @@ Production text measured **44,743 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Audit raid/event continuation and terminal command guards next, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
+1. Extend the bounded phase audit to contextual CYOA choices and remaining command ownership, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

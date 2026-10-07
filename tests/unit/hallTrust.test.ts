@@ -44,7 +44,7 @@ test('Hall rewards preserve zero and fractional trust through save continuation'
 test('inactive season decay keeps zero at zero and subtracts exactly two from fractions', () => {
   for (const trust of [0,.5,2,30.5,50.5,85.5,100]) {
     const base=createInitialState(104);
-    const state={...base,phase:'seasonal_resolve' as const,greatHall:{...base.greatHall,stewardTrust:trust}};
+    const state={...base,phase:'random_resolve' as const,greatHall:{...base.greatHall,stewardTrust:trust}};
     const before=structuredClone(state), result=gameReducer(state,{type:'ADVANCE_TURN'});
     assert.equal(result.turn,state.turn+1);
     assert.equal(result.greatHall.stewardTrust,Math.max(0,trust-2)); assert.deepEqual(state,before);
