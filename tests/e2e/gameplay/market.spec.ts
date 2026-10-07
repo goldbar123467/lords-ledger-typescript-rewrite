@@ -1,123 +1,98 @@
+/** Mandatory native Market flows with exact transaction and persistence checks. */
+import {test, expect, type Page} from '@playwright/test';
+import {startGame, navigateToTab} from '../helpers.ts';
 import {present} from '../../gameInput.ts';
-/**
- * Gameplay Tests — Market Trading
- *
- * Verifies the buy/sell workflow in the Market Square.
- */
+import {readV2Save, SAVE_KEY_V2} from '../../../src/save/saveGame.ts';
 
-import { test, expect, type Page } from "@playwright/test";
-import { startGame, navigateToTab } from "../helpers.ts";
-
-/**
- * Get the current denarii from the Dashboard.
- *
- * Reads the value via the `data-testid="resource-denarii"` attribute instead
- * of relying on positional order of `.text-2xl` elements (B-29 / B-37).
- */
-async function getDenarii(page: Page) {
-  return page.evaluate(() => {
-    const el = document.querySelector('[data-testid="resource-denarii"]');
-    if (!el) return undefined;
-    const parsed = parseInt(el.textContent ?? "", 10);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  });
+async function saveSnapshot(page: Page) {
+  await page.getByRole('button', {name: 'Save game', exact: true}).click();
+  const raw = await page.evaluate(key => localStorage.getItem(key), SAVE_KEY_V2);
+  if (!raw) throw new Error('Native Market flow did not produce a save.');
+  const loaded = readV2Save(raw);
+  if (!loaded.ok) throw new Error(loaded.error);
+  return {raw, state: loaded.state};
 }
 
-test.describe("Market Tab", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await startGame(page, "easy");
-    await navigateToTab(page, "Market");
+async function openMerchant(page: Page, mode: 'sell' | 'buy') {
+  await page.getByRole('button', {name: /Edmund the Grain Merchant/}).click();
+  await expect(page.getByRole('heading', {name: 'Edmund the Grain Merchant', exact: true})).toBeVisible();
+  await page.getByRole('button', {name: mode === 'sell' ? 'Sell to Merchant' : 'Buy from Merchant', exact: true}).click();
+  const row = page.getByTestId(`merchant-${mode}-grain`);
+  await expect(row).toBeVisible();
+  return row;
+}
+
+test.describe('Market Tab', () => {
+  test.beforeEach(async ({page}) => {
+    await page.goto('/');
+    await startGame(page, 'easy');
+    await navigateToTab(page, 'Market');
   });
 
-  test("market square is visible with merchant content", async ({ page }) => {
-    // Market should show trading-related content
-    const hasMarketContent = await page.evaluate(() => {
-      const text = document.body.innerText;
-      return (
-        text.includes("Market") ||
-        text.includes("Merchant") ||
-        text.includes("Sell") ||
-        text.includes("Buy") ||
-        text.includes("Trade")
-      );
+  test('market square is visible with merchant content', async ({page}) => {
+    await expect(page.getByTestId('market-price-board')).toBeVisible();
+    await expect(page.getByRole('button', {name: /Edmund the Grain Merchant/})).toBeVisible();
+  });
+
+  test('sell mode shows available resources to sell', async ({page}) => {
+    const row = await openMerchant(page, 'sell');
+    await expect(row).toContainText('Grain');
+    await expect(row.getByRole('button', {name: /^Sell 1 Grain for \d+d$/})).toBeEnabled();
+  });
+
+  test('buy mode shows available resources to purchase', async ({page}) => {
+    const row = await openMerchant(page, 'buy');
+    await expect(row).toContainText('Supply: 100 this season');
+    await expect(row.getByRole('button', {name: /^Buy 1 Grain for \d+d$/})).toBeEnabled();
+  });
+
+  for (const width of [390, 1366]) for (const mode of ['sell', 'buy'] as const) {
+    test(`${mode === 'sell' ? 'selling a resource increases' : 'buying a resource decreases'} denarii at ${width}px`, async ({page}, info) => {
+      const errors: string[] = [];
+      page.on('pageerror', error => errors.push(error.message));
+      await page.setViewportSize({width, height: 844});
+      const row = await openMerchant(page, mode);
+      const before = await saveSnapshot(page);
+      const grain = present(before.state.inventory.grain, 'starting grain');
+      const tradeCount = present(before.state.tradeCount, 'starting trade counter');
+      expect(grain).toBeGreaterThan(0);
+      expect(before.state.market.supply).toBeUndefined();
+      const verb = mode === 'sell' ? 'Sell' : 'Buy';
+      const action = row.getByRole('button', {name: new RegExp(`^${verb} 1 Grain for \\d+d$`)});
+      await expect(action).toBeVisible();
+      await expect(action).toBeEnabled();
+      const label = present(await action.getAttribute('aria-label'), 'trade price label');
+      const price = Number(present(label.match(/ for (\d+)d$/)?.[1], 'displayed trade price'));
+      expect(Number.isSafeInteger(price)).toBe(true);
+      expect(price).toBeGreaterThan(0);
+      const delta = mode === 'sell' ? -1 : 1;
+      const cash = before.state.denarii - delta * price;
+      await row.scrollIntoViewIfNeeded();
+      await page.screenshot({path: info.outputPath('before-trade.png'), animations: 'disabled'});
+      await action.click();
+      await expect(page.getByTestId('resource-denarii')).toHaveText(`${cash}d`);
+      const after = await saveSnapshot(page);
+      expect(after.state.denarii).toBe(cash);
+      expect(after.state.inventory).toEqual({...before.state.inventory, grain: grain + delta});
+      expect(after.state.food).toBe(before.state.food + delta);
+      expect(after.state.tradeCount).toBe(tradeCount + 1);
+      expect(after.state.rngState).toBe(before.state.rngState);
+      expect(after.state).toMatchObject({phase: 'management', turn: before.state.turn, season: before.state.season, year: before.state.year});
+      if (mode === 'buy') {
+        expect(after.state.market.supply).toEqual({turn: before.state.turn, purchased: {grain: 1}});
+        await expect(row).toContainText('Supply: 99 this season');
+      } else {
+        expect(after.state.market.supply).toEqual(before.state.market.supply);
+        await expect(row).toContainText(`(${grain - 1} in stock)`);
+      }
+      await page.screenshot({path: info.outputPath('after-trade.png'), animations: 'disabled'});
+      await page.reload();
+      await page.getByRole('button', {name: 'Load saved game', exact: true}).click();
+      await expect(page.getByTestId('resource-denarii')).toHaveText(`${cash}d`);
+      const reloaded = await saveSnapshot(page);
+      expect(reloaded.raw).toBe(after.raw);
+      expect(reloaded.state.tradeCount).toBe(tradeCount + 1);
+      expect(errors).toEqual([]);
     });
-
-    expect(hasMarketContent).toBe(true);
-  });
-
-  test("sell mode shows available resources to sell", async ({ page }) => {
-    // Look for sell-related button or mode
-    const sellBtn = page.getByText("Sell to Merchant", { exact: false }).first();
-    if (await sellBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await sellBtn.click();
-      await page.waitForTimeout(300);
-
-      // Should show resources with sell prices
-      const hasResources = await page.evaluate(() => {
-        const text = document.body.innerText;
-        return text.includes("Grain") || text.includes("Livestock") || text.includes("Iron");
-      });
-      expect(hasResources).toBe(true);
-    }
-  });
-
-  test("buy mode shows available resources to purchase", async ({ page }) => {
-    const buyBtn = page.getByText("Buy from Merchant", { exact: false }).first();
-    if (await buyBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await buyBtn.click();
-      await page.waitForTimeout(300);
-
-      const hasResources = await page.evaluate(() => {
-        const text = document.body.innerText;
-        return text.includes("Grain") || text.includes("Iron") || text.includes("Livestock");
-      });
-      expect(hasResources).toBe(true);
-    }
-  });
-
-  test("selling a resource increases denarii", async ({ page }) => {
-    const initialDenarii = present(await getDenarii(page), "initial denarii");
-
-    // Enter sell mode
-    const sellBtn = page.getByText("Sell to Merchant", { exact: false }).first();
-    if (await sellBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await sellBtn.click();
-      await page.waitForTimeout(300);
-    }
-
-    // Try to find and click a quick-sell button (sells 1 unit)
-    // Quick trade buttons are small numbered buttons like "1", "5"
-    const quickSellBtns = page.locator("button").filter({ hasText: /^1$/ });
-    const count = await quickSellBtns.count();
-    if (count > 0) {
-      await quickSellBtns.first().click();
-      await page.waitForTimeout(300);
-
-      const newDenarii = await getDenarii(page);
-      expect(newDenarii).toBeGreaterThan(initialDenarii);
-    }
-  });
-
-  test("buying a resource decreases denarii", async ({ page }) => {
-    const initialDenarii = present(await getDenarii(page), "initial denarii");
-
-    // Enter buy mode
-    const buyBtn = page.getByText("Buy from Merchant", { exact: false }).first();
-    if (await buyBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-      await buyBtn.click();
-      await page.waitForTimeout(300);
-    }
-
-    // Try to find and click a quick-buy button
-    const quickBuyBtns = page.locator("button").filter({ hasText: /^1$/ });
-    const count = await quickBuyBtns.count();
-    if (count > 0) {
-      await quickBuyBtns.first().click();
-      await page.waitForTimeout(300);
-
-      const newDenarii = await getDenarii(page);
-      expect(newDenarii).toBeLessThan(initialDenarii);
-    }
-  });
+  }
 });
