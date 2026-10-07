@@ -138,11 +138,11 @@ test.describe("Management Phase Theme", () => {
     expect(activeTab.color).toBe(THEME.gold);
     expect(activeTab.bg).toBe(THEME.bgCard);
 
-    // Inactive tabs should use dark tan
+    // Inactive tabs use the readable tan token authored by TabBar.
     const inactiveTab = tabStyles.find((t) => !t.isActive);
     expect(inactiveTab, "should have inactive tabs").toBeTruthy();
     if (!inactiveTab) throw new Error('Inactive tab styles are missing.');
-    expect(inactiveTab.color).toBe(THEME.tanDark);
+    expect(inactiveTab.color).toBe(THEME.tan);
   });
 
   test("Simulate Season button uses royal red gradient with gold text", async ({

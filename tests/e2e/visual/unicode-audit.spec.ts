@@ -6,132 +6,17 @@
  * Captures screenshots of each screen for visual reference.
  */
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import {scanForUnicodeIcons, type UnicodeFinding} from '../unicodeAudit.ts';
 import {
   waitForFonts,
   startGame,
   navigateToTab,
 } from "../helpers.ts";
 
-// Unicode ranges used as visual icons (not normal prose punctuation).
-// We look for anything in these blocks rendered as raw text:
-//   - Miscellaneous Symbols (U+2600–U+26FF)
-//   - Dingbats (U+2700–U+27BF)
-//   - Miscellaneous Technical (U+2300–U+23FF)
-//   - Geometric Shapes (U+25A0–U+25FF)
-//   - Arrows (U+2190–U+21FF)
-//   - Mathematical Operators used as icons (U+2200–U+22FF)
-//   - Box Drawing / Block Elements (U+2500–U+259F)
-//   - Supplemental Arrows / Misc Symbols (U+2900–U+297F, U+2980–U+29FF)
-//   - General Punctuation used as icons (U+2020–U+206F subset)
-//   - Letterlike Symbols (U+2100–U+214F)
-//   - Music Symbols, playing cards, etc.
-//
-// We exclude normal prose characters: em dash (—), en dash (–), smart quotes,
-// ellipsis (…), middle dot for sentences, accent marks, etc.
-
-const PROSE_EXCLUDE = new Set([
-  "\u2014", // — em dash
-  "\u2013", // – en dash
-  "\u2018", // ' left single quote
-  "\u2019", // ' right single quote
-  "\u201C", // " left double quote
-  "\u201D", // " right double quote
-  "\u2026", // … ellipsis
-  "\u00B7", // · middle dot (used in prose)
-  "\u00D7", // × multiplication sign (used in prose like "×1.5")
-  "\u2212", // − minus sign
-  "\u00E9", // é
-  "\u00F3", // ó
-  "\u00FC", // ü
-]);
-
-/**
- * Scans the page for Unicode characters used as visual icons.
- * Returns an array of { char, codePoint, context, tagName, x, y }.
- */
-interface UnicodeFinding {
-  char: string; codePoint: string; unicodeName: string; context: string;
-  tagName: string; className: string; x: number; y: number; visible: boolean;
-}
 interface IconSummary {
   char: string; codePoint: string; name: string;
   locations: {screen: string; context: string; tag: string}[];
-}
-
-async function scanForUnicodeIcons(page: Page): Promise<UnicodeFinding[]> {
-  return page.evaluate((excludeList) => {
-    const results: UnicodeFinding[] = [];
-    const seen = new Map<string, boolean>(); // track unique char+context combos
-
-    // Walk all text nodes in the document
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
-
-    while (walker.nextNode()) {
-      const node = walker.currentNode;
-      const text = node.textContent;
-      if (!text) continue;
-
-      // Check if parent is visible
-      const parent = node.parentElement;
-      if (!parent) continue;
-      const style = window.getComputedStyle(parent);
-      if (style.display === "none" || style.visibility === "hidden") continue;
-
-      // Scan for non-ASCII characters in icon ranges
-      for (let i = 0; i < text.length; i++) {
-        const cp = text.codePointAt(i);
-        if (cp === undefined) throw new Error('Missing code point within text bounds.');
-        const char = String.fromCodePoint(cp);
-
-        // Skip basic ASCII and Latin-1 prose characters
-        if (cp < 0x2000) continue;
-        // Skip excluded prose characters
-        if (excludeList.includes(char)) continue;
-
-        // Check if this char is inside an SVG or an <img> (already replaced)
-        let el: Element | null = parent;
-        let insideSvgOrImg = false;
-        while (el) {
-          if (el.tagName === "SVG" || el.tagName === "svg" || el.tagName === "IMG") {
-            insideSvgOrImg = true;
-            break;
-          }
-          el = el.parentElement;
-        }
-        if (insideSvgOrImg) continue;
-
-        // Get surrounding context (trim to 60 chars)
-        const fullText = text.trim();
-        const context = fullText.length > 60
-          ? fullText.substring(0, 60) + "..."
-          : fullText;
-
-        const rect = parent.getBoundingClientRect();
-        const key = `${char}|${parent.tagName}|${context.substring(0, 30)}`;
-
-        if (!seen.has(key)) {
-          seen.set(key, true);
-          results.push({
-            char,
-            codePoint: "U+" + cp.toString(16).toUpperCase().padStart(4, "0"),
-            unicodeName: "", // filled in post-processing
-            context,
-            tagName: parent.tagName.toLowerCase(),
-            className: (parent.className || "").toString().substring(0, 80),
-            x: Math.round(rect.x),
-            y: Math.round(rect.y),
-            visible: rect.width > 0 && rect.height > 0,
-          });
-        }
-      }
-    }
-    return results;
-  }, [...PROSE_EXCLUDE]);
 }
 
 // Map of code points to descriptive names for the report
@@ -227,7 +112,7 @@ test.describe("Unicode Asset Audit", () => {
     allFindings["Title Screen"] = findings;
 
     console.log("\n=== TITLE SCREEN ===");
-    console.log(`Found ${findings.length} Unicode icon instances`);
+    console.log(`Found ${findings.length} Unicode icon code-point candidates`);
     for (const f of findings) {
       const name = UNICODE_NAMES[f.codePoint] || f.char;
       console.log(`  ${f.codePoint} ${name} — <${f.tagName}> "${f.context.substring(0, 50)}"`);
@@ -287,7 +172,7 @@ test.describe("Unicode Asset Audit", () => {
       allFindings[`${tab} Tab`] = findings;
 
       console.log(`\n=== ${tab.toUpperCase()} TAB ===`);
-      console.log(`Found ${findings.length} Unicode icon instances`);
+      console.log(`Found ${findings.length} Unicode icon code-point candidates`);
       for (const f of findings) {
         const name = UNICODE_NAMES[f.codePoint] || f.char;
         console.log(`  ${f.codePoint} ${name} — <${f.tagName}> "${f.context.substring(0, 50)}"`);
@@ -306,7 +191,7 @@ test.describe("Unicode Asset Audit", () => {
     const dashboardFindings = findings.filter((f) => f.y < 200);
 
     console.log("\n=== DASHBOARD ===");
-    console.log(`Found ${dashboardFindings.length} Unicode icon instances in dashboard area`);
+    console.log(`Found ${dashboardFindings.length} Unicode icon code-point candidates in dashboard area`);
     for (const f of dashboardFindings) {
       const name = UNICODE_NAMES[f.codePoint] || f.char;
       console.log(`  ${f.codePoint} ${name} — <${f.tagName}> "${f.context.substring(0, 50)}"`);
@@ -427,7 +312,7 @@ test.describe("Unicode Asset Audit", () => {
     console.log("\n" + "=".repeat(80));
     console.log("COMPLETE UNICODE ASSET AUDIT — Characters Not Replaced by Pixel Sprites");
     console.log("=".repeat(80));
-    console.log(`\nTotal unique Unicode icon characters found: ${sorted.length}\n`);
+    console.log(`\nTotal unique Unicode icon code-point candidates found: ${sorted.length}\n`);
 
     console.log("Code Point | Char | Name                              | Screens Found In");
     console.log("-".repeat(80));
