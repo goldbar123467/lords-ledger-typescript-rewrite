@@ -4,6 +4,8 @@ import seasonalEventsData from "./data/seasonalEvents";
 import randomEventsData from "./data/randomEvents";
 import { ALL_FLIPS, computeFlipConsequences, isCyoaFlip, computeCyoaConsequences } from "./engine/flipEngine";
 import useMusic from "./hooks/useMusic";
+import { useSaveFeedback } from './hooks/useSaveFeedback.ts';
+import { useDeferredAction } from './hooks/useDeferredAction.ts';
 import { LEGACY_SAVE_KEY, SAVE_KEY_V2, readLegacySave, readV2Save, writeV2Save } from "./save/saveGame";
 
 import TitleScreen from "./components/TitleScreen";
@@ -116,6 +118,8 @@ export default function App() {
   }
 
   function handleStart(difficulty) {
+    cancelDeferredAction();
+    clearSaveFeedback();
     dispatch({ type: "START_GAME", payload: { ...payload, difficulty, seed: newGameSeed() } });
   }
 
@@ -140,6 +144,8 @@ export default function App() {
   }
 
   function handlePlayAgain() {
+    cancelDeferredAction();
+    clearSaveFeedback();
     dispatch({ type: "PLAY_AGAIN", payload: { ...payload, seed: newGameSeed() } });
   }
 
@@ -225,29 +231,18 @@ export default function App() {
 
   const [tavernOpen, setTavernOpen] = useState(false);
   const [watchtowerOpen, setWatchtowerOpen] = useState(false);
-  const [isResolving, setIsResolving] = useState(false);
-  const [saveFlash, setSaveFlash] = useState(null); // saved | loaded | imported | recovered | error
-  const [saveError, setSaveError] = useState("");
-  const [saveRecovery, setSaveRecovery] = useState(null);
+  const { pending: isResolving, schedule: scheduleDeferredAction, cancel: cancelDeferredAction } = useDeferredAction();
+  const { feedback, reportError: reportSaveError, reportSuccess: reportSaveSuccess,
+    reportNotice: reportSaveNotice, clear: clearSaveFeedback } = useSaveFeedback();
+  const saveFlash = feedback?.kind ?? null;
+  const saveError = feedback && 'message' in feedback ? feedback.message : '';
+  const saveRecovery = feedback?.kind === 'error' ? feedback.recovery : null;
   const [hasSavedGame, setHasSavedGame] = useState(() => {
     try { return !!localStorage.getItem(SAVE_KEY_V2); } catch { return false; }
   });
   const [hasLegacySave] = useState(() => {
     try { return !!localStorage.getItem(LEGACY_SAVE_KEY); } catch { return false; }
   });
-
-  function reportSaveError(message, recovery = null) {
-    setSaveRecovery(recovery);
-    setSaveError(message);
-    setSaveFlash("error");
-  }
-
-  function reportSaveSuccess(kind) {
-    setSaveRecovery(null);
-    setSaveError("");
-    setSaveFlash(kind);
-    setTimeout(() => setSaveFlash(null), 2000);
-  }
 
   function handleSaveGame() {
     try {
@@ -265,6 +260,7 @@ export default function App() {
       if (!raw) { reportSaveError("No 2.0 save was found."); return; }
       const result = readV2Save(raw);
       if (!result.ok) { reportSaveError(result.error, result.canRestartManuscript ? { raw, kind: "v2" } : null); return; }
+      cancelDeferredAction();
       setTavernOpen(false);
       setWatchtowerOpen(false);
       dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
@@ -284,13 +280,13 @@ export default function App() {
       if (!result.ok) { reportSaveError(result.error, result.canRestartManuscript ? { raw, kind: "legacy" } : null); return; }
       const currentSaveExists = localStorage.getItem(SAVE_KEY_V2) !== null;
       if (!currentSaveExists) localStorage.setItem(SAVE_KEY_V2, writeV2Save(result.state));
+      cancelDeferredAction();
       setTavernOpen(false);
       setWatchtowerOpen(false);
       dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
       setViewSession(session => session + 1);
       if (currentSaveExists) {
-        setSaveError("Old save opened. Your 2.0 save is unchanged; choose Save game to replace it.");
-        setSaveFlash("imported");
+        reportSaveNotice("imported", "Old save opened. Your 2.0 save is unchanged; choose Save game to replace it.");
       } else {
         setHasSavedGame(true);
         reportSaveSuccess("loaded");
@@ -306,23 +302,20 @@ export default function App() {
       ? readLegacySave(saveRecovery.raw, { restartManuscript: true })
       : readV2Save(saveRecovery.raw, { restartManuscript: true });
     if (!result.ok) { reportSaveError(result.error); return; }
-    setSaveRecovery(null);
+    cancelDeferredAction();
     setTavernOpen(false);
     setWatchtowerOpen(false);
     dispatch({ type: "LOAD_SAVE", payload: { savedState: result.state } });
     setViewSession(session => session + 1);
-    setSaveError("Manuscript restarted. Estate resources and progress are kept. Stored saves are unchanged; choose Save game to save this recovery.");
-    setSaveFlash("recovered");
+    reportSaveNotice("recovered", "Manuscript restarted. Estate resources and progress are kept. Stored saves are unchanged; choose Save game to save this recovery.");
   }
 
   function handleSimulateSeason() {
     if (isResolving) return;
     setTavernOpen(false);
     setWatchtowerOpen(false);
-    setIsResolving(true);
-    requestAnimationFrame(() => {
+    scheduleDeferredAction(() => {
       dispatch({ type: "SIMULATE_SEASON", payload });
-      setIsResolving(false);
     });
   }
 

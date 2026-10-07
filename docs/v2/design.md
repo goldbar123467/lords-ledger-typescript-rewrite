@@ -70,3 +70,8 @@ Derive five station IDs from their authored card tuple. Use a discriminated comm
 ## Tavern secret target and feedback (2026-10-06)
 
 Keep the star/EMPTY easter egg and authored 25d reward, but expose a neutral Inspect the wall crack name and a quiet opaque 44px native control. Reuse one DOM button after collection; remove its callback and set aria-disabled while preserving focus, preventing duplicate reward actions. The existing keyboard-only reading-focus helper serves only the Wall wrapper. The existing timeout owner now owns the unchanged four-second reward message and cancels on unmount. Status semantics improve feedback structure; actual screen-reader/native-zoom and dim surrounding graffiti remain IN PROGRESS.
+
+
+## App transient ownership (2026-10-06)
+
+Save feedback is one local discriminated value: finite success status, error with optional validated recovery source, or durable import/recovery notice. Each fresh success object owns its two-second expiry, cleanup and identity guard. A nullable ref owns one deferred season action independently of asynchronous pending render state. Successful game replacement cancels that action; failures preserve the current game. These are transient DOM controllers, with no storage or simulation work inside either hook. Complete App/reducer state/action checking and broader lifecycle/AT/zoom remain IN PROGRESS.

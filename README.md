@@ -57,6 +57,8 @@ Knight's Gambit now uses checked TSX props and one discriminated stage instead o
 
 The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All362unit checks and27focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
 
+App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. The App and main reducer themselves remain unchecked pending migration.
+
 ## Code map
 
 | Location | Rewrite responsibility |
@@ -87,7 +89,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Correct App save/status and navigation callback lifecycle, then complete the app and reducer.
+1. Complete the App and reducer state/action contracts and checked TypeScript migration.
 2. Continue reducing duplicated reducer logic and completing its state/action contracts.
 3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
 4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
