@@ -83,7 +83,7 @@ function nextContent(state: GameSnapshot, kind: CompanionId, random: () => numbe
   const fields = COMPANIONS[kind], tavern = state.tavern ?? {}, current = tavern[fields.current];
   if (current?.type === 'offer' && current.resolution === null && fields.offers.find(offer => offer.id === current.offerId)?.canAccept(state)) return state;
   const next = nextCompanionContent(kind, random, tavern[fields.used] ?? [], tavern[fields.advice] ?? [], tavern[fields.stories] ?? []);
-  return next ? {...state, tavern: {...tavern, [fields.current]: next.content,
+  return next ? {...state, tavern: {...tavern, [fields.current]: next.content, [fields.used]: tavern[fields.used] ?? [],
     [fields.advice]: next.adviceRemaining, [fields.stories]: next.storiesRemaining}} : state;
 }
 

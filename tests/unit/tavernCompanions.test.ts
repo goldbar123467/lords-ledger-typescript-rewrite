@@ -2,12 +2,65 @@ import {snapshotFixture} from '../gameInput.ts';
 import {present} from '../gameInput.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { initialState } from '../../src/engine/gameReducer.ts';
+import { initialState, createInitialState, gameReducer as checkedGameReducer } from '../../src/engine/gameReducer.ts';
 import { rawGameReducer as gameReducer } from '../gameInput.ts';
-import { nextCompanionContent } from '../../src/engine/tavernCompanion.ts';
+import { nextCompanionContent, isCompanionOfferId } from '../../src/engine/tavernCompanion.ts';
+import type {GameCommand} from '../../src/engine/gameCommands.ts';
 import { readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 import { calculateDefenseRating } from '../../src/data/military.ts';
 import seasonalEventData from '../../src/data/seasonalEvents.ts';
+
+for (const kind of ['marta', 'aldric'] as const) {
+  test(`${kind} offer selected from omitted compatible history can save, resume and settle once`, () => {
+    const started = checkedGameReducer(createInitialState(17), {
+      type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 },
+    });
+    const older = {...started, tavern: {...started.tavern}};
+    delete older.tavern[`${kind}OffersUsed`];
+    delete older.tavern[`${kind}AdviceRemaining`];
+    delete older.tavern[`${kind}StoriesRemaining`];
+    const initialRaw = writeV2Save(older);
+    const loaded = readV2Save(initialRaw);
+    assert.ok(loaded.ok);
+    const input = structuredClone(loaded.state);
+    const offered = checkedGameReducer(loaded.state, {
+      type: kind === 'marta' ? 'TAVERN_MARTA_NEXT' : 'TAVERN_ALDRIC_NEXT',
+    });
+    assert.deepEqual(loaded.state, input, 'Selection must not mutate the loaded save.');
+    const content = present(offered.tavern[`${kind}CurrentContent`], 'selected content');
+    assert.equal(content.type, 'offer');
+    assert.ok(content.type === 'offer');
+    assert.deepEqual(offered.tavern[`${kind}OffersUsed`], []);
+    const pendingRaw = writeV2Save(offered);
+    const resumed = readV2Save(pendingRaw);
+    assert.ok(resumed.ok);
+    assert.equal(writeV2Save(resumed.state), pendingRaw);
+    assert.equal(resumed.state.rngState, offered.rngState);
+    for (const operation of ['ACCEPT_OFFER', 'DECLINE_OFFER'] as const) {
+      let command: GameCommand;
+      if (kind === 'marta') {
+        assert.ok(isCompanionOfferId('marta', content.offerId));
+        command = {type: operation === 'ACCEPT_OFFER' ? 'TAVERN_MARTA_ACCEPT_OFFER' : 'TAVERN_MARTA_DECLINE_OFFER',
+          payload: {offerId: content.offerId}};
+      } else {
+        assert.ok(isCompanionOfferId('aldric', content.offerId));
+        command = {type: operation === 'ACCEPT_OFFER' ? 'TAVERN_ALDRIC_ACCEPT_OFFER' : 'TAVERN_ALDRIC_DECLINE_OFFER',
+          payload: {offerId: content.offerId}};
+      }
+      const settled = checkedGameReducer(resumed.state, command);
+      assert.deepEqual(settled.tavern[`${kind}OffersUsed`], [content.offerId]);
+      const resolution = present(settled.tavern[`${kind}CurrentContent`], 'settled content');
+      assert.ok(resolution.type === 'offer');
+      assert.equal(resolution.resolution, operation === 'ACCEPT_OFFER' ? 'accepted' : 'declined');
+      assert.equal(settled.rngState, resumed.state.rngState);
+      assert.strictEqual(checkedGameReducer(settled, command), settled);
+      const settledRaw = writeV2Save(settled);
+      const reloaded = readV2Save(settledRaw);
+      assert.ok(reloaded.ok);
+      assert.equal(writeV2Save(reloaded.state), settledRaw);
+    }
+  });
+}
 
 test('Marta and Aldric cannot resolve an offer that was never displayed', () => {
   const started = gameReducer(initialState, { type: 'START_GAME', payload: { difficulty: 'easy', seed: 1 } });

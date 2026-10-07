@@ -38,13 +38,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Headless driver (`75631db`) | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
 | Browser driver (`13ca781`) | 775 unit tests, typecheck, lint, build, and ten focused browser cases passed; six natural campaigns completed with two victories and four famine losses. Independent tester: eight browser cases and a Hard turn-40 victory | Managed action/card fixtures are not acquired campaigns; selected natural runs do not establish final campaign, full interface, or human usability acceptance |
 | QA diagnostics (`fbd8c8f`) | 777 unit tests, typecheck, lint, and ten browser cases passed; independent tester passed eight cases | Reports retain failed requests and early exceptions. Expected media cancellation during a declared reload is recorded separately; complete failure attribution and interruption recovery remain unproved |
-| Companion consolidation | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | An inherited missing-history save defect remains open: selecting an offer from an accepted save with omitted companion history can produce an unsavable state. This checkpoint preserves behavior; it does not establish complete save closure |
+| Companion consolidation (`b9d43c5`) | 777 unit tests, typecheck, lint, and build passed; 81,168 old/new state comparisons and 65,664 save-output comparisons matched. Independent tester passed ten production browser cases; tester and grader accepted the bounded consolidation | Selecting an offer from an accepted save with omitted history could produce an unsavable state. The next checkpoint fixes that inherited defect; complete save closure remains unproved |
+| Companion history correction | 779 unit tests, typecheck, lint, and build passed; both native regressions failed before and passed after. Independent tester passed four browser cases and 46 write/read/resave cases; grader verified existing-state parity, closure and no-op behavior | G-CA01 is closed for both companions. Successful selection initializes omitted history without changing existing receipts or RNG behavior; broader runtime, interface and campaign gates remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,877 lines**, versus 45,347 at baseline. Companion consolidation removed 126 net production lines, including its new domain module; line totals also reflect formatting. The companion checkpoint's inclusive subtotal was **80,314 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **44,877 lines**, versus 45,347 at baseline. Companion consolidation removed 126 net production lines, including its new domain module; line totals also reflect formatting. The history correction's inclusive subtotal was **80,479 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -64,7 +65,7 @@ Production text measured **44,877 lines**, versus 45,347 at baseline. Companion 
 
 ## Next rewrite sections
 
-1. Repair missing companion histories that become unsavable after offer selection, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
+1. Continue orchestration decomposition and state, command, save, arithmetic, and replay validation. Inspect remaining Market and haggle settlement duplication next.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
