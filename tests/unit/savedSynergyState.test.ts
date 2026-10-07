@@ -3,6 +3,7 @@ import test from 'node:test';
 import { createInitialState, gameReducer } from '../../src/engine/gameReducer.js';
 import { advanceSynergyCounters, checkSynergies } from '../../src/engine/synergyEngine.ts';
 import { isActivatedSynergies } from '../../src/engine/marketHaggle.ts';
+import type { SavedSynergyState } from '../../src/save/savedSynergy.ts';
 import { readLegacySave, readV2Save, writeV2Save } from '../../src/save/saveGame.ts';
 
 const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 104 } });
@@ -34,8 +35,9 @@ for (const value of [undefined, null, -3.5, 0, 4.5]) test(`historical seasonal c
   if (!loaded.ok) throw new Error(loaded.error); if (!legacy.ok) throw new Error(legacy.error);
   assert.equal(writeV2Save(loaded.state), raw); assert.equal(JSON.stringify(legacy.state), JSON.stringify(state));
   const next = advanceSynergyCounters(loaded.state.synergies, { taxRate: 'low', food: 200, faith: 0, peopleApproval: 0 });
-  const seasonalCounters: readonly number[] = [next.lowTaxTurns, next.foodSurplusTurns, next.highFaithTurns, next.highPeopleTurns];
-  assert.equal(seasonalCounters.length, 4);
+  const seasonalCounters: readonly number[] = [next.lowTaxTurns, next.foodSurplusTurns];
+  const sustainedCounters: readonly NonNullable<SavedSynergyState['highFaithTurns']>[] = [next.highFaithTurns, next.highPeopleTurns];
+  assert.equal(seasonalCounters.length + sustainedCounters.length, 4);
   assert.equal(next.lowTaxTurns, (value ?? 0) + 1); assert.equal(next.foodSurplusTurns, (value ?? 0) + 1);
   assert.deepEqual(checkSynergies(loaded.state), checkSynergies(state));
   const sold = gameReducer(loaded.state, { type: 'SELL_RESOURCE', payload: { resource: 'grain', quantity: 1 } });

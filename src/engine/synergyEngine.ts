@@ -12,6 +12,7 @@ import {
 } from "../data/synergies.ts";
 import type { SynergyTierDefinition, SynergyConditions } from "../data/synergies.ts";
 import { getBuildingType } from "./buildingActions.ts";
+import { addTavernLedgerInteger as addExactInteger, isTavernLedgerInteger as isExactInteger, type TavernLedgerInteger as ExactInteger } from './tavernLedger.ts';
 
 type SynergyBuilding = string | { type: string };
 export interface SynergyState {
@@ -30,14 +31,25 @@ export interface SynergyState {
     woolTrades?: number;
     spicePurchases?: number;
     lowTaxTurns?: number | null;
-    highFaithTurns?: number;
-    highPeopleTurns?: number;
+    highFaithTurns?: ExactInteger;
+    highPeopleTurns?: ExactInteger;
     foodSurplusTurns?: number | null;
     revoltTriggered?: boolean | null;
   };
 }
 
 const foodBuildingIds: ReadonlySet<string> = new Set(FOOD_BUILDING_IDS);
+
+function sustainedCounterBelow(value: ExactInteger | undefined, threshold: number): boolean {
+  if (typeof value !== 'string') return (value ?? 0) < threshold;
+  if (!isExactInteger(value, true)) return true;
+  return Number.isFinite(threshold) ? BigInt(value) < BigInt(Math.ceil(threshold)) : threshold === Infinity;
+}
+function incrementSustainedCounter(value: ExactInteger | undefined): ExactInteger {
+  const next = addExactInteger(value, 1, true);
+  if (next === null) throw new TypeError('Sustained synergy counter must be an exact nonnegative integer.');
+  return next;
+}
 
 /**
  * Count how many of a given building ID the player has built.
@@ -100,10 +112,10 @@ export function checkTierConditions(tierDef: SynergyTierDefinition, state: Syner
   if (c.lowTaxTurns !== undefined && (synergies.lowTaxTurns ?? 0) < c.lowTaxTurns) return false;
 
   if (c.highPeopleTurns !== undefined &&
-      ((synergies.highPeopleTurns ?? 0) < c.highPeopleTurns ||
+      (sustainedCounterBelow(synergies.highPeopleTurns, c.highPeopleTurns) ||
        (state.greatHall?.meters?.people ?? 0) < HIGH_PEOPLE_THRESHOLD)) return false;
   if (c.highFaithTurns !== undefined &&
-      ((synergies.highFaithTurns ?? 0) < c.highFaithTurns ||
+      (sustainedCounterBelow(synergies.highFaithTurns, c.highFaithTurns) ||
        (state.chapel?.faith ?? 0) < HIGH_FAITH_THRESHOLD)) return false;
 
   // foodSurplusTurns (consecutive turns with food > 100)
@@ -144,14 +156,14 @@ export function advanceSynergyCounters<Previous extends NonNullable<SynergyState
   previous: Previous,
   observed: { taxRate: string; food: number; faith: number; peopleApproval: number },
 ): Omit<Previous, 'lowTaxTurns' | 'foodSurplusTurns' | 'highFaithTurns' | 'highPeopleTurns'> &
-  Record<'lowTaxTurns' | 'foodSurplusTurns' | 'highFaithTurns' | 'highPeopleTurns', number> {
+  Record<'lowTaxTurns' | 'foodSurplusTurns', number> & Record<'highFaithTurns' | 'highPeopleTurns', ExactInteger> {
   return {
     ...previous,
     lowTaxTurns: observed.taxRate === 'low' || observed.taxRate === 'medium'
       ? (previous.lowTaxTurns ?? 0) + 1 : 0,
     foodSurplusTurns: observed.food > 100 ? (previous.foodSurplusTurns ?? 0) + 1 : 0,
-    highFaithTurns: observed.faith >= HIGH_FAITH_THRESHOLD ? (previous.highFaithTurns ?? 0) + 1 : 0,
-    highPeopleTurns: observed.peopleApproval >= HIGH_PEOPLE_THRESHOLD ? (previous.highPeopleTurns ?? 0) + 1 : 0,
+    highFaithTurns: observed.faith >= HIGH_FAITH_THRESHOLD ? incrementSustainedCounter(previous.highFaithTurns) : 0,
+    highPeopleTurns: observed.peopleApproval >= HIGH_PEOPLE_THRESHOLD ? incrementSustainedCounter(previous.highPeopleTurns) : 0,
   };
 }
 
