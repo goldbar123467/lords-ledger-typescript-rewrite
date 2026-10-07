@@ -20,7 +20,8 @@ test('saved knight summary applies morale and leaves bankruptcy for the season s
     raids: { ...started.raids, lastRaidTurn: 19 },
   };
   const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-  let summary = gameReducer(gameReducer(simulated, { type: 'ADVANCE_TURN' }), { type: 'DISMISS_FLIP_INTRO' });
+  const resolved = gameReducer(simulated, { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } });
+  let summary = gameReducer(gameReducer(resolved, { type: 'ADVANCE_TURN' }), { type: 'DISMISS_FLIP_INTRO' });
   for (let step = 0; step < 4; step++) summary = gameReducer(summary, { type: 'SELECT_FLIP_OPTION', payload: { optionIndex: 0 } });
   expect(summary.cyoaEndingType).toBe('good');
   const fixture = { ...summary, denarii: 0, bankruptcyTurns: 5,
@@ -66,7 +67,8 @@ for (const [taxRate, flipId] of [['high', 'serf_week'], ['medium', 'cyoa_lord']]
     // Fixture-assisted turn-seven boundary. The browser traverses the complete story.
     const boundary = { ...started, turn: 7, season: 'autumn' as const, year: 2, taxRate };
     const simulated = gameReducer(boundary, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-    const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+    const entered = gameReducer(gameReducer(simulated,
+      { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
     expect(entered.currentFlipId).toBe(flipId);
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -22,7 +22,8 @@ for (const width of [390, 1366]) for (const branching of [false, true]) {
     const started = gameReducer(createInitialState(17), { type: 'START_GAME', payload: { difficulty: 'normal', seed: 17 } });
     const simulated = gameReducer({ ...started, turn: 7, season: 'autumn' as const, year: 2, taxRate: branching ? 'medium' : 'high' },
       { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-    const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+    const entered = gameReducer(gameReducer(simulated,
+      { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
     const story = branching ? CYOA_FLIPS.cyoa_lord : PERSPECTIVE_FLIPS.serf_week;
     expect(entered.currentFlipId).toBe(story.id);
     await page.addInitScript(raw => localStorage.setItem('lords-ledger-v2-save', raw), writeV2Save(entered));

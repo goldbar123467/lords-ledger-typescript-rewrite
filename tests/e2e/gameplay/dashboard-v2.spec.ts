@@ -120,7 +120,8 @@ for (const width of [390, 1366]) {
 test('perspective meters stay separate with enlarged phone text', async ({ page }, info) => {
   const simulated = gameReducer({ ...normal, turn: 7, season: 'autumn' as const, year: 2, taxRate: 'high' },
     { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
-  const entered = gameReducer(simulated, { type: 'ADVANCE_TURN' });
+  const entered = gameReducer(gameReducer(simulated,
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   expect(entered.currentFlipId).toBe('serf_week');
   await page.setViewportSize({ width: 390, height: 844 });
   await load(page, entered, true);

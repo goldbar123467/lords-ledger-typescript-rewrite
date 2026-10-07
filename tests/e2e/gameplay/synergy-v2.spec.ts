@@ -40,8 +40,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const built = gameReducer(newGame(), { type: 'BUILD_BUILDING', payload: { buildingId: 'herb_garden' } });
     const tithed = gameReducer(built, { type: 'CHAPEL_PAY_TITHE', payload: { amount: 50 } });
-    const unlocked = gameReducer(gameReducer(tithed,
-      { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+    const simulated = gameReducer(tithed, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
+    const unlocked = gameReducer(gameReducer(simulated,
+      { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
     // Fixture-assisted notification render from reducer-produced state, not a campaign.
     await loadScenario(page, writeV2Save(unlocked));
     const toast = page.getByRole('status').filter({ hasText: 'Path Unlocked' });
@@ -73,8 +74,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
 test('loading the same notification cancels the outgoing dismissal timer', async ({ page }) => {
   let state = newGame();
   state = gameReducer(state, { type: 'BUILD_BUILDING', payload: { buildingId: 'pasture' } });
+  state = gameReducer(state, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
   state = gameReducer(gameReducer(state,
-    { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+    { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
   await loadScenario(page, writeV2Save(state));
   const first = page.getByRole('status').filter({ hasText: "Shepherd's Promise" });
   await expect(first).toHaveCSS('opacity', '1');
@@ -183,8 +185,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1366, height: 768 
         state = gameReducer(state, { type: 'BUILD_BUILDING', payload: { buildingId } });
       }
       state = gameReducer(state, { type: 'CHAPEL_PAY_TITHE', payload: { amount: 50 } });
+      state = gameReducer(state, { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } });
       state = gameReducer(gameReducer(state,
-        { type: 'SIMULATE_SEASON', payload: { seasonalEvents: [] } }), { type: 'ADVANCE_TURN' });
+        { type: 'CONTINUE_TO_RANDOM', payload: { randomEvents: [] } }), { type: 'ADVANCE_TURN' });
       expect(state.pendingSynergyNotifications.map((entry: { tierId: string }) => entry.tierId))
         .toEqual(['wool_baron_1', 'pious_lord_1']);
       await loadScenario(page, writeV2Save(state));

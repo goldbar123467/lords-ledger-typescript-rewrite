@@ -43,6 +43,7 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Market consolidation (`d76f593`) | 781 unit tests, typecheck, lint, build and 16 browser cases passed; 40,672 old/new state results and 37,552 save outputs matched. Independent tester passed 11 browser cases; both reviewers accepted bounded preservation | The inherited fractional pending-bargain defect found here is fixed in the next checkpoint; full Market, runtime and interface acceptance remains pending |
 | Fractional Market correction (`c443190`) | 783 unit tests, typecheck, lint, build and eight browser cases passed at phone/laptop sizes. Independent tester passed nine cases; grader passed four and verified admitted-state save closure | G-MA01/G-MA02 are closed within scope. Bargains use whole units, fractional leftovers remain sellable, and stale quantity choices cannot start a deal. Wider numeric, UI and campaign gates remain |
 | Phase continuation correction | 787 unit tests, typecheck, lint, build and nine focused browser cases passed. Independent tester passed two browser cases and 361 state/save comparisons; grader passed 16 unit groups and 180 comparisons | G-PC01 is closed for premature calendar advancement. Historical seasonal-resolution saves still continue normally. Same-phase CYOA choices are new decisions; complete phase/provenance and final campaign checks remain |
+| Browser fixture protocol | Typecheck, lint and all 29 affected browser cases passed; independent tester passed five cases. Grader verified all 129 matcher calls and 93 selectors unchanged | Seven fixture sites now resolve the empty random stage before advancing. This repairs test setup after the phase guard; production bytes are unchanged. Managed fixtures are not acquired campaigns |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
@@ -68,7 +69,7 @@ Production text measured **44,743 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Extend the bounded phase audit to contextual CYOA choices and remaining command ownership, then continue orchestration decomposition and state, command, save, arithmetic, and replay validation.
+1. Reject malformed flip-choice indices, then consolidate repeated flip lifecycle handling and continue state, command, save, arithmetic, and replay validation. Contextual CYOA ownership remains unproved; no native stale-choice defect has been reproduced.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 
