@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import WatchtowerDefenseStatus from './WatchtowerDefenseStatus.tsx';
+import {useHallReadingFocus} from '../hooks/useHallReadingFocus.ts';
 import { createRandomCursor } from "../engine/random.ts";
 import { createScanPlan, summarizeScan, type ScanAnomaly, type ScanPlan, type ScanReport } from "../engine/watchtowerScan.ts";
 import {
@@ -81,27 +82,10 @@ function shuffle<T,>(arr: readonly T[]): T[] {
 // ---------------------------------------------------------------------------
 
 function WatchtowerHeader({ subtitle }: { subtitle: string }) {
-  return (
-    <div className="text-center mb-4">
-      <h2
-        className="text-xl sm:text-2xl font-bold uppercase tracking-widest"
-        style={{
-          fontFamily: "Cinzel Decorative, Cinzel, serif",
-          color: "var(--gold, #c4a24a)",
-          textShadow: "0 0 12px rgba(196, 162, 74, 0.25)",
-          letterSpacing: "3px",
-        }}
-      >
-        The Watchtower
-      </h2>
-      <p
-        className="mt-1 italic text-sm"
-        style={{ color: "#8090a0", fontFamily: "Crimson Text, serif" }}
-      >
-        &ldquo;{subtitle}&rdquo;
-      </p>
-    </div>
-  );
+  return <div className="watchtower-heading">
+    <h2>The Watchtower</h2>
+    <p>&ldquo;{subtitle}&rdquo;</p>
+  </div>;
 }
 
 // ---------------------------------------------------------------------------
@@ -816,180 +800,30 @@ function CaptainBriefing({ state, dispatch, onBack }: SectionProps) {
     : content.type === "lesson" ? "A Military Lesson"
     : "Strategic Recommendation";
 
-  return (
-    <div
-      className="rounded-lg border-2 p-4 sm:p-5 max-w-xl mx-auto"
-      style={{
-        backgroundColor: "#0e0a0a",
-        borderColor: "var(--royal-red, #8b1a1a)",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
-      }}
-    >
-      {/* Header */}
-      <h3
-        className="text-center text-lg sm:text-xl font-bold mb-1"
-        style={{ fontFamily: "Cinzel, serif", color: "#c44a4a" }}
-      >
-        Captain Roderic
-      </h3>
-      <p
-        className="text-center text-xs italic mb-3"
-        style={{ color: "#8a6a5a", fontFamily: "Crimson Text, serif" }}
-      >
-        Garrison Commander
-      </p>
+  return <section className="watchtower-captain">
+    <h3>Captain Roderic</h3>
+    <p className="watchtower-caption">Garrison Commander</p>
+    <div className="watchtower-portrait" aria-hidden="true"><span>{"\u26E8"}</span></div>
+    <p className="watchtower-motto">Duty. Vigilance. Stone and steel.</p>
 
-      {/* Portrait */}
-      <div
-        className="flex items-center justify-center rounded-lg border-2 mx-auto"
-        style={{
-          width: 80, height: 80,
-          borderColor: "var(--royal-red, #8b1a1a)",
-          backgroundColor: "#120808",
-          boxShadow: "0 0 12px rgba(139, 26, 26, 0.3)",
-        }}
-      >
-        <span style={{ fontSize: 36, color: "#c44a4a", fontFamily: "serif", lineHeight: 1 }}>
-          {"\u26E8"}
-        </span>
-      </div>
+    {showScribesNote && <section className="watchtower-note">
+      <h4>Scribe{'\u0027'}s Note</h4>
+      <p>{RODERIC_SCRIBES_NOTE}</p>
+      <button onClick={handleDismissScribesNote} className="watchtower-action watchtower-action--note">I understand</button>
+    </section>}
+    <div className="decorative-rule watchtower-rule" aria-hidden="true">{"\u25C6"}</div>
+    {wtComment && <p className="watchtower-comment">&ldquo;{wtComment}&rdquo;</p>}
 
-      {/* Intro */}
-      <p
-        className="text-center italic text-sm mt-3 mb-1"
-        style={{ color: "#7a6a5a", fontFamily: "Crimson Text, serif" }}
-      >
-        Duty. Vigilance. Stone and steel.
-      </p>
-
-      {/* Scribe's Note (first visit) */}
-      {showScribesNote && (
-        <div
-          className="rounded-lg border p-3 mt-3 mb-2"
-          style={{ backgroundColor: "#1a2018", borderColor: "#4a6a3a" }}
-        >
-          <h4
-            className="text-xs font-bold uppercase tracking-widest mb-2"
-            style={{ color: "#8a9a6a", fontFamily: "Cinzel, serif" }}
-          >
-            Scribe{"'"}s Note
-          </h4>
-          <p
-            className="text-xs leading-relaxed italic"
-            style={{ color: "#a8a080", fontFamily: "Crimson Text, serif" }}
-          >
-            {RODERIC_SCRIBES_NOTE}
-          </p>
-          <button
-            onClick={handleDismissScribesNote}
-            className="mt-2 px-3 py-1 rounded text-xs"
-            style={{
-              backgroundColor: "#2a3a1a", color: "#8a9a6a",
-              border: "1px solid #4a6a3a", cursor: "pointer",
-            }}
-          >
-            I understand
-          </button>
-        </div>
-      )}
-
-      {/* Decorative rule */}
-      <div className="decorative-rule" style={{ color: "var(--royal-red, #8b1a1a)" }}>
-        {"\u25C6"}
-      </div>
-
-      {/* Watchtower-specific comment */}
-      {wtComment && (
-        <p
-          className="text-xs italic text-center mb-2"
-          style={{ color: "#8a6a5a", fontFamily: "Crimson Text, serif" }}
-        >
-          &ldquo;{wtComment}&rdquo;
-        </p>
-      )}
-
-      {/* Speech content */}
-      <div
-        key={animKey}
-        className="quill-appear rounded-lg border-2 p-4 mt-3"
-        style={{
-          backgroundColor: "#1a0e0e",
-          borderColor: "var(--royal-red, #8b1a1a)",
-          boxShadow: "inset 0 2px 8px rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <p
-          className="text-xs uppercase tracking-wide mb-2"
-          style={{ color: "#c44a4a", fontFamily: "Cinzel, serif" }}
-        >
-          {typeLabel}
-        </p>
-        <p
-          className="text-sm sm:text-base leading-relaxed"
-          style={{
-            color: "#c8b090",
-            fontFamily: "Crimson Text, serif",
-            lineHeight: 1.8,
-            letterSpacing: "0.3px",
-          }}
-        >
-          <span style={{ color: "#c44a4a", fontSize: "1.3em", lineHeight: 1 }}>{"\u201C"}</span>
-          {content.text}
-          <span style={{ color: "#c44a4a", fontSize: "1.3em", lineHeight: 1 }}>{"\u201D"}</span>
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3 mt-4">
-        <button
-          onClick={reroll}
-          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px]"
-          style={{
-            backgroundColor: "#1a0e0e",
-            borderColor: "var(--royal-red, #8b1a1a)",
-            color: "#c44a4a",
-            fontFamily: "Cinzel, serif",
-            transition: "all 200ms ease",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#2a1010";
-            e.currentTarget.style.borderColor = "#c44a4a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#1a0e0e";
-            e.currentTarget.style.borderColor = "var(--royal-red, #8b1a1a)";
-          }}
-        >
-          Hear More
-        </button>
-        <button
-          onClick={onBack}
-          className="flex-1 px-4 py-3 rounded-md border-2 font-semibold text-sm min-h-[44px]"
-          style={{
-            backgroundColor: "#0e0a0a",
-            borderColor: "#4a3030",
-            color: "#8a6a5a",
-            fontFamily: "Cinzel, serif",
-            transition: "all 200ms ease",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#1a0e0e";
-            e.currentTarget.style.borderColor = "#8a6a5a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#0e0a0a";
-            e.currentTarget.style.borderColor = "#4a3030";
-          }}
-        >
-          Dismiss
-        </button>
-      </div>
+    <div key={animKey} className="quill-appear watchtower-speech">
+      <p className="watchtower-speech-type">{typeLabel}</p>
+      <p><span className="watchtower-quote">{"\u201C"}</span>{content.text}<span className="watchtower-quote">{"\u201D"}</span></p>
     </div>
-  );
+    <div className="watchtower-actions">
+      <button onClick={reroll} className="watchtower-action watchtower-action--red">Hear More</button>
+      <button onClick={onBack} className="watchtower-action">Dismiss</button>
+    </div>
+  </section>;
 }
-
 // ---------------------------------------------------------------------------
 // Defense Status Panel
 // ---------------------------------------------------------------------------
@@ -999,50 +833,17 @@ function CaptainBriefing({ state, dispatch, onBack }: SectionProps) {
 // ---------------------------------------------------------------------------
 
 function SignalFireLog({ state }: { state: WatchtowerViewState }) {
-  const wt = state.watchtower ?? {};
-  const log = wt.signalLog ?? [];
-
-  return (
-    <div
-      className="rounded-lg border p-3"
-      style={{
-        backgroundColor: "var(--bg-card, #231e16)",
-        borderColor: "#2a3040",
-        maxHeight: "150px",
-        overflowY: "auto",
-      }}
-    >
-      <h4
-        className="text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1"
-        style={{ color: "var(--gold-dim, #8a7a3a)", fontFamily: "Cinzel, serif" }}
-      >
-        {"\u2668"} Signal Fire Log
-      </h4>
-
-      {log.length === 0 ? (
-        <p className="text-xs italic" style={{ color: "#4a5a6a" }}>
-          No entries yet. Scan the horizon to begin your watch.
-        </p>
-      ) : (
-        <div className="space-y-1">
-          {[...log].reverse().map((entry, i) => (
-            <div
-              key={i}
-              className="text-xs"
-              style={{
-                color: entry.type === "raid" ? "#c44a4a" : entry.type === "warning" ? "var(--gold, #c4a24a)" : "#6a7a8a",
-                fontFamily: "system-ui, sans-serif",
-                animation: i === 0 ? "watchtower-log-in 300ms ease-out" : "none",
-              }}
-            >
-              <span style={{ color: "#5a6a7a" }}>{entry.season} Y{entry.year}:</span>{" "}
-              {entry.text}
-            </div>
-          ))}
-        </div>
-      )}
+  const log = state.watchtower?.signalLog ?? [];
+  const revealFocusedEntries = useHallReadingFocus('[role="region"]:focus-visible');
+  return <section className="watchtower-history">
+    <h4><span aria-hidden="true">{"\u2668"}</span> Signal Fire Log</h4>
+    <div className="watchtower-history-region" role="region" aria-label="Signal fire entries" tabIndex={0} onFocusCapture={revealFocusedEntries}>
+      {log.length === 0 ? <p className="watchtower-history-empty">No entries yet. Scan the horizon to begin your watch.</p> :
+        <ol>{[...log].reverse().map((entry, index) => <li key={index} data-kind={entry.type}>
+          <span className="watchtower-history-date">{entry.season} Y{entry.year}:</span>{' '}{entry.text}
+        </li>)}</ol>}
     </div>
-  );
+  </section>;
 }
 
 // ---------------------------------------------------------------------------
@@ -1050,44 +851,11 @@ function SignalFireLog({ state }: { state: WatchtowerViewState }) {
 // ---------------------------------------------------------------------------
 
 function WatchtowerStation({ title, subtitle, icon, borderColor, disabled, disabledText, onClick }: StationProps) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="rounded-lg p-4 text-center cursor-pointer border-2 w-full"
-      style={{
-        backgroundColor: disabled ? "#0a0a10" : "#0e0e18",
-        borderColor: disabled ? "#2a2a30" : borderColor,
-        opacity: disabled ? 0.5 : 1,
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
-    >
-      <div
-        className="text-3xl mb-2"
-        style={{ color: disabled ? "#3a3a40" : borderColor, lineHeight: 1 }}
-      >
-        {icon}
-      </div>
-      <h3
-        className="font-bold text-sm uppercase tracking-wide"
-        style={{
-          fontFamily: "Cinzel, serif",
-          color: disabled ? "#3a3a40" : "#c4a24a",
-        }}
-      >
-        {title}
-      </h3>
-      <p
-        className="text-xs mt-1 italic"
-        style={{
-          fontFamily: "system-ui, sans-serif",
-          color: disabled ? "#2a2a30" : "#6a7a8a",
-        }}
-      >
-        {disabled ? disabledText : subtitle}
-      </p>
-    </button>
-  );
+  return <button onClick={onClick} disabled={disabled} className="watchtower-station" style={{borderColor: disabled ? '#8090a0' : borderColor}}>
+    <span className="watchtower-station-icon" aria-hidden="true" style={{color: disabled ? '#c1def7' : borderColor}}>{icon}</span>
+    <h3>{title}</h3>
+    <p>{disabled ? disabledText : subtitle}</p>
+  </button>;
 }
 
 // ---------------------------------------------------------------------------
@@ -1144,6 +912,7 @@ const WATCHTOWER_STYLES = `
 // ---------------------------------------------------------------------------
 
 export default function Watchtower({ state, dispatch, onClose }: Omit<SectionProps, 'onBack'> & { onClose: () => void }) {
+  const revealFocusedControl = useHallReadingFocus();
   const [activeSection, setActiveSection] = useState<"scan" | "roderic" | null>(null);
   const [entering, setEntering] = useState(true);
 
@@ -1178,7 +947,7 @@ export default function Watchtower({ state, dispatch, onClose }: Omit<SectionPro
 
   if (activeSection === "roderic") {
     return (
-      <div style={{ animation: "watchtower-enter 300ms ease-out" }}>
+      <div className="watchtower-reading" onFocusCapture={revealFocusedControl} style={{ animation: "watchtower-enter 300ms ease-out" }}>
         <style>{WATCHTOWER_STYLES}</style>
         <CaptainBriefing state={state} dispatch={dispatch} onBack={() => setActiveSection(null)} />
       </div>
@@ -1188,7 +957,8 @@ export default function Watchtower({ state, dispatch, onClose }: Omit<SectionPro
   // Main watchtower view
   return (
     <div
-      className={`w-full max-w-4xl mx-auto rounded-xl border-2 overflow-hidden relative ${entering ? "" : ""}`}
+      className="watchtower-reading watchtower-home w-full max-w-4xl mx-auto rounded-xl border-2 overflow-hidden relative"
+      onFocusCapture={revealFocusedControl}
       style={{
         backgroundColor: "#0e0c14",
         borderColor: "#3a4050",
@@ -1223,8 +993,8 @@ export default function Watchtower({ state, dispatch, onClose }: Omit<SectionPro
             onClick={() => setActiveSection("scan")}
           />
           <WatchtowerStation
-            title="Captain\u2019s Briefing"
-            subtitle="Hear your garrison commander\u2019s report"
+            title="Captain’s Briefing"
+            subtitle="Hear your garrison commander’s report"
             icon={"\u26E8"}
             borderColor="var(--royal-red, #8b1a1a)"
             disabled={false}
@@ -1243,34 +1013,13 @@ export default function Watchtower({ state, dispatch, onClose }: Omit<SectionPro
         </div>
 
         {/* Footer */}
-        <div
-          className="flex items-center justify-between pt-3"
-          style={{ borderTop: "1px solid #2a3040" }}
-        >
-          <span
-            className="text-sm font-bold"
-            style={{ color: "var(--gold, #c4a24a)", fontFamily: "Cinzel, serif" }}
-          >
+        <div className="watchtower-footer">
+          <span>
             Garrison: {state.garrison} | Castle Lvl {state.castleLevel}
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-sm font-bold uppercase tracking-wider"
-            style={{
-              backgroundColor: "#1a1820",
-              color: "#8090a0",
-              border: "1px solid #3a4050",
-              fontFamily: "Cinzel, serif",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#2a2830";
-              e.currentTarget.style.color = "#c4a24a";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#1a1820";
-              e.currentTarget.style.color = "#8090a0";
-            }}
+            className="watchtower-action watchtower-action--blue"
           >
             Descend from Tower
           </button>

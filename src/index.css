@@ -1917,3 +1917,47 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .estate-ripple--three { animation-duration: 3.5s; animation-delay: .7s; --ripple-low: .08; --ripple-high: .28; }
 @keyframes estate-ripple { 0%, 100% { opacity: var(--ripple-low); } 50% { opacity: var(--ripple-high); } }
 @media(prefers-reduced-motion:reduce) { .estate-map * { animation: none !important; } }
+
+.watchtower-heading { text-align: center; margin-bottom: 1rem; }
+.watchtower-heading h2 { color: #f4d77f; font: 700 1.5rem/1.4 'Cinzel Decorative', 'Cinzel', serif; letter-spacing: .1em; text-transform: uppercase; overflow-wrap: anywhere; }
+.watchtower-heading p { color: #c1def7; font: italic 1rem/1.6 'Crimson Text', serif; margin-top: .25rem; }
+.watchtower-station { width: 100%; padding: 1rem; border: 2px solid; border-radius: .5rem; background: #0e0e18; cursor: pointer; text-align: center; }
+.watchtower-station:disabled { opacity: 1; background: #0a0a10; border-style: dashed; cursor: not-allowed; }
+.watchtower-station-icon { display: block; font-size: 2rem; line-height: 1; margin-bottom: .5rem; }
+.watchtower-station h3 { color: #f4d77f; font: 700 1rem/1.5 'Cinzel', serif; text-transform: uppercase; }
+.watchtower-station p { color: #c1def7; font: italic 1rem/1.6 'Crimson Text', serif; margin-top: .25rem; }
+.watchtower-captain { max-width: 36rem; margin-inline: auto; padding: 1.25rem; border: 2px solid #8b1a1a; border-radius: .5rem; background: #0e0a0a; box-shadow: 0 4px 20px #0008; }
+.watchtower-captain h3 { color: #efb3a8; text-align: center; font: 700 1.25rem/1.5 'Cinzel', serif; }
+.watchtower-captain p { color: #f4e2c5; font: 1rem/1.8 'Crimson Text', serif; overflow-wrap: anywhere; }
+.watchtower-captain .watchtower-caption, .watchtower-captain .watchtower-motto, .watchtower-captain .watchtower-comment { text-align: center; font-style: italic; }
+.watchtower-caption { margin-bottom: .75rem; }
+.watchtower-motto { margin: .75rem 0 .25rem; }
+.watchtower-portrait { width: 5rem; height: 5rem; display: flex; align-items: center; justify-content: center; margin-inline: auto; border: 2px solid #8b1a1a; border-radius: .5rem; background: #120808; box-shadow: 0 0 12px #8b1a1a4d; color: #efb3a8; font: 2.25rem/1 serif; }
+.watchtower-note { margin-top: .75rem; margin-bottom: .5rem; padding: .75rem; border: 1px solid #688f5c; border-radius: .5rem; background: #1a2018; }
+.watchtower-note h4 { color: #d3e4bc; font: 700 1rem/1.5 'Cinzel', serif; text-transform: uppercase; margin-bottom: .5rem; }
+.watchtower-note p { font-style: italic; }
+.watchtower-rule { color: #efb3a8; }
+.watchtower-comment { margin-bottom: .5rem; }
+.watchtower-speech { margin-top: .75rem; padding: 1rem; border: 2px solid #8b1a1a; border-radius: .5rem; background: #1a0e0e; box-shadow: inset 0 2px 8px #0006; }
+.watchtower-captain .watchtower-speech-type { color: #efb3a8; font-family: 'Cinzel', serif; text-transform: uppercase; margin-bottom: .5rem; }
+.watchtower-quote { color: #efb3a8; font-size: 1.3em; line-height: 1; }
+.watchtower-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+.watchtower-actions button { flex: 1 1 8rem; }
+.watchtower-action { min-height: 44px; padding: .65rem 1rem; border: 2px solid #8a6a5a; border-radius: .375rem; background: #0e0a0a; color: #f4e2c5; font: 600 1rem/1.5 'Cinzel', serif; cursor: pointer; transition: background-color 200ms ease, border-color 200ms ease; }
+.watchtower-action:hover { background: #1a0e0e; border-color: #efb3a8; }
+.watchtower-action--red { background: #1a0e0e; border-color: #8b1a1a; color: #efb3a8; }
+.watchtower-action--red:hover { background: #2a1010; }
+.watchtower-action--note { margin-top: .5rem; background: #2a3a1a; border-color: #688f5c; color: #d3e4bc; }
+.watchtower-action--blue { background: #1a1820; border-color: #8090a0; color: #c1def7; }
+.watchtower-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding-top: .75rem; border-top: 1px solid #8090a0; }
+.watchtower-footer > span { color: #f4d77f; font: 700 1rem/1.5 'Cinzel', serif; }
+.watchtower-history { padding: .75rem; border: 1px solid #8090a0; border-radius: .5rem; background: #121820; }
+.watchtower-history h4 { color: #f4d77f; font: 700 1rem/1.5 'Cinzel', serif; text-transform: uppercase; margin-bottom: .5rem; }
+.watchtower-history-region { max-height: 28vh; overflow-y: auto; padding: .25rem; }
+.watchtower-history-region ol { list-style: none; padding: 0; margin: 0; }
+.watchtower-history-region li, .watchtower-history-empty { color: #f4e2c5; font: 1rem/1.6 'Crimson Text', serif; overflow-wrap: anywhere; margin: 0 0 .5rem; }
+.watchtower-history-region li[data-kind="raid"] { color: #efb3a8; }
+.watchtower-history-region li[data-kind="warning"], .watchtower-history-date { color: #f4d77f; }
+.watchtower-history-region li:first-child { animation: watchtower-log-in 300ms ease-out; }
+.watchtower-station:focus-visible, .watchtower-action:focus-visible, .watchtower-history-region:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+@media(prefers-reduced-motion:reduce) { .watchtower-reading, .watchtower-reading * { animation: none !important; transition: none !important; } }

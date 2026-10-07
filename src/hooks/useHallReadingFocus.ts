@@ -1,14 +1,14 @@
 import { useEffect, useRef, type FocusEvent } from 'react';
 
 /** Keep keyboard actions in the reading area between the pinned game controls. */
-export function useHallReadingFocus() {
+export function useHallReadingFocus(selector = 'button:focus-visible') {
   const frame = useRef<number | null>(null);
   useEffect(() => () => {
     if (frame.current !== null) window.cancelAnimationFrame(frame.current);
   }, []);
   return (event: FocusEvent<HTMLDivElement>) => {
     const control = event.target;
-    if (!(control instanceof HTMLElement) || !control.matches('button:focus-visible')) return;
+    if (!(control instanceof HTMLElement) || !control.matches(selector)) return;
     if (frame.current !== null) window.cancelAnimationFrame(frame.current);
     // Native focus scrolling runs first. Pointer focus must not move a held click.
     frame.current = window.requestAnimationFrame(() => {
