@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/` or `tests/e2e/gameplay/`. All 130 gameplay spec files are TypeScript. Eight visual/QA test files and four root configuration/playtest scripts still use JavaScript. Reducer simplification and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/` or `tests/e2e/gameplay/`. All 131 gameplay spec files are TypeScript. Eight visual/QA test files and four root configuration/playtest scripts still use JavaScript. Reducer simplification and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -16,9 +16,11 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 ## Latest verified checkpoint
 
-The final eight JavaScript gameplay specs now have checked Playwright, resource, diagnostic and playthrough-result contracts. **Typecheck and lint pass; 45 focused browser cases pass.** Gameplay discovery remains **718 tests across 130 files**. Independent tester and grader reviews accept this migration scope. Shipping source and all nine production assets are unchanged; this section does not claim a new unit-suite or production-build run.
+The final eight JavaScript gameplay specs now have checked Playwright, resource, diagnostic and playthrough-result contracts. That migration passed typecheck, lint and **45 focused browser cases**, with 718 tests discovered across 130 files. Independent tester and grader reviews accept this migration scope. Shipping source and all nine production assets are unchanged; this section does not claim a new unit-suite or production-build run.
 
-Two inherited test issues remain open: the private auto-playthrough logger repeatedly selects Save during a raid (**G-GT01, P2**), and conditional Market checks can finish without asserting a trade (**G-GT02, P3**). The six full auto campaigns were not run: their existing setup overwrites a tracked report and deletes shared screenshots. The next correction will fix progression and isolate campaign artifacts before those runs. Historical report arrays remain opaque; malformed or non-array history now falls back to an empty array. These checks do not establish final campaign acceptance.
+**Campaign logger correction: G-GT01 closed.** The extracted checked logger shares recognized progression controls with the turn helper, including Defend the Estate; Save/reset controls are excluded. Reports and screenshots now use per-test output paths, with reports attached before terminal assertions. Historical reports and shared screenshots are preserved. Both original phone/desktop raid regressions pass, including exact saved-byte reload, with independent tester and grader review.
+
+The correction passes typecheck, lint and **36 browser cases**, including all six native campaigns: four 40-turn victories and famine losses on turns 30 and 15, both followed by successful native restart. All ending reports and images were inspected. Discovery is now **720 tests across 131 files**. These natural-start campaigns use unseeded driver choices; final seeded replay and the completed-build campaign gate remain required. **G-GT02, P3 remains open:** conditional Market checks can finish without asserting a trade. Strengthening those checks is next.
 
 The actual [main reducer](src/engine/gameReducer.ts) now checks `GameSnapshot` inputs and outputs and `GameCommand` payloads. App calls it directly; the temporary JavaScript output bridge is removed. Compatible historical defaults are retained, and consumed military metadata has runtime validation. These contracts do not establish complete external-command or phase validation.
 
@@ -64,7 +66,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,917 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,901 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -135,7 +137,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Fix the private campaign driver's raid progression and isolate its output; strengthen conditional Market assertions.
+1. Strengthen conditional Market assertions so every required trade is exercised and verified.
 2. Finish the eight visual/QA tests and four root JavaScript scripts, then remove the temporary JavaScript compiler allowance.
 3. Continue decomposing season and subsystem orchestration, and complete remaining state and command validation.
 4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.

@@ -27,6 +27,10 @@ const resolvePattern = new RegExp(
   RESOLVE_LABELS.map((l) => `${RESOLVE_PREFIX}${l}\\s*$`).join("|")
 );
 
+/** Visible, recognized progression controls; excludes saves and ending resets. */
+export function progressionButtons(page: Page, selector = 'button:visible') {
+  return page.locator(selector).filter({hasText: resolvePattern});
+}
 
 /**
  * Shared test helpers for E2E Playwright tests.
@@ -273,7 +277,7 @@ export async function playOneTurn(page: Page, diag?: TurnDiagnostic) {
     // Wait for the target button to be visible + stable before clicking so
     // we don't race with overlay fade-in/unmount transitions under parallel
     // workers (B-33/B-44).
-    const overlayBtns = page.locator(".fixed.inset-0 button:visible").filter({ hasText: resolvePattern });
+    const overlayBtns = progressionButtons(page, '.fixed.inset-0 button:visible');
     const overlayCount = await overlayBtns.count();
     if (overlayCount > 0) {
       const topBtn = overlayBtns.last();
@@ -306,7 +310,7 @@ export async function playOneTurn(page: Page, diag?: TurnDiagnostic) {
     // Title" on the game-over screen, which masked the actual end state.
     // Each alternative is anchored (optionally preceded by a decorative
     // arrow + whitespace) so substrings of unrelated buttons cannot match.
-    const continueBtn = page.locator("button").filter({ hasText: resolvePattern });
+    const continueBtn = progressionButtons(page);
     if (await continueBtn.first().isVisible({ timeout: 200 }).catch(() => false)) {
       try {
         await continueBtn.last().waitFor({ state: "visible", timeout: 1_000 });
