@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** The latest section corrects exact sustained synergy counters and their save continuation, closing G-SY01. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** A shared command contract now accounts for all 86 main reducer commands; App and the main reducer still need checked TypeScript migration. Final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -41,7 +41,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,882 production lines versus the original 45,347, a reduction of 465 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,777 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,933 production lines versus the original 45,347, a reduction of 414 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,887 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -78,6 +78,8 @@ Watchtower saves now validate consumed scan counters, flags, scouting bonuses, m
 Consumed synergy saves now reject malformed wool/spice counters, trade-history lists, seasonal defaults and revolt flags. Historical fractional counts, optional defaults, unknown trade names and duplicates retain their bytes; activated-tier validation rejects sparse arrays. That guard section passed 703 unit tests, static/build checks and 21 production browser scenarios. Its independently discovered counter overflow is corrected below.
 
 Sustained faith and approval counters now advance exactly beyond the safe integer range using the existing integer ledger. Ordinary counts remain numbers; larger values use canonical decimal strings, supported by the updated reader. Resets and live-meter eligibility checks stay intact. G-SY01 is closed by independent retesting of the original turn-advance/save failure. All 713 unit tests, static/build checks and 16 production browser scenarios pass; 525 archived complete-state/save comparisons preserve ordinary behavior, with 11,025 authored tier comparisons. Broader arithmetic and final migration gates remain incomplete.
+
+GameCommand now composes the existing domain actions into a finite 86-tag union. Tavern commands and rat result types belong to the engine, with existing view type imports preserved. A maintained compiler-based test compares the contract with every main reducer branch. All 714 unit tests and static/build checks pass; independent reviews verify payload types and API compatibility. The affected runtime modules and every built file are byte-identical, so no browser run is attributed to this type-only section. Runtime command validation and the reducer implementation remain separate work.
 
 ## Code map
 

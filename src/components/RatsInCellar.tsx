@@ -5,7 +5,8 @@ import {
   RATS_SCRIBES_NOTE,
 } from "../data/tavern";
 import { createRandomCursor } from "../engine/random.ts";
-import { planRatRun, scoreRatRun, type RatSpawn } from "../engine/ratsInCellar.ts";
+import { planRatRun, scoreRatRun, type RatSpawn, type RatRunResult } from "../engine/ratsInCellar.ts";
+export type { RatRunResult } from '../engine/ratsInCellar.ts';
 import ScribesNote from "./ScribesNote";
 import { useOwnedTimeout } from "../hooks/useOwnedTimeout.ts";
 
@@ -76,12 +77,6 @@ type RatPhase = typeof PHASE_INTRO | typeof PHASE_COUNTDOWN | typeof PHASE_ACTIV
 interface ActiveRat { readonly cellIndex: number }
 interface CellFlash { readonly type: "green" | "red"; readonly id: number }
 interface FloatText { readonly id: number; readonly cellIndex: number; readonly text: string }
-
-export interface RatRunResult {
-  readonly caught: number;
-  readonly escaped: number;
-  readonly seed: number;
-}
 
 export interface RatsInCellarProps {
   readonly rngState: number;

@@ -11,19 +11,13 @@
 import { useState, useMemo, useEffect, useLayoutEffect, useRef } from "react"; // useMemo used in TavernWall
 import type { GameSnapshot } from '../save/saveGame.ts';
 import type { GambitWeapon } from '../engine/tavernGambit.ts';
-import type { RatRunResult } from './RatsInCellar.tsx';
+import type { RatRunResult } from '../engine/ratsInCellar.ts';
+import type { TavernAction } from '../engine/gameCommands.ts';
+export type { TavernAction } from '../engine/gameCommands.ts';
 import { isCompanionOfferId } from '../engine/tavernCompanion.ts';
 import { useOwnedTimeout } from '../hooks/useOwnedTimeout.ts';
 import { useHallReadingFocus } from '../hooks/useHallReadingFocus.ts';
-import type { MartaOfferId, AldricOfferId, StaticGraffiti } from '../data/tavern.ts';
-
-export type TavernAction =
-  | Readonly<{ type: 'TAVERN_VISIT' | 'TAVERN_GAMBIT_SCRIBES_NOTE_SEEN' | 'TAVERN_RATS_SCRIBES_NOTE_SEEN' | 'TAVERN_BARD_NEXT' | 'TAVERN_MARTA_NEXT' | 'TAVERN_MARTA_SCRIBES_NOTE_SEEN' | 'TAVERN_ALDRIC_NEXT' | 'TAVERN_ALDRIC_SCRIBES_NOTE_SEEN' | 'TAVERN_WALL_STASH' | 'TAVERN_STRANGER_TRADE' | 'TAVERN_STRANGER_DISMISS' }>
-  | Readonly<{ type: 'TAVERN_GAMBIT_PLAY'; payload: Readonly<{ choice: GambitWeapon; wager: number; seed: number }> }>
-  | Readonly<{ type: 'TAVERN_RATS_FINISH'; payload: Readonly<RatRunResult> }>
-  | Readonly<{ type: 'TAVERN_BARD_ANSWER'; payload: Readonly<{ option: string }> }>
-  | Readonly<{ type: 'TAVERN_MARTA_ACCEPT_OFFER' | 'TAVERN_MARTA_DECLINE_OFFER'; payload: Readonly<{ offerId: MartaOfferId }> }>
-  | Readonly<{ type: 'TAVERN_ALDRIC_ACCEPT_OFFER' | 'TAVERN_ALDRIC_DECLINE_OFFER'; payload: Readonly<{ offerId: AldricOfferId }> }>;
+import type { StaticGraffiti } from '../data/tavern.ts';
 
 export interface TavernProps {
   readonly state: Readonly<GameSnapshot>;

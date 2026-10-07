@@ -17,6 +17,11 @@ export interface RatScore {
   reward: number;
   rating: (typeof RATS_RATINGS)[number];
 }
+export interface RatRunResult {
+  readonly caught: number;
+  readonly escaped: number;
+  readonly seed: number;
+}
 
 function drawUnit(random: () => number): number {
   const draw = random();
