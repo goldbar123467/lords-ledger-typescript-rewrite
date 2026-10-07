@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. The rewrite preserves its authored content, narrative branches, economy, military, characters, and strategic choices while improving implementation, gameplay, and presentation.
 
-**Status: in progress.** Application source, tests, and the Vite/ESLint configurations now use checked TypeScript. Two root playtest scripts still use JavaScript. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
+**Status: in progress.** Application source, tests, the Vite/ESLint configurations, and the headless playtest now use checked TypeScript. The root browser playtest still uses JavaScript. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
 
 ## Rewrite goals
 
@@ -34,13 +34,14 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Visual audit (`607903d`) | Focused regressions passed; full visual suite: 50 passes and 13 failures | All 13 failures are missing Windows baselines; no new goldens were approved |
 | QA migration (`973def9`) | Typecheck, lint, and four diagnostic cases passed; independent reviews accepted typing and artifact isolation | Its scope covered typing/artifacts; assertion defects were addressed in the later QA correction |
 | QA assertion correction | Typecheck and lint passed; four ordinary QA cases and five ending/stall cases passed across recorded batches | Endings use managed fixtures and native UI checks, not acquired campaigns or saved terminal snapshots; transport filtering and early report-loss paths remain |
-| Root configurations | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; both playtest scripts remain unchecked |
+| Root configurations | Strict typecheck, lint, and build passed; all 35 output files preserve prior and served bytes, with independent review | Native lint loading was verified on Node 22.23.2 and ESLint 9.39.3; playtest bodies were outside this checkpoint's scope |
+| Headless driver | 770 unit tests, typecheck, and lint passed; 54 seeded scenarios repeated exactly across 108 executions, with independent review | These 31 victories and 23 losses verify selected driver policies; final completed-build and native campaign gates remain |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **45,003 lines**, versus 45,347 at baseline. The inclusive checkpoint subtotal was **80,082 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These dated measurements do not establish whole-rewrite reduction acceptance.
+Production text measured **45,003 lines**, versus 45,347 at baseline. The headless checkpoint's inclusive subtotal was **80,388 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
@@ -54,11 +55,12 @@ Production text measured **45,003 lines**, versus 45,347 at baseline. The inclus
 | [tests/unit/](tests/unit/) | Domain, contract, and persistence regressions |
 | [tests/e2e/](tests/e2e/) | Browser gameplay, visual checks, and QA drivers |
 | [vite.config.ts](vite.config.ts), [eslint.config.ts](eslint.config.ts) | Checked build and lint configuration |
+| [playtest.ts](playtest.ts) | Seeded headless campaigns, six strategy profiles, transition invariants, and terminal reporting |
 | [docs/v2/](docs/v2/) | Baseline, decisions, migration status, and verification records |
 
 ## Next rewrite sections
 
-1. Repair and migrate `playtest.js` and `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
+1. Repair and migrate `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
 2. Strengthen remaining QA transport filtering and report emission on early failures.
 3. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
 4. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
