@@ -1,165 +1,83 @@
 # Lord's Ledger: TypeScript Rewrite
 
-An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
+An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. The rewrite preserves its authored content, narrative branches, economy, military, characters, and strategic choices while improving implementation, gameplay, and presentation.
 
-**Status: work in progress.** App and the actual main reducer now use checked TypeScript with a shared contract for all 86 reducer commands. No JavaScript files remain under `src/` or `tests/`. All gameplay, visual and QA specs are checked TypeScript. Four root configuration/playtest scripts still use JavaScript. Reducer simplification and final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: in progress.** Application source and all unit, gameplay, visual, and QA tests now use checked TypeScript. Four root configuration/playtest scripts still use JavaScript. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
 
 ## Rewrite goals
 
-- Migrate first-party executable code, including the app, engine, content definitions, tests, and tooling, to TypeScript with `strict` and `noUncheckedIndexedAccess`.
-- Give game state, actions, resources, and subsystem boundaries explicit contracts. Validate persisted data at runtime.
-- Make random state explicit and saved so gameplay transitions can be reproduced and tested.
-- Repair gameplay defects and improve readability, accessibility, and interaction across desktop and mobile.
-- Reduce duplicate implementation while preserving narrative branches, historical notes, legal choices, and game difficulty.
+- Check all first-party executable code with TypeScript `strict` and `noUncheckedIndexedAccess`, including tests and tooling.
+- Give state and commands explicit contracts; validate loaded saves and external inputs at runtime.
+- Persist gameplay random state for reproducible transitions and replay.
+- Repair gameplay defects and improve readability, keyboard interaction, and responsive layouts.
+- Remove redundant implementation while preserving content, legal choices, difficulty, and save compatibility.
 
-The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. CSS, HTML, JSON, and media remain in their native formats.
+The project retains React, Vite, Tailwind CSS, and its DOM interface. CSS, HTML, JSON, and media stay in their native formats.
 
-## Latest verified checkpoint
+## Current implementation
 
-The two QA specs now have checked error, snapshot, turn-diagnostic and report contracts. Findings, one-persona summaries and screenshots use per-test output paths, preserving five tracked historical reports/images. Typecheck, lint and all four diagnostic cases pass; independent reviews accept this scope. Discovery is **789 browser tests across 140 files**, not a full-suite pass. Existing permissive error budgets, optional Avg construction and logging-only exploratory checks remain; these QA passes do not establish successful construction or strict gameplay acceptance.
+The application calls the checked main reducer directly. Its command contract covers all 86 reducer tags. Seasonal processing has a separate checked owner, but the main reducer and orchestration still need decomposition.
 
-The six converted visual specs have checked DOM, scanner and report contracts; all 13 Linux golden images retain their exact bytes. **G-VT01 and G-VT02 are now closed:** the palette test uses the existing authored tan token, and the shared scanner iterates by code point while excluding malformed surrogate units and selected formatting characters. Nine real-DOM regressions preserve the original failures and verify the correction. The scanner remains a candidate heuristic, not a glyph counter or complete icon classifier; its selected ranges follow the [Unicode charts](https://www.unicode.org/charts/PDF/UE0100.pdf).
+Versioned saves use `lords-ledger-v2-save`. Explicit legacy import reads `lords-ledger-save` without overwriting the original bytes. Consumed fields in several subsystem saves have runtime guards; complete nested-schema, phase, arithmetic, and command validation remain pending. Static types alone do not establish valid runtime state.
 
-Typecheck and lint pass, with independent tester and grader review. The focused correction passes all ten root checks and eleven independent browser checks. **The full visual suite still fails: 50 passes and 13 missing Windows-baseline failures across 63 tests.** No baselines were generated. Approved platform baselines and whole-interface acceptance remain required.
+Gameplay corrections cover invalid choice indices and difficulty values, donation arithmetic, sustained-counter overflow, paid Market assertions, and raid progression in browser drivers. Detailed migration and compatibility evidence belongs in the [migration ledger](docs/v2/migration-ledger.md) and [verification notes](docs/v2/verification.md).
 
-The final eight JavaScript gameplay specs now have checked Playwright, resource, diagnostic and playthrough-result contracts. That migration passed typecheck, lint and **45 focused browser cases**, with 718 tests discovered across 130 files. Independent tester and grader reviews accept this migration scope. Shipping source and all nine production assets are unchanged; this section does not claim a new unit-suite or production-build run.
+## Verified checkpoints and limits
 
-**Campaign logger correction: G-GT01 closed.** The extracted checked logger shares recognized progression controls with the turn helper, including Defend the Estate; Save/reset controls are excluded. Reports and screenshots now use per-test output paths, with reports attached before terminal assertions. Historical reports and shared screenshots are preserved. Both original phone/desktop raid regressions pass, including exact saved-byte reload, with independent tester and grader review.
+These results belong to their recorded revisions. They are not a fresh full-suite result for every subsequent commit.
 
-The logger correction passes typecheck, lint and **36 browser cases**, including all six native campaigns: four 40-turn victories and famine losses on turns 30 and 15, both followed by successful native restart. All ending reports and images were inspected. These natural-start campaigns use unseeded driver choices; final seeded replay and the completed-build campaign gate remain required.
-
-**Market test correction: G-GT02 closed.** The five original scenarios now require merchant and mode selection, with buy/sell trades checked on phone and desktop. Four native transactions verify exact quoted currency changes, full inventory, food, trade count, supply, unchanged RNG/calendar and exact saved-byte reload. All **23 related browser cases**, typecheck and lint pass, with independent tester and grader review. Discovery is **722 tests across 131 files**. These checks establish payment/quote consistency for fresh grain trades; broader pricing and interface acceptance remain incomplete.
-
-The actual [main reducer](src/engine/gameReducer.ts) now checks `GameSnapshot` inputs and outputs and `GameCommand` payloads. App calls it directly; the temporary JavaScript output bridge is removed. Compatible historical defaults are retained, and consumed military metadata has runtime validation. These contracts do not establish complete external-command or phase validation.
-
-The reducer migration passed **737 unit tests**, typecheck, lint and production build. Root browser verification passed **77 cases** covering affected lifecycle, persistence, choices, story, Forge and Tavern flows. Independent tester and grader runs passed **10 and 11 browser cases**, respectively, including historical saves, recruitment, paid Estate actions and story continuations. Actual images were inspected; these checks do not establish whole-interface acceptance.
-
-Migration replay matched **28,632 complete state/save pairs across 120 seeded campaigns**, with 65 victories and 55 losses, against the preceding implementation. The grader independently matched 2,012 pairs and 26 historical-default compatibility pairs. These simple-policy comparisons check migration preservation; final campaigns and a genuine browser-driven 40-turn victory on the completed build remain required.
-
-**Choice-index correction: G-RM01 closed.** Seasonal and random choice commands now reject negative, fractional, out-of-range and nonnumeric indices without changing the pending event, save bytes or RNG. All **739 unit tests**, static checks and build pass; root and each independent reviewer passed four browser choice/save/reload cases. The unchanged golden hash covers 1,332 authored choice transitions. Broader runtime phase and command validation remains incomplete.
-
-Seasonal and random settlement now share one checked domain function, removing duplicate validation and transition code. This refactor passes **740 unit tests**, static checks, build and four affected browser flows. Twelve baseline replay campaigns match 2,801 state/save pairs; independent reviews verify historical defaults, ending priority and military bookkeeping.
-
-**Legacy donation correction: G-ES01 closed.** The retained `DONATE_TO_CHURCH` command now rejects coerced amounts and nonfinite totals atomically while preserving valid fractional donations. All **743 unit tests**, typecheck, lint and build pass, along with two related Chapel payment/save/reload browser cases. Independent reviews reproduce the original failures and check legal state/save parity. The Chapel interface uses its separate tithe command; this fix does not imply whole-game arithmetic closure.
-
-Seasonal processing now has a checked owner for economy, morale, wear, timed effects and raid interruption, with shared result assembly and a shared calendar. All **744 unit tests**, static checks, build and **31 affected browser cases** pass. Baseline comparisons match 120 complete seeded replay campaigns/28,632 state-save pairs and 180 targeted snapshots. Independent review also matches 1,809 random draws. The main reducer is now 2,508 lines; the 428-line season owner still needs further decomposition. **G-SO01 is now closed:** both start commands reject malformed difficulty values before replacing state or indexing configuration.
-Start/restart validation passes **747 unit tests**, typecheck, lint, build and five native start/restart browser cases. Independent reviews verify invalid-input identity, supported difficulty defaults, exact save/RNG behavior and fresh ownership. Invalid empty, zero and false difficulty values now reject; omitted/null values retain the supported default. Broader action, phase, seed and saved-state validation remains incomplete.
-
-The shared browser-test helper now uses checked TypeScript with Playwright Page parameters and finite turn diagnostics; sixteen callers import the typed module. Static checks/build and a frozen 26-case browser batch pass. **G-BH01 is now closed:** visible dialog controls must match the anchored progression registry, which includes Defend the Estate and excludes Save/reset actions. Both original phone/desktop forced-raid regressions pass, along with all 28 combined start, season, synergy and raid cases. Exact raid count, calendar continuation, changed RNG and saved-byte reload are verified; wider helper reliability remains incomplete. The private auto logger has a separate progression loop, covered by the open finding above.
-
-## Current progress
-
-| Area | Included in the checkpoint | Remaining work |
+| Checkpoint | Recorded evidence | Remaining limit |
 | --- | --- | --- |
-| Domain logic | Checked main reducer and typed economy, resource effects, ending checks, raids, event selection, perspective-story evaluator, building actions, Market haggling, Feast, Watchtower, and Tavern helpers | Simplify reducer orchestration; finish runtime action and state validation |
-| Content definitions | Typed resource, building, Market, decree, military, raid, synergy, perspective-story, seasonal/random event, tab, and tutorial definitions; checked category/gate relationship | Complete registry cross-reference and runtime audits |
-| React interface | Checked App shell and typed management and interaction views, including Estate, Map, Chronicle, Tavern, Bard, Gambit and Rats in the Cellar; checked entry, modal focus, resize-aware navigation and readable resource headers | Complete interface review and remaining phase/state contracts |
-| Persistence | Validated v2 save boundary, explicit legacy import, saved random state, and regression coverage | Complete remaining nested subsystem validation and whole-game deterministic replay checks |
-| Strategy synergies | Typed definitions, evaluator, and notification view; corrected requirements, rewards, counters, saved tier order, toast placement, and sequential announcements | Complete wider accessibility and natural higher-tier campaign coverage |
-| Verification | Strict TypeScript checks for migrated files, unit tests, and scoped browser checks | Complete final browser, visual, campaign, and independent review gates |
+| Difficulty validation (`6b9fba6`) | 747 unit tests, typecheck, lint, build, and five focused browser cases passed | Initialization and managed restart checks are not complete campaigns |
+| Campaign driver (`56e53b7`) | 36 browser cases passed, including four native 40-turn victories and two famine losses followed by restart | Driver choices were unseeded; final completed-build campaign checks remain |
+| Market assertions (`bdc587d`) | 23 browser cases passed; native paid trades check state changes and exact save/reload bytes | Fresh grain trades do not establish all pricing and interface rules |
+| Visual audit (`607903d`) | Focused regressions passed; full visual suite: 50 passes and 13 failures | All 13 failures are missing Windows baselines; no new goldens were approved |
+| QA migration (`973def9`) | Typecheck, lint, and four diagnostic cases passed; independent reviews accepted typing and artifact isolation | Permissive error budgets, optional construction, and logging-only checks still require correction |
 
-The current compiler configuration uses `allowJs: true` and `checkJs: false`. Passing typecheck therefore covers migrated TypeScript, not the remaining JavaScript. Removing this migration allowance is part of completion.
+At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
-The rewrite includes checked Outcome, Military, Watchtower, Chapel, People and Great Hall views, guarded domain commands and consumed save validation. The Hall shell preserves authored content with typed actions, readable meter labels and responsive navigation.
+Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-The rhythm minigame now uses strict TypeScript with explicit phase and result contracts. Its four difficulty lengths, selection/cancellation and paid results have scoped browser coverage. Responsive rhythm tracks, readable crafting states and pointer/Enter/Space play are implemented. The independently verified focus correction keeps Collect Item visible above the season footer during native keyboard navigation, including at 200% browser zoom. The main Blacksmith view also uses checked props, actions and saved-item contracts; its shared typography, named navigation and native confirmations are implemented. Independent review verifies the correction of enlarged navigation overlap, chart digit wrapping and phone category splitting. Transient ambient and bellows timer cleanup is verified, including repeated teardown and exact saves. Enlarged grade labels, controller simplification and wider interface checks remain unfinished.
-
-Forge data preserves all 35 items, 20 facts, five buyers and seven supply events. Completion, owned-item actions, visits, Talk and known saved fields have checked contracts. Functional equipment counts exclude zero-bonus military items while preserving historical records and flat defense.
-
-Plowshare and Scythe affect seasonal production; deployed Nails reduce Estate building and upgrade costs by 5%, rounded up to whole denarii. Estate output and construction quotes share their engine calculations. Item selection and deployment confirmation support keyboard use. Deployed Hinges & Fittings reduce seasonal building wear by 5%; Estate condition forecasts use the same calculation. The first working Church Bell deployment adds 8 Chapel faith, capped at 100; additional bells and reloads grant no extra faith. Deployed Lock & Key reduces raid coin losses by 5%, rounded up to whole denarii. A deployed Cauldron adds 3 Great Hall People approval per feast; shared previews and validated saved history record the bonus. Horseshoes adds 5% trade-good proceeds. A new balance rule limits Market and Forge purchases to a shared 100 units per good each season, persisted through Save/reload, to bound repeatable resale loops. A deployed Weather Vane shows conditional next-season farm potential, food needs and seasonal factors; it predicts no random events. A deployed Chandelier adds 3 prestige toward titles on the reputation path earned by rulings; moral scores stay unchanged. The scoped sections pass 332 unit tests, typecheck, lint and build, with independent browser checks of deployment, exact Save/reload and seasonal transitions. All ten tool effects have consumers. Combined integration passes for three seeds using paid commands and prescribed quality-50 crafting results, with browser trade and seasonal continuation. A final-strike counting defect is fixed, with native six-strike Dagger results, paid collection and store/equip/scrap verified, including independent wall-clock play. Native acquisition of all tools, longer minigames and broader Forge interface review remain unfinished.
-
-Gambit owns all four reveal and feedback timeouts and cancels them when its view closes. The Load and Walk Away regressions and existing paid-round flows pass with exact saved-state checks.
-
-Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-handle contracts. Real 20-second one-catch and zero-catch runs preserve scoring, saved RNG and once-per-season play. Rats and Gambit share a timeout owner that cancels pending callbacks when their views close.
-
-Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
-
-No source JavaScript files remain. The latest recorded census counts 45,003 production lines versus the original 45,347, a reduction of 344 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 80,082 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
-
-Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
-
-Map uses checked saved-state, building, seasonal and callback contracts while preserving authored artwork. The inherited missing Mill is corrected, with exhaustive slot coverage and eighteen passing browser cases including normal paid construction and exact saves. Crowded labels and wider Map interface checks remain unfinished.
-
-Estate uses checked view, building, resource and command contracts. Its six content/management cases and 337 unit tests pass. Forge keyboard tests now follow native heading-to-Confirm navigation; all 42 Estate and tool-consumer browser checks pass. Purchased salt, tools and spices now appear in Estate inventory with paid purchase/reload coverage. Upkeep displays use actual military costs and building waivers, with fourteen focused browser checks passing. Estate now has brighter text, responsive grids, larger actions and native history disclosures, verified by 31 focused browser checks including native 200% zoom. The separately verified Condition row correction keeps enlarged text inside its card; broader Estate accessibility remains unfinished. Building saves now validate consumed data fields and boolean upkeep waivers, with 343 unit tests and thirteen focused browser cases passing. Broader serialization and save-schema checks remain incomplete.
-
-Tavern content now has checked readonly state predicates and finite weapon, riddle, offer and encounter IDs. All 28 runtime initializers preserve their authored baseline, and 346 unit tests pass. The entry point now uses TSX and omits Analytics on recognized local-preview hosts. Seventeen production-browser checks pass with the original console-error assertions intact; independent reviewers confirm the local script failure is corrected. Hosted tracking remains untested.
-
-The Bard view now has checked saved-content, answer callback and DOM-ref contracts. Twenty-one browser checks cover all five riddles, both answer outcomes, exact saves and reentry, with once-only reward coverage. Its authored content and styling are preserved; broader Bard readability and accessibility remain unfinished.
-
-Knight's Gambit now uses checked TSX props and one discriminated stage instead of five separate game-state hooks. Thirteen browser checks cover every weapon pair, all stakes, paid replay, cancellation and the fifth round. Shared owned timeouts cancel all four Gambit callbacks on teardown; broader minigame UI review remains unfinished.
-
-The Tavern shell now has checked station, saved-state, dispatch and child-callback contracts. All 362 unit checks and 27 focused browser cases pass, with independent tester/grader review. Authored content and normal save behavior are preserved. The hidden stash now supports native Enter/Space, a visible 44px target and stable found-state focus. Its four-second feedback timer is cancelled on Load/Leave, with seven regression cases and independent review. Broader interface and final campaign verification remain incomplete.
-
-App save feedback and deferred season actions now use checked ownership hooks. Older success timers cannot erase newer errors or notices, and Load cancels queued season work. Seven regression cases, 23 existing persistence checks and independent review pass. App and the main reducer are now checked as described above.
-
-The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; complete runtime loaded-state validation remains unfinished.
-
-Seasonal and random event-choice settlement now uses checked TypeScript for resource effects, military reconciliation, history and ending checks. All 1,332 authored choice transitions retain complete state and save bytes across three seeds and all difficulties. The section passes 395 unit tests, static/build checks and four choice/Save/reload browser cases, with independent review. The inherited optional saved-event text gap is corrected below.
-
-Save validation now checks consumed history, text lists, resource deltas, perspective metadata and pending/deferred synergy notifications. Malformed known fields are rejected by both readers and the writer; historical names, fractional values and unknown extensions retain their bytes. This closes a deferred notification queue crash during story continuation. The current section passes 390 unit tests, typecheck, lint, build, four browser rejection regressions and 28 existing persistence, lifecycle and initialization checks. Independent tester and grader reviews accept this scope. Complete save-schema validation remains unfinished.
-
-Optional event notes, choice notes and choice summaries now reject malformed values before loading or settlement. Omitted, null, empty and historical text retain their save bytes and existing fallback behavior. The correction passes 435 unit tests, static/build checks, six browser rejection regressions and 32 supporting choice/persistence checks, with independent tester and grader review. Broader nested save and raw command validation remain unfinished.
-
-Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. At that checkpoint, the App migration probe had 36 compiler diagnostics; this verified persistence and view boundaries without migrating App.
-
-Loaded raids now have explicit bookkeeping, warning and result contracts. Malformed counters, flags, raid types and captured numeric metadata reject; omitted/null defaults and finite historical values stay intact. At checkpoint `44c462f`, all 521 unit tests, typecheck, lint and build pass. Three new raid persistence flows pass; the initial 28 integration scenarios have 24 passes and four failures from an older invalid Forge test fixture. The same four pass after the separately committed fixture repair, giving 31 distinct passing browser scenarios across the recorded batches. Independent tester and grader reviews accept this scope. An exploratory App migration probe still reports 34 diagnostics; production App and the reducer remain unchecked.
-
-Saved Market prices and pending bargains now expose the types proved by their existing guards. Bookkeeping, event-history lists, banner text and the no-haggling flag reject malformed values before loading. Historical missing/null defaults, fractional counters and unknown extensions retain their save bytes and trade behavior. The section passes 590 unit tests, typecheck, lint, build and 16 Market browser scenarios, with independent tester and grader review. Complete Market provenance, arithmetic invariants and remaining save contracts are still pending.
-
-Watchtower saves now validate consumed scan counters, flags, scouting bonuses, merchant previews and signal-log entries. Historical null/missing/fractional defaults retain their exact bytes and scan behavior; unused old report metadata remains opaque. Shared readiness and view contracts admit supported null defaults without changing their executable behavior. All 665 unit tests, static/build checks and 19 production browser scenarios pass. Independent review accepts the contract scope while retaining an initial grader reload timeout followed by a successful diagnostic rerun; the first cause remains unclassified. Full lifecycle, log readability and wider interface verification remain pending.
-
-Consumed synergy saves now reject malformed wool/spice counters, trade-history lists, seasonal defaults and revolt flags. Historical fractional counts, optional defaults, unknown trade names and duplicates retain their bytes; activated-tier validation rejects sparse arrays. That guard section passed 703 unit tests, static/build checks and 21 production browser scenarios. Its independently discovered counter overflow is corrected below.
-
-Sustained faith and approval counters now advance exactly beyond the safe integer range using the existing integer ledger. Ordinary counts remain numbers; larger values use canonical decimal strings, supported by the updated reader. Resets and live-meter eligibility checks stay intact. G-SY01 is closed by independent retesting of the original turn-advance/save failure. All 713 unit tests, static/build checks and 16 production browser scenarios pass; 525 archived complete-state/save comparisons preserve ordinary behavior, with 11,025 authored tier comparisons. Broader arithmetic and final migration gates remain incomplete.
-
-GameCommand now composes the existing domain actions into a finite 86-tag union. Tavern commands and rat result types belong to the engine, with existing view type imports preserved. A maintained compiler-based test compares the contract with every main reducer branch. All 714 unit tests and static/build checks pass; independent reviews verify payload types and API compatibility. The affected runtime modules and every built file are byte-identical, so no browser run is attributed to this type-only section. Runtime command validation and the reducer implementation remain separate work.
+Production text measured **45,003 lines**, versus 45,347 at baseline. The inclusive checkpoint subtotal was **80,082 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. These dated measurements do not establish whole-rewrite reduction acceptance.
 
 ## Code map
 
-| Location | Rewrite responsibility |
+| Location | Responsibility |
 | --- | --- |
-| [src/engine/initialGameState.ts](src/engine/initialGameState.ts) | Checked seeded modern constructor; complete runtime state validation remains pending |
-| [src/App.tsx](src/App.tsx) | Checked root state wiring and phase presentation; calls the checked reducer directly |
-| [src/engine/](src/engine/) | Game transitions, domain rules, and deterministic random helpers |
-| [src/data/](src/data/) | Authored content, resource IDs, and gameplay definitions |
+| [src/App.tsx](src/App.tsx) | Application state wiring, phase presentation, and browser integration |
+| [src/engine/](src/engine/) | State transitions, domain rules, seasonal processing, and deterministic random helpers |
+| [src/data/](src/data/) | Authored content, stable IDs, and gameplay definitions |
 | [src/components/](src/components/) | React views and local presentation state |
-| [src/save/saveGame.ts](src/save/saveGame.ts) | Runtime save validation, versioned persistence, and legacy import |
-| [tests/unit/](tests/unit/) | Domain and persistence regressions |
-| [tests/e2e/](tests/e2e/) | Browser gameplay and visual checks |
-| [docs/v2/](docs/v2/) | Baseline, decisions, migration status, and verification evidence |
-
-The legacy save key is `lords-ledger-save`; the rewrite uses `lords-ledger-v2-save`. Legacy import is explicit and leaves the original bytes intact. Preserve this boundary as the remaining state contracts are migrated.
-
-## Rewrite workflow and commit history
-
-Follow [AGENTS.md](AGENTS.md) for the working rules. Each loop should cover one bounded migration section or review correction:
-
-1. Inspect the authored rules, consumers, save shape, and existing tests.
-2. Implement the change and verify the affected behavior. Inspect actual screenshots when presentation changes.
-3. Update the migration ledger and verification notes with evidence and remaining issues.
-4. **Commit after every loop or section, before starting the next one.** Include that section's code, tests, and documentation in a focused commit, then report its SHA. Mark incomplete checkpoints explicitly and record failed or pending checks.
-
-Keep these commits separate so progress and regressions can be traced. A checkpoint commit records work; completion still requires the verification gates in `AGENTS.md`.
-
-The original history is retained through baseline `47570f9`, with the rewrite checkpoint at `ee66330` and the repository-initialization merge at `9b561d9`. See the [commit history](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commits/main/).
+| [src/save/saveGame.ts](src/save/saveGame.ts) | Save validation, versioned persistence, and explicit legacy import |
+| [tests/unit/](tests/unit/) | Domain, contract, and persistence regressions |
+| [tests/e2e/](tests/e2e/) | Browser gameplay, visual checks, and QA drivers |
+| [docs/v2/](docs/v2/) | Baseline, decisions, migration status, and verification records |
 
 ## Next rewrite sections
 
-1. Strengthen QA progress/error/construction assertions; finish four root JavaScript scripts and remove the temporary JavaScript compiler allowance.
-2. Continue decomposing season and subsystem orchestration, and complete remaining state and command validation.
-3. Complete nested save validation, deterministic replay, interface and accessibility review, approved platform visual baselines, and production-code reduction.
-4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
+1. Correct QA progress, error, and paid-construction assertions, including legitimate ending handling.
+2. Migrate `vite.config.js`, `eslint.config.js`, `playtest.js`, and `playwright-playtest.js`; remove the temporary JavaScript compiler allowance.
+3. Decompose remaining orchestration and complete state, command, save, arithmetic, and replay validation.
+4. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
+5. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
+
+## Rewrite workflow and history
+
+Follow [AGENTS.md](AGENTS.md). Each bounded section includes implementation, appropriate checks, actual image inspection when presentation changes, independent review, and updated evidence.
+
+**Commit after every loop or section before starting the next one.** Keep corrections in separate commits on this repository's `main`. A checkpoint records progress; it does not declare the rewrite complete.
+
+The original history is retained through baseline `47570f9`, the rewrite checkpoint `ee66330`, and repository-initialization merge `9b561d9`. See the [commit history](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commits/main/).
 
 ## Rewrite records
 
-- [Checkpoint report](docs/v2/checkpoint.md): the preserved implementation state, checks, and known limits.
-- [Migration ledger](docs/v2/migration-ledger.md): section status, decisions, and next actions.
-- [Verification notes](docs/v2/verification.md): historical test and review evidence by recorded build.
-- [Baseline](docs/v2/baseline.md): the starting implementation and measurements.
-- [Design notes](docs/v2/design.md): the intended architecture.
-- [Content manifest](docs/v2/content-manifest.json): baseline authored-content inventory.
+- [Migration ledger](docs/v2/migration-ledger.md): current section status, decisions, and next actions.
+- [Verification notes](docs/v2/verification.md): executed checks, failures, and independent review by recorded build.
+- [Checkpoint report](docs/v2/checkpoint.md): the earlier repository handoff, with historical status.
+- [Baseline](docs/v2/baseline.md), [design notes](docs/v2/design.md), and [content manifest](docs/v2/content-manifest.json).
+- [QA process](QA.md): diagnostic profiles and their coverage limits.
 
-Bulky browser and reviewer artifacts are kept in ignored local evidence directories; they are not committed to this repository. The tracked records identify their scope and limitations.
+Bulky browser and reviewer artifacts remain in ignored local evidence directories. Tracked records describe their scope and limitations.
 
 ## License
 
