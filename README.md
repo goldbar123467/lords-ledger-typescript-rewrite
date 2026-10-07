@@ -4,7 +4,7 @@ An incremental rewrite of The Lord's Ledger, a React game about managing a medie
 
 **Status: in progress.** All first-party executable source, tests, configurations, and playtest tooling now use checked TypeScript under `strict` and `noUncheckedIndexedAccess`. The temporary JavaScript compiler allowance is removed. Architecture simplification, complete runtime validation, interface review, and final campaign verification remain unfinished.
 
-The current requirement audit is recorded in [verification notes](docs/v2/verification.md). Browser discovery finds 820 cases in 146 files; this is not a passing full-suite result. Final-build seeded campaigns, platform visual approval and a consolidated interface verdict remain open.
+The current requirement audit is recorded in [verification notes](docs/v2/verification.md). Browser discovery finds 830 cases in 148 files; this is not a passing full-suite result. Final-build seeded campaigns, platform visual approval and a consolidated interface verdict remain open.
 
 ## Rewrite goals
 
@@ -50,12 +50,13 @@ These results belong to their recorded revisions. They are not a fresh full-suit
 | Flip lifecycle consolidation (`595469c`) | 789 unit tests, typecheck, lint, build and 32 focused browser cases passed. Independent tester matched 7,172 save roundtrips across all nine stories and passed four browser cases; grader verified expanded case bodies and fresh-array ownership | Main reducer: 1,946 to 1,646 lines; new owner: 304 lines. Five reset literals and two recovery paths share cleanup, but total production text increased by four. Managed story fixtures are not campaigns |
 | Shared synergy activation | 789 unit tests, typecheck, lint, build and 18 focused browser cases passed. Independent tester matched 1,150 state/save pairs and passed seven browser cases; grader checked all 21 tiers' receipt metadata | Removed 21 net production lines. Advancement retains all-active bonuses and next-season dates; story settlement retains new-only bonuses and deferred queues. Managed eligibility fixtures are not campaigns |
 | Henrik trade permission correction | 792 unit tests, typecheck, lint, build and 20 focused browser cases passed. Independent tester passed four native cases; both reviewers accepted receipt, save and buyer behavior | Warm and restricted permissions unlock Henrik in Spring/Autumn; refusal does not. Older resolved-only saves remain ambiguous. Browser items use managed paid Forge-result fixtures, not played crafting or campaigns |
+| Forge grade chart reflow | Typecheck, lint, build and 16 focused browser cases passed. Independent tester accepted seven distinct scenarios across two batches; both reviewers accepted the scoped layout | Grade names stay whole at normal/doubled text on phone and desktop. Exact counts/bars and empty state were independently checked; native zoom and complete Forge review remain open |
 
 At the QA migration checkpoint, browser discovery found **789 tests across 140 files**. Discovery is not execution. Reports and screenshots use per-test paths, preserving historical evidence.
 
 Migration replay matched 28,632 state/save pairs across 120 seeded campaigns against the preceding implementation. This demonstrates preservation for those policies, not fulfillment of the final campaign acceptance gate.
 
-Production text measured **44,749 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, shared synergy activation removed 21, and the Henrik correction added 22. Line totals also reflect comments and formatting. The prospective implementation target is **27,577 lines**, 10% below the original 30,642; current implementation is 28,138, leaving 561 lines before the target is met. This target is newly recorded after the audit found no earlier numeric target. The inclusive subtotal is **80,493 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. Documentation trimming is excluded from production reduction.
+Production text measured **44,753 lines**, versus 45,347 at baseline. Market consolidation removed 143 net production lines; fractional trading added nine, flip index validation added one, flip lifecycle extraction added four, shared synergy activation removed 21, the Henrik correction added 22, and grade-chart reflow added four style lines. Line totals also reflect comments and formatting. The prospective implementation target is **27,577 lines**, 10% below the original 30,642; current implementation is 28,138, leaving 561 lines before the target is met. This target is newly recorded after the audit found no earlier numeric target. The inclusive subtotal is **80,564 lines**, versus 62,282, including types, tests, tooling, documentation, and other tracked text. Documentation trimming is excluded from production reduction.
 
 ## Code map
 
@@ -75,7 +76,7 @@ Production text measured **44,749 lines**, versus 45,347 at baseline. Market con
 
 ## Next rewrite sections
 
-1. Reproduce and repair enlarged Forge grade labels, then review the remaining Hall aliases. Continue runtime/save checks and meaningful duplication reduction; contextual CYOA ownership remains unproved.
+1. Review the remaining Hall aliases and complete the broader interface review. Continue runtime/save checks and meaningful duplication reduction; contextual CYOA ownership remains unproved.
 2. Complete interface and accessibility review, independently approve platform visual baselines, and measure final code totals.
 3. Verify the completed build with at least 100 genuine seeded campaigns, a native 40-turn victory, loss/restart, and save/reload flows. Obtain final independent tester and grader review.
 

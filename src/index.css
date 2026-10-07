@@ -1781,6 +1781,10 @@ input[type="range"].labor-slider::-moz-range-thumb {
   font-size: 1rem; line-height: 1.55; overflow-wrap: anywhere;
 }
 .forge-ui .forge-caption { font-family: "Cinzel", serif; font-size: .95rem; line-height: 1.55; letter-spacing: .025em; }
+.forge-grade-row { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: center; gap: .25rem .5rem; }
+.forge-grade-label { overflow-wrap: normal; }
+.forge-grade-count { grid-column: 2; grid-row: 1; text-align: right; }
+.forge-grade-track { grid-column: 1 / -1; grid-row: 2; min-width: 0; }
 .forge-ui .forge-lore { font-family: "Almendra", "Crimson Text", serif; font-size: 1.05rem; line-height: 1.55; font-style: italic; }
 .forge-ui .forge-heading { font-family: "Cinzel Decorative", "Cinzel", serif; font-size: 1.25rem; line-height: 1.45; }
 .forge-ui .forge-value { font-family: "Cinzel", serif; font-size: 1.1rem; line-height: 1.5; }

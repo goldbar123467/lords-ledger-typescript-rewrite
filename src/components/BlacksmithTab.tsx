@@ -1624,11 +1624,11 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
               const pct = totalForged > 0 ? (count / totalForged) * 100 : 0;
               const gradeData = isGrade(grade) ? QUALITY_GRADES[grade] : undefined;
               return (
-                <div key={grade} className="flex items-center gap-2">
-                  <span className="forge-caption"  style={{color: forgeTextColor(gradeData?.color || "#5a5550"), width: 110, minWidth: 110, textAlign: "right"}}>
+                <div key={grade} className="forge-grade-row">
+                  <span className="forge-caption forge-grade-label" style={{color: forgeTextColor(gradeData?.color || "#5a5550")}}>
                     {grade}
                   </span>
-                  <div style={{ flex: 1, height: 12, borderRadius: 3, backgroundColor: "#1a1510", overflow: "hidden", border: "1px solid #2a2420" }}>
+                  <div className="forge-grade-track" style={{ height: 12, borderRadius: 3, backgroundColor: "#1a1510", overflow: "hidden", border: "1px solid #2a2420" }}>
                     <div style={{
                       height: "100%",
                       width: `${pct}%`,
@@ -1638,7 +1638,7 @@ function ForgeLedger({ blacksmith, garrison }: {blacksmith:ForgeSaveState; garri
                       opacity: 0.7
                     }} />
                   </div>
-                  <span className="forge-caption"  style={{color: forgeTextColor("#8a7a5a"), width: 20, textAlign: "right"}}>
+                  <span className="forge-caption forge-grade-count" style={{color: forgeTextColor("#8a7a5a")}}>
                     {count}
                   </span>
                 </div>
