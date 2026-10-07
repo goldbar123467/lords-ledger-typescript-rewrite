@@ -24,6 +24,8 @@ Migration replay matched **28,632 complete state/save pairs across 120 seeded ca
 
 **Choice-index correction: G-RM01 closed.** Seasonal and random choice commands now reject negative, fractional, out-of-range and nonnumeric indices without changing the pending event, save bytes or RNG. All **739 unit tests**, static checks and build pass; root and each independent reviewer passed four browser choice/save/reload cases. The unchanged golden hash covers 1,332 authored choice transitions. Broader runtime phase and command validation remains incomplete.
 
+Seasonal and random settlement now share one checked domain function, removing duplicate validation and transition code. This refactor passes **740 unit tests**, static checks, build and four affected browser flows. Twelve baseline replay campaigns match 2,801 state/save pairs; independent reviews verify historical defaults, ending priority and military bookkeeping. **G-ES01 remains open:** the legacy donation command can accept coerced amounts or overflow its total, producing an unsaveable state. Its correction is next.
+
 ## Current progress
 
 | Area | Included in the checkpoint | Remaining work |
@@ -51,7 +53,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-No source JavaScript files remain. The latest recorded census counts 45,031 production lines versus the original 45,347, a reduction of 316 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,495 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,010 production lines versus the original 45,347, a reduction of 337 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,528 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -122,7 +124,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Simplify the checked reducer's orchestration, beginning with shared event settlement, and complete remaining state and command validation.
+1. Correct G-ES01 legacy donation validation, simplify the larger season and subsystem orchestration, and complete remaining state and command validation.
 2. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
 4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.

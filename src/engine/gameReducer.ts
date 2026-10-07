@@ -5,7 +5,7 @@ import type {EventDefinition, SeasonalEvent} from '../data/eventTypes.ts';
 import type {BuildingId, BuildingDefinition} from '../data/buildings.ts';
 import type {ResourceId} from '../data/economy.ts';
 import type {RandomSource} from './eventSelector.ts';
-import { resolveEventChoice, computeResourceDeltas } from './eventChoice.ts';
+import { settlePendingEvent, computeResourceDeltas } from './eventChoice.ts';
 import { createInitialState } from './initialGameState.ts';
 export { createInitialState } from './initialGameState.ts';
 import {getChandelierPrestigeBonus} from "./forgeTools.ts";
@@ -1368,30 +1368,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     // SELECT_SEASONAL_ACTION
     // -----------------------------------------------------------------------
     case "SELECT_SEASONAL_ACTION": {
-      const { optionIndex } = action.payload ?? {};
-      const { currentEvent, phase } = state;
-
-      if (phase !== "seasonal_action" || !currentEvent) return state;
-      if (!Number.isSafeInteger(optionIndex) || optionIndex < 0 ||
-          !currentEvent.options?.[optionIndex]) return state;
-
-      const settled = resolveEventChoice(state, currentEvent, optionIndex, "action");
-      const partial = {...settled, military: settled.military ?? state.military};
-
-      if (partial.gameOverReason) {
-        return {
-          ...state,
-          ...partial,
-          phase: "game_over",
-          currentEvent: null,
-        };
-      }
-
-      return {
-        ...state,
-        ...partial,
-        phase: "seasonal_resolve",
-      };
+      return settlePendingEvent(state, "seasonal", action.payload?.optionIndex);
     }
 
     // -----------------------------------------------------------------------
@@ -1431,31 +1408,7 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
     // SELECT_RANDOM_RESPONSE
     // -----------------------------------------------------------------------
     case "SELECT_RANDOM_RESPONSE": {
-      const { optionIndex } = action.payload ?? {};
-      const { currentRandomEvent, phase } = state;
-
-      if (phase !== "random_event" || !currentRandomEvent) return state;
-      if (!Number.isSafeInteger(optionIndex) || optionIndex < 0 ||
-          !currentRandomEvent.options?.[optionIndex]) return state;
-
-      const settled = resolveEventChoice(state, currentRandomEvent, optionIndex, "event");
-      const partial = {...settled, military: settled.military ?? state.military};
-
-      if (partial.gameOverReason) {
-        return {
-          ...state,
-          ...partial,
-          phase: "game_over",
-          currentRandomEvent: null,
-        };
-      }
-
-      return {
-        ...state,
-        ...partial,
-        phase: "random_resolve",
-        militaryEventEverFired: state.militaryEventEverFired || (currentRandomEvent?.requiresMeter === "military"),
-      };
+      return settlePendingEvent(state, "random", action.payload?.optionIndex);
     }
 
     // -----------------------------------------------------------------------

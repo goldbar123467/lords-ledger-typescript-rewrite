@@ -3,7 +3,7 @@ import { addChronicle, type ChronicleKind, type SavedChronicleEntry } from './ch
 import { MAX_GARRISON, type Inventory } from '../data/economy.ts';
 import { removeFromGarrison, type MilitaryDefenseState } from '../data/military.ts';
 import type { CauseChainEntry, ResourceDeltas } from './initialGameStateTypes.ts';
-import type { Season } from '../save/saveGame.ts';
+import type { GameSnapshot, Season } from '../save/saveGame.ts';
 
 /** Historical optional wording uses the same fallback order as authored events. */
 export interface ChoiceOption {
@@ -23,6 +23,32 @@ export interface ChoiceState<M extends MilitaryDefenseState = MilitaryDefenseSta
   readonly difficulty: string; readonly bankruptcyTurns?: number; readonly starvationTurns?: number;
 }
 const MAX_CAUSE_CHAIN = 4;
+
+/** Own pending-event validation, settlement and phase changes together. */
+export function settlePendingEvent(
+  state: GameSnapshot, kind: 'seasonal' | 'random', optionIndex: unknown,
+): GameSnapshot {
+  const seasonal = kind === 'seasonal';
+  if (state.phase !== (seasonal ? 'seasonal_action' : 'random_event')) return state;
+  const event = seasonal ? state.currentEvent : state.currentRandomEvent;
+  if (!event || typeof optionIndex !== 'number' || !Number.isSafeInteger(optionIndex) ||
+      optionIndex < 0 || !event.options?.[optionIndex]) return state;
+
+  const settled = resolveEventChoice(state, event, optionIndex, seasonal ? 'action' : 'event');
+  const partial = { ...settled, military: settled.military ?? state.military };
+  if (partial.gameOverReason) {
+    return {
+      ...state, ...partial, phase: 'game_over',
+      ...(seasonal ? { currentEvent: null } : { currentRandomEvent: null }),
+    };
+  }
+  return {
+    ...state, ...partial, phase: seasonal ? 'seasonal_resolve' : 'random_resolve',
+    ...(seasonal ? {} : {
+      militaryEventEverFired: state.militaryEventEverFired || event.requiresMeter === 'military',
+    }),
+  };
+}
 
 function addCauseChain(causeChain: readonly CauseChainEntry[], turn: number, season: Season, year: number, summary: string) {
   const entry = { turn, season, year, summary };

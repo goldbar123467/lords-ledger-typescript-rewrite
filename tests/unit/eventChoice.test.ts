@@ -9,6 +9,28 @@ import random from '../../src/data/randomEvents.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 import { resolveEventChoice, type ChoiceEvent } from '../../src/engine/eventChoice.ts';
 
+test('pending event settlement retains distinct ending and military bookkeeping', () => {
+  const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { seed: 104, difficulty: 'normal' } });
+  const seasonalEvent = present(seasonal.spring[0], 'seasonal event');
+  const militaryEvent = present(random.find(event => event.requiresMeter === 'military'), 'military event');
+  for (const kind of ['seasonal', 'random'] as const) {
+    const type = kind === 'seasonal' ? 'SELECT_SEASONAL_ACTION' : 'SELECT_RANDOM_RESPONSE';
+    const state = snapshotFixture({ ...base, phase: kind === 'seasonal' ? 'seasonal_action' : 'random_event',
+      currentEvent: seasonalEvent, currentRandomEvent: militaryEvent, militaryEventEverFired: false });
+    const before = writeV2Save(state);
+    const ordinary = gameReducer(state, { type, payload: { optionIndex: 0 } });
+    assert.equal(ordinary.militaryEventEverFired, kind === 'random');
+    const ending = gameReducer({ ...state, bankruptcyTurns: 6 }, { type, payload: { optionIndex: 0 } });
+    assert.equal(ending.phase, 'game_over');
+    assert.equal(ending.gameOverReason?.type, 'bankruptcy');
+    assert.equal(ending.militaryEventEverFired, false, 'ending must not record a nonterminal military trigger');
+    assert.strictEqual(ending.currentEvent, kind === 'seasonal' ? null : seasonalEvent);
+    assert.strictEqual(ending.currentRandomEvent, kind === 'random' ? null : militaryEvent);
+    assert.equal(ending.rngState, state.rngState);
+    assert.equal(writeV2Save(state), before);
+  }
+});
+
 for (const kind of ['seasonal', 'random'] as const) {
   test(`${kind} choices reject malformed indices without consuming the pending event`, () => {
     const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { seed: 104, difficulty: 'normal' } });
