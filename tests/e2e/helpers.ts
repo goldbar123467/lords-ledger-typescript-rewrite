@@ -3,6 +3,31 @@ import type {Page} from '@playwright/test';
 export type TurnExitReason = 'sim_missing' | 'game_over' | 'victory' | 'title_screen' | 'page_closed' | 'loop_timeout';
 export interface TurnDiagnostic { reason?: TurnExitReason; iteration?: number; }
 
+const RESOLVE_PREFIX = "^\\s*(?:\\u2190\\s*)?";
+const RESOLVE_LABELS = [
+  "See What Happens Next",
+  "Continue",
+  "See Your Legacy",
+  "See the Consequences",
+  "Return to Your Reign",
+  "Return to Throne",
+  "Return to Queue",
+  "Return to Market Square",
+  "Return to Tavern",
+  "Return to Chapel",
+  "Defend",
+  "Defend the Estate",
+  "I Understand",
+  "Begin",
+  "Proceed",
+  "Accept",
+  "Done",
+];
+const resolvePattern = new RegExp(
+  RESOLVE_LABELS.map((l) => `${RESOLVE_PREFIX}${l}\\s*$`).join("|")
+);
+
+
 /**
  * Shared test helpers for E2E Playwright tests.
  *
@@ -244,11 +269,11 @@ export async function playOneTurn(page: Page, diag?: TurnDiagnostic) {
     }
 
     // Priority 1: Dismiss any overlay (scribe's note, tutorial, raid)
-    // by clicking the LAST matching button (topmost in stacking order).
+    // by clicking the last visible progression control. Save/reset controls are excluded.
     // Wait for the target button to be visible + stable before clicking so
     // we don't race with overlay fade-in/unmount transitions under parallel
     // workers (B-33/B-44).
-    const overlayBtns = page.locator(".fixed.inset-0 button");
+    const overlayBtns = page.locator(".fixed.inset-0 button:visible").filter({ hasText: resolvePattern });
     const overlayCount = await overlayBtns.count();
     if (overlayCount > 0) {
       const topBtn = overlayBtns.last();
@@ -281,27 +306,6 @@ export async function playOneTurn(page: Page, diag?: TurnDiagnostic) {
     // Title" on the game-over screen, which masked the actual end state.
     // Each alternative is anchored (optionally preceded by a decorative
     // arrow + whitespace) so substrings of unrelated buttons cannot match.
-    const RESOLVE_PREFIX = "^\\s*(?:\\u2190\\s*)?";
-    const RESOLVE_LABELS = [
-      "See What Happens Next",
-      "Continue",
-      "See Your Legacy",
-      "See the Consequences",
-      "Return to Your Reign",
-      "Return to Throne",
-      "Return to Queue",
-      "Return to Market Square",
-      "Return to Tavern",
-      "Return to Chapel",
-      "Defend",
-      "Begin",
-      "Proceed",
-      "Accept",
-      "Done",
-    ];
-    const resolvePattern = new RegExp(
-      RESOLVE_LABELS.map((l) => `${RESOLVE_PREFIX}${l}\\s*$`).join("|")
-    );
     const continueBtn = page.locator("button").filter({ hasText: resolvePattern });
     if (await continueBtn.first().isVisible({ timeout: 200 }).catch(() => false)) {
       try {
