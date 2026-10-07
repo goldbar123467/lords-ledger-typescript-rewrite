@@ -1372,6 +1372,8 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const { currentEvent, phase } = state;
 
       if (phase !== "seasonal_action" || !currentEvent) return state;
+      if (!Number.isSafeInteger(optionIndex) || optionIndex < 0 ||
+          !currentEvent.options?.[optionIndex]) return state;
 
       const settled = resolveEventChoice(state, currentEvent, optionIndex, "action");
       const partial = {...settled, military: settled.military ?? state.military};
@@ -1433,6 +1435,8 @@ function reduceGame(state: GameSnapshot, action: GameCommand, random: RandomSour
       const { currentRandomEvent, phase } = state;
 
       if (phase !== "random_event" || !currentRandomEvent) return state;
+      if (!Number.isSafeInteger(optionIndex) || optionIndex < 0 ||
+          !currentRandomEvent.options?.[optionIndex]) return state;
 
       const settled = resolveEventChoice(state, currentRandomEvent, optionIndex, "event");
       const partial = {...settled, military: settled.military ?? state.military};

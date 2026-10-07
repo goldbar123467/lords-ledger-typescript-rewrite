@@ -3,10 +3,39 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import { createInitialState } from '../../src/engine/gameReducer.ts';
 import { rawGameReducer as gameReducer } from '../gameInput.ts';
+import { present, snapshotFixture } from '../gameInput.ts';
 import seasonal from '../../src/data/seasonalEvents.ts';
 import random from '../../src/data/randomEvents.ts';
 import { writeV2Save } from '../../src/save/saveGame.ts';
 import { resolveEventChoice, type ChoiceEvent } from '../../src/engine/eventChoice.ts';
+
+for (const kind of ['seasonal', 'random'] as const) {
+  test(`${kind} choices reject malformed indices without consuming the pending event`, () => {
+    const base = gameReducer(createInitialState(104), { type: 'START_GAME', payload: { seed: 104, difficulty: 'normal' } });
+    const event = present(kind === 'seasonal' ? seasonal.spring[0] : random[0], 'authored choice');
+    const state = snapshotFixture({ ...base, phase: kind === 'seasonal' ? 'seasonal_action' : 'random_event',
+      currentEvent: kind === 'seasonal' ? event : null, currentRandomEvent: kind === 'random' ? event : null });
+    const type = kind === 'seasonal' ? 'SELECT_SEASONAL_ACTION' : 'SELECT_RANDOM_RESPONSE';
+    const before = writeV2Save(state);
+    for (const optionIndex of [-1, event.options.length, 999, 0.5, NaN, Infinity, -Infinity,
+      Number.MAX_SAFE_INTEGER + 1, '0', 'toString', null, undefined, false, {}, []]) {
+      assert.strictEqual(gameReducer(state, { type, payload: { optionIndex } }), state,
+        `invalid index ${String(optionIndex)} must preserve identity`);
+      assert.equal(writeV2Save(state), before);
+    }
+    for (const payload of [undefined, null, {}]) {
+      assert.strictEqual(gameReducer(state, { type, payload }), state);
+      assert.equal(writeV2Save(state), before);
+    }
+    // A rejected choice must leave the same legitimate decision available.
+    const settled = gameReducer(state, { type, payload: { optionIndex: 0 } });
+    assert.notStrictEqual(settled, state);
+    assert.equal(settled.phase, kind === 'seasonal' ? 'seasonal_resolve' : 'random_resolve');
+    assert.equal(settled.rngState, state.rngState);
+    assert.strictEqual(gameReducer(settled, { type, payload: { optionIndex: 0 } }), settled);
+    assert.equal(writeV2Save(state), before);
+  });
+}
 
 test('all authored event choices preserve complete transitions, saves, input and RNG', () => {
   const hash = createHash('sha256'); let cases = 0;

@@ -18,11 +18,11 @@ The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. C
 
 The actual [main reducer](src/engine/gameReducer.ts) now checks `GameSnapshot` inputs and outputs and `GameCommand` payloads. App calls it directly; the temporary JavaScript output bridge is removed. Compatible historical defaults are retained, and consumed military metadata has runtime validation. These contracts do not establish complete external-command or phase validation.
 
-All **737 unit tests**, typecheck, lint and production build passed. Root browser verification passed **77 cases** covering affected lifecycle, persistence, choices, story, Forge and Tavern flows. Independent tester and grader runs passed **10 and 11 browser cases**, respectively, including historical saves, recruitment, paid Estate actions and story continuations. Actual images were inspected; these checks do not establish whole-interface acceptance.
+The reducer migration passed **737 unit tests**, typecheck, lint and production build. Root browser verification passed **77 cases** covering affected lifecycle, persistence, choices, story, Forge and Tavern flows. Independent tester and grader runs passed **10 and 11 browser cases**, respectively, including historical saves, recruitment, paid Estate actions and story continuations. Actual images were inspected; these checks do not establish whole-interface acceptance.
 
 Migration replay matched **28,632 complete state/save pairs across 120 seeded campaigns**, with 65 victories and 55 losses, against the preceding implementation. The grader independently matched 2,012 pairs and 26 historical-default compatibility pairs. These simple-policy comparisons check migration preservation; final campaigns and a genuine browser-driven 40-turn victory on the completed build remain required.
 
-**Open defect: G-RM01.** Invalid seasonal choice indices can advance the phase without applying a choice. This reproduces in both the baseline and migrated reducer. Fixing that guard is the next corrective section.
+**Choice-index correction: G-RM01 closed.** Seasonal and random choice commands now reject negative, fractional, out-of-range and nonnumeric indices without changing the pending event, save bytes or RNG. All **739 unit tests**, static checks and build pass; root and each independent reviewer passed four browser choice/save/reload cases. The unchanged golden hash covers 1,332 authored choice transitions. Broader runtime phase and command validation remains incomplete.
 
 ## Current progress
 
@@ -51,7 +51,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-No source JavaScript files remain. The latest recorded census counts 45,027 production lines versus the original 45,347, a reduction of 320 lines; this section adds 64 production lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,438 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+No source JavaScript files remain. The latest recorded census counts 45,031 production lines versus the original 45,347, a reduction of 316 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal after this checkpoint's documentation updates is 79,495 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -122,7 +122,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Fix G-RM01 invalid choice-index transitions, simplify the checked reducer's orchestration, and complete remaining state and command validation.
+1. Simplify the checked reducer's orchestration, beginning with shared event settlement, and complete remaining state and command validation.
 2. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 3. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
 4. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
