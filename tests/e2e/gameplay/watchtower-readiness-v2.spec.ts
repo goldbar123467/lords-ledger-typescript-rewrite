@@ -9,8 +9,9 @@ for (const width of [390, 1366]) {
       const base = createInitialState(104);
       const state = { ...base, phase: 'management', turn: 8, season: 'winter', year: 2,
         activeTab: 'military', tutorialsSeen: ['military', 'map'],
-        blacksmith: { ...base.blacksmith, equipped: scenario === 'bonuses' ? [{ id: 'readiness-fixture',
-          itemId: 'longsword', name: 'Longsword', category: 'weapon', quality: 'Masterwork',
+        blacksmith: { ...base.blacksmith, nextItemUid: scenario === 'bonuses' ? 2 : base.blacksmith.nextItemUid,
+          equipped: scenario === 'bonuses' ? [{ id: 'readiness-fixture', uid: 1,
+          itemId: 'longsword', name: 'Longsword', category: 'weapon', grade: 'Masterwork', quality: 'Masterwork',
           qualityScore: 90, militaryBonus: 8, tradeValue: 15 }] : base.blacksmith.equipped },
         watchtower: { ...base.watchtower, rodericScribesNoteSeen: true, scannedThisSeason: true },
       };
