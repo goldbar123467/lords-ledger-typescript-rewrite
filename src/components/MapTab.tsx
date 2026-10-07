@@ -9,6 +9,7 @@
 import { useMemo } from "react";
 import BUILDINGS, {type BuildingId,type BuildingDefinition} from "../data/buildings.ts";
 import type {BuildingInstance,GameSnapshot,Season} from '../save/saveGame.ts';
+import {useHallReadingFocus} from '../hooks/useHallReadingFocus.ts';
 
 interface MapPoint {readonly x:number;readonly y:number}
 type WalkPath=readonly [MapPoint,MapPoint,...MapPoint[]];
@@ -57,7 +58,7 @@ const BUILDING_SPOTS = {
   apiary:        [{ x: 10, y: 74 }, { x: 22, y: 74 }],
   mill:          [{ x: 22, y: 88 }],
   fulling_mill:  [{ x: 36, y: 80 }],
-  brewery:       [{ x: 48, y: 72 }],
+  brewery:       [{ x: 48, y: 90 }],
 } as const satisfies Readonly<Record<Exclude<BuildingId,PermanentForgeBuildingId>,readonly [MapPoint,...MapPoint[]]>>;
 type MapBuildingId=keyof typeof BUILDING_SPOTS;
 function isMapBuildingId(value:string):value is MapBuildingId {return Object.hasOwn(BUILDING_SPOTS,value);}
@@ -280,15 +281,9 @@ function WaterBody({ pal }:{pal:MapPalette}) {
         <ellipse cx="18" cy="240" rx="14" ry="30" fill="white" opacity="0.07" transform="rotate(-12 18 240)" />
 
         {/* Animated surface ripples */}
-        <path d="M 14,175 Q 24,168 32,178" stroke="#7ac4dd" strokeWidth="1.5" fill="none" strokeLinecap="round">
-          <animate attributeName="opacity" values="0.12;0.42;0.12" dur="4s" repeatCount="indefinite" />
-        </path>
-        <path d="M 10,295 Q 22,287 30,298" stroke="#7ac4dd" strokeWidth="1.5" fill="none" strokeLinecap="round">
-          <animate attributeName="opacity" values="0.08;0.35;0.08" dur="5s" repeatCount="indefinite" begin="1.5s" />
-        </path>
-        <path d="M 16,410 Q 24,404 20,418" stroke="#7ac4dd" strokeWidth="1" fill="none" strokeLinecap="round">
-          <animate attributeName="opacity" values="0.08;0.28;0.08" dur="3.5s" repeatCount="indefinite" begin="0.7s" />
-        </path>
+        <path className="estate-ripple estate-ripple--one" d="M 14,175 Q 24,168 32,178" stroke="#7ac4dd" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path className="estate-ripple estate-ripple--two" d="M 10,295 Q 22,287 30,298" stroke="#7ac4dd" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path className="estate-ripple estate-ripple--three" d="M 16,410 Q 24,404 20,418" stroke="#7ac4dd" strokeWidth="1" fill="none" strokeLinecap="round" />
 
         {/* ---- Reed clusters along shoreline ---- */}
         {/* Cluster 1 — upper shore */}
@@ -481,19 +476,7 @@ function CastleView({ level }:{level:GameSnapshot['castleLevel']}) {
       </div>
 
       {/* Label */}
-      <span style={{
-        fontSize: "11px",
-        fontFamily: "Cinzel, serif",
-        fontWeight: "bold",
-        color: "#e8c44a",
-        backgroundColor: "rgba(15, 13, 10, 0.85)",
-        padding: "1px 6px",
-        borderRadius: "3px",
-        border: "1px solid rgba(196, 162, 74, 0.4)",
-        marginTop: "3px",
-        whiteSpace: "nowrap",
-        letterSpacing: "0.5px",
-      }}>
+      <span className="estate-map-landmark">
         {level >= 2 ? `Castle Lv.${level}` : "Castle"}
       </span>
     </div>
@@ -502,22 +485,7 @@ function CastleView({ level }:{level:GameSnapshot['castleLevel']}) {
 
 /** Shared label for all building sprites */
 function BuildingLabel({ name }:{name:string}) {
-  return (
-    <span style={{
-      fontSize: "9px",
-      fontFamily: "Cinzel, serif",
-      fontWeight: "700",
-      color: "#2c1810",
-      backgroundColor: "rgba(244, 228, 193, 0.75)",
-      padding: "0px 3px",
-      borderRadius: "2px",
-      whiteSpace: "nowrap",
-      marginTop: "2px",
-      letterSpacing: "0.3px",
-    }}>
-      {name}
-    </span>
-  );
+  return <span className="estate-building-label">{name}</span>;
 }
 
 /** Coal Pit — dark mound with glowing embers and smoke hole */
@@ -829,20 +797,7 @@ function BuildingSprite({ buildingId, x, y }:MapPoint & {buildingId:MapBuildingI
           <span style={{ fontSize: "15px", lineHeight: 1 }}>{def.icon}</span>
         </div>
       </div>
-      <span style={{
-        fontSize: "9px",
-        fontFamily: "Cinzel, serif",
-        fontWeight: "700",
-        color: "#2c1810",
-        backgroundColor: "rgba(244, 228, 193, 0.75)",
-        padding: "0px 3px",
-        borderRadius: "2px",
-        whiteSpace: "nowrap",
-        marginTop: "2px",
-        letterSpacing: "0.3px",
-      }}>
-        {def.name}
-      </span>
+      <BuildingLabel name={def.name} />
     </div>
   );
 }
@@ -892,6 +847,7 @@ function SmokePuff({ x, y, delay }:MapPoint & {delay:number}) {
 // ---------------------------------------------------------------------------
 
 export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMarket }:MapViewProps) {
+  const revealFocusedControl = useHallReadingFocus();
   const { buildings, castleLevel, population, season } = state;
   const pal = SEASON_PALETTE[season] || SEASON_PALETTE.spring;
 
@@ -926,7 +882,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
   }, [counts]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="estate-map w-full max-w-6xl mx-auto" onFocusCapture={revealFocusedControl}>
       <style>{STYLE_SHEET}</style>
 
       {/* Title bar */}
@@ -940,16 +896,18 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
         >
           Estate of the Realm
         </h3>
-        <p className="text-xs" style={{ color: "#8a7a3a" }}>
+        <p className="estate-map-caption">
           {buildings.length} building{buildings.length !== 1 ? "s" : ""} constructed
           {" · "}{population} families
           {" · "}{season?.charAt(0).toUpperCase() + season?.slice(1)}
         </p>
       </div>
+      <p className="estate-map-pan-hint">Scroll sideways when needed to explore the map. Use arrow keys when the map is focused.</p>
 
       {/* ============ MAP CANVAS ============ */}
+      <div className="estate-map-scroll" role="region" aria-label="Estate map" tabIndex={0}>
       <div
-        className="relative border-2 border-t-0 overflow-hidden select-none"
+        className="estate-map-canvas relative border-2 border-t-0 overflow-hidden select-none"
         style={{
           aspectRatio: "5 / 3",
           backgroundColor: pal.ground,
@@ -1184,6 +1142,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
         {/* ---- TAVERN (clickable) ---- */}
         <button
           onClick={onOpenTavern}
+          className="estate-map-destination"
           style={{
             position: "absolute",
             left: "36%",
@@ -1256,19 +1215,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
             </div>
           </div>
           {/* Name label with dark background pill */}
-          <span style={{
-            fontSize: "11px",
-            fontFamily: "Cinzel, serif",
-            fontWeight: "700",
-            color: "#e8c44a",
-            backgroundColor: "rgba(15, 13, 10, 0.85)",
-            padding: "1px 6px",
-            borderRadius: "3px",
-            border: "1px solid rgba(196, 162, 74, 0.4)",
-            whiteSpace: "nowrap",
-            marginTop: "3px",
-            letterSpacing: "0.5px",
-          }}>
+          <span className="estate-map-landmark">
             Tavern
           </span>
         </button>
@@ -1277,6 +1224,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
         {onOpenWatchtower && (
           <button
             onClick={onOpenWatchtower}
+            className="estate-map-destination"
             style={{
               position: "absolute",
               left: "38%",
@@ -1328,19 +1276,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
               </div>
             </div>
             {/* Name label with dark background pill */}
-            <span style={{
-              fontSize: "11px",
-              fontFamily: "Cinzel, serif",
-              fontWeight: "700",
-              color: "#a0c0e0",
-              backgroundColor: "rgba(15, 13, 10, 0.85)",
-              padding: "1px 6px",
-              borderRadius: "3px",
-              border: "1px solid rgba(128, 144, 160, 0.4)",
-              whiteSpace: "nowrap",
-              marginTop: "3px",
-              letterSpacing: "0.5px",
-            }}>
+            <span className="estate-map-landmark estate-map-landmark--tower">
               Watchtower
             </span>
           </button>
@@ -1349,6 +1285,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
         {/* ---- MARKET SQUARE (clickable) ---- */}
         <button
           onClick={onOpenMarket}
+          className="estate-map-destination"
           style={{
             position: "absolute",
             left: "50%",
@@ -1386,19 +1323,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
             ))}
           </div>
           {/* Name label with dark background pill */}
-          <span style={{
-            fontSize: "11px",
-            fontFamily: "Cinzel, serif",
-            fontWeight: "700",
-            color: "#e8c44a",
-            backgroundColor: "rgba(15, 13, 10, 0.85)",
-            padding: "1px 6px",
-            borderRadius: "3px",
-            border: "1px solid rgba(196, 162, 74, 0.4)",
-            whiteSpace: "nowrap",
-            marginTop: "3px",
-            letterSpacing: "0.5px",
-          }}>
+          <span className="estate-map-landmark">
             Market
           </span>
         </button>
@@ -1456,10 +1381,11 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
           </div>
         )}
       </div>
+      </div>
 
       {/* ============ LEGEND ============ */}
       <div
-        className="rounded-b-lg border-2 border-t-0 px-3 py-2 flex flex-wrap gap-x-3 gap-y-1 justify-center items-center"
+        className="estate-map-legend rounded-b-lg border-2 border-t-0 px-3 py-2 flex flex-wrap gap-x-3 gap-y-1 justify-center items-center"
         style={{ backgroundColor: "#1a1610", borderColor: "#6a5a42" }}
       >
         <LegendSwatch color="#a08060" label="Common" />
@@ -1480,7 +1406,7 @@ export default function MapTab({ state, onOpenTavern, onOpenWatchtower, onOpenMa
 
 function LegendSwatch({ color, label }:{color:string;label:string}) {
   return (
-    <span className="flex items-center gap-1" style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
+    <span className="flex items-center gap-1">
       <span style={{
         display: "inline-block",
         width: "10px",
@@ -1496,7 +1422,7 @@ function LegendSwatch({ color, label }:{color:string;label:string}) {
 
 function LegendDot({ color, label }:{color:string;label:string}) {
   return (
-    <span className="flex items-center gap-1" style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
+    <span className="flex items-center gap-1">
       <span style={{
         display: "inline-block",
         width: "7px",
@@ -1510,12 +1436,12 @@ function LegendDot({ color, label }:{color:string;label:string}) {
 }
 
 function LegendDivider() {
-  return <span style={{ fontSize: "11px", color: "#6a5a42" }}>|</span>;
+  return <span className="estate-map-divider" aria-hidden="true">|</span>;
 }
 
 function LegendText({ label }:{label:string}) {
   return (
-    <span style={{ fontSize: "11px", color: "#a89070", fontFamily: "Cinzel, serif" }}>
+    <span>
       {label}
     </span>
   );

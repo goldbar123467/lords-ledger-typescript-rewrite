@@ -1901,3 +1901,19 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .tavern-wall-notice { margin: 0; color: #f4e2c5; font: italic 1rem/1.6 'Crimson Text', serif; }
 .tavern-wall-milestone { font-weight: 700; }
 @media(prefers-reduced-motion:reduce) { .tavern-enter { animation: none; } .tavern-station { transition: none; } .tavern-station:not(:disabled):hover { transform: none; } }
+
+.estate-map-caption, .estate-map-pan-hint, .estate-map-legend { color: #dbc7a8; font: 1rem/1.5 'Crimson Text', serif; }
+.estate-map-pan-hint { margin: 0; padding: .4rem .75rem; background: #1a1610; border-inline: 2px solid #6a5a42; }
+.estate-map-scroll { overflow-x: auto; scrollbar-color: #c4a24a #1a1610; }
+.estate-map-scroll:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+.estate-map-canvas { min-width: 64rem; }
+.estate-building-label { color: #2c1810; background: #f4e4c1; padding: 1px 4px; border-radius: 2px; white-space: nowrap; margin-top: 2px; font: 700 .8125rem/1.4 'Cinzel', serif; letter-spacing: .02em; }
+.estate-map-landmark { color: #f4d77f; background: #0f0d0a; padding: 2px 6px; border-radius: 3px; border: 1px solid #8a7a5a; margin-top: 3px; white-space: nowrap; font: 700 .875rem/1.4 'Cinzel', serif; }
+.estate-map-landmark--tower { color: #c1def7; border-color: #8090a0; }
+.estate-map-destination:focus-visible { outline: 3px solid #f4d77f; outline-offset: 4px; }
+.estate-map-divider { color: #8a7a5a; }
+.estate-ripple { animation: estate-ripple 4s linear infinite; --ripple-low: .12; --ripple-high: .42; opacity: var(--ripple-low); }
+.estate-ripple--two { animation-duration: 5s; animation-delay: 1.5s; --ripple-low: .08; --ripple-high: .35; }
+.estate-ripple--three { animation-duration: 3.5s; animation-delay: .7s; --ripple-low: .08; --ripple-high: .28; }
+@keyframes estate-ripple { 0%, 100% { opacity: var(--ripple-low); } 50% { opacity: var(--ripple-high); } }
+@media(prefers-reduced-motion:reduce) { .estate-map * { animation: none !important; } }
