@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
 import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
-test('a timed seeded cellar run settles once and survives save/load', async ({ page }) => {
+test('a timed seeded cellar run settles once and survives save/load', async ({ page }, info) => {
   test.setTimeout(60_000); // The authored minigame runs for 20 real seconds after its countdown.
   await page.setViewportSize({ width: 1366, height: 768 });
   const errors: string[] = [];
@@ -23,10 +22,9 @@ test('a timed seeded cellar run settles once and survives save/load', async ({ p
   await page.getByRole('button', { name: /Rats in the Cellar/ }).click();
   const note = page.getByRole('button', { name: 'Continue' });
   if (await note.isVisible()) await note.click();
-  await mkdir('artifacts/v2/rats-browser', { recursive: true });
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/intro-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('intro-1366x768.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/intro-390x844.png' });
+  await page.screenshot({ path: info.outputPath('intro-390x844.png') });
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.getByRole('button', { name: 'Ready!' }).click();
   await page.getByRole('button', { name: /Rat in cell/ }).first().click({ timeout: 6_000 });
@@ -38,13 +36,13 @@ test('a timed seeded cellar run settles once and survives save/load', async ({ p
   await expect(focusedCell).toHaveCSS('outline-style', 'solid');
   await expect(page.getByRole('heading', { name: 'Cellar Cleared' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText('Escaped', { exact: true }).locator('..')).toContainText('15');
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/result-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('result-1366x768.png') });
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/result-1280x720.png' });
+  await page.screenshot({ path: info.outputPath('result-1280x720.png') });
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/result-1920x1080.png' });
+  await page.screenshot({ path: info.outputPath('result-1920x1080.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/rats-browser/result-390x844.png' });
+  await page.screenshot({ path: info.outputPath('result-390x844.png') });
   const collectBox = await page.getByRole('button', { name: 'Collect and Return' }).boundingBox();
   expect(collectBox).not.toBeNull();
   if (collectBox) expect(collectBox.y + collectBox.height).toBeLessThanOrEqual(844);

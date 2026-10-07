@@ -306,11 +306,7 @@ export default function RatsInCellar({
   if (ratsPlayedThisSeason && phase === PHASE_INTRO) {
     return (
       <div
-        className="mx-auto w-full max-w-md rounded-lg border-2 p-5 text-center"
-        style={{
-          backgroundColor: "#231e16",
-          borderColor: "#6a5a42",
-        }}
+        className="rats-game rats-card rats-card--cleared mx-auto w-full max-w-md rounded-lg border-2 p-5 text-center"
       >
         <p className="text-base mb-4" style={{ color: "#a89070" }}>
           The cellar has been cleared for this season.
@@ -318,18 +314,7 @@ export default function RatsInCellar({
         <button
           onClick={onBack}
           ref={introActionRef}
-          className="px-6 py-2 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
-          style={{
-            backgroundColor: "#2a2318",
-            borderColor: "#6a5a42",
-            color: "#a89070",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#3a3228";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#2a2318";
-          }}
+          className="px-6 py-2 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer rats-button"
         >
           Return to Tavern
         </button>
@@ -341,12 +326,7 @@ export default function RatsInCellar({
   if (phase === PHASE_INTRO) {
     return (
       <div
-        className="mx-auto w-full max-w-md rounded-lg border-2 p-5"
-        style={{
-          backgroundColor: "#231e16",
-          borderColor: "#8a7a3a",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
-        }}
+        className="rats-game rats-card mx-auto w-full max-w-md rounded-lg border-2 p-5"
       >
         <h3
           className="font-heading text-lg font-bold mb-3 text-center"
@@ -362,42 +342,20 @@ export default function RatsInCellar({
           Click the rats before they escape. They get faster as time goes on.
           Escapees can cost food; catching more rats reduces the loss.
         </p>
-        <div className="flex gap-3 justify-center">
+        <div className="rats-actions">
           <button
             onClick={() => {
               setPhase(PHASE_COUNTDOWN);
               setCountdownNum(3);
             }}
             ref={introActionRef}
-            className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
-            style={{
-              backgroundColor: "#4a8a3a",
-              borderColor: "#4a8a3a",
-              color: "#fff",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#5a9a4a";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#4a8a3a";
-            }}
+            className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer rats-button rats-button--ready"
           >
             Ready!
           </button>
           <button
             onClick={onBack}
-            className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
-            style={{
-              backgroundColor: "#2a2318",
-              borderColor: "#8a7a3a",
-              color: "#bfa982",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#3a3228";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#2a2318";
-            }}
+            className="px-6 py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer rats-button"
           >
             Not now
           </button>
@@ -410,12 +368,7 @@ export default function RatsInCellar({
   if (phase === PHASE_COUNTDOWN) {
     return (
       <div
-        className="mx-auto w-full max-w-md rounded-lg border-2 p-5 flex flex-col items-center justify-center"
-        style={{
-          backgroundColor: "#231e16",
-          borderColor: "#8a7a3a",
-          minHeight: "320px",
-        }}
+        className="rats-game rats-card rats-card--countdown mx-auto w-full max-w-md rounded-lg border-2 p-5 flex flex-col items-center justify-center"
       >
         <p className="text-base mb-4" style={{ color: "#a89070" }}>
           {countdownNum > 0 ? "Ready..." : ""}
@@ -441,12 +394,7 @@ export default function RatsInCellar({
   if (phase === PHASE_RESULTS) {
     return (
       <div
-        className="mx-auto w-full max-w-md rounded-lg border-2 p-5"
-        style={{
-          backgroundColor: "#231e16",
-          borderColor: "#8a7a3a",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
-        }}
+        className="rats-game rats-card mx-auto w-full max-w-md rounded-lg border-2 p-5"
       >
         <h3
           className="font-heading text-lg font-bold mb-1 text-center"
@@ -462,8 +410,7 @@ export default function RatsInCellar({
         </p>
 
         <div
-          className="rounded-md p-4 mb-4 grid gap-y-3 text-center"
-          style={{ display: "grid", backgroundColor: "#1a1610", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+          className="rats-result-stats rounded-md p-4 mb-4 text-center"
         >
           <div>
             <div
@@ -539,7 +486,7 @@ export default function RatsInCellar({
               className="flex items-center justify-center px-3 py-2 rounded-md"
               style={{ backgroundColor: "rgba(74, 138, 58, 0.1)" }}
             >
-              <span className="text-sm" style={{ color: "#4a8a3a" }}>
+              <span className="text-sm" style={{ color: "#7dc673" }}>
                 No food lost, but no reward earned.
               </span>
             </div>
@@ -548,18 +495,7 @@ export default function RatsInCellar({
 
         <button
           onClick={handleFinish}
-          className="w-full py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer"
-          style={{
-            backgroundColor: "#2a2318",
-            borderColor: "#c4a24a",
-            color: "#c4a24a",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#3a3228";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#2a2318";
-          }}
+          className="w-full py-3 rounded-md border-2 font-heading font-semibold text-sm uppercase tracking-wider cursor-pointer rats-button"
         >
           Collect and Return
         </button>
@@ -570,16 +506,11 @@ export default function RatsInCellar({
   // ---- ACTIVE PHASE ----
   return (
     <div
-      className="mx-auto w-full max-w-md rounded-lg border-2 p-3"
-      style={{
-        backgroundColor: "#1a1610",
-        borderColor: "#8a7a3a",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
-      }}
+      className="rats-game rats-card rats-card--active mx-auto w-full max-w-md rounded-lg border-2 p-3"
     >
       {/* HUD */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <span className="text-sm font-bold" style={{ color: "#4a8a3a" }}>
+      <div className="rats-hud mb-2 px-1">
+        <span className="text-sm font-bold" style={{ color: "#7dc673" }}>
           Caught: {caught}
         </span>
         <span
@@ -588,7 +519,7 @@ export default function RatsInCellar({
         >
           {Math.max(0, Math.ceil((RATS_DURATION_MS - elapsedMs) / 1000))}s
         </span>
-        <span className="text-sm font-bold" style={{ color: "#c62828" }}>
+        <span className="text-sm font-bold" style={{ color: "#f0786d" }}>
           Escaped: {escaped}
         </span>
       </div>
@@ -668,10 +599,10 @@ export default function RatsInCellar({
                     top: "20%",
                     left: "50%",
                     transform: "translateX(-50%)",
-                    fontSize: "0.75rem",
+                    fontSize: "16px",
                     fontWeight: "bold",
                     color:
-                      ft.text === "Miss!" ? "#6a5a42" : "#c62828",
+                      ft.text === "Miss!" ? "#dbc7a8" : "#f0786d",
                     pointerEvents: "none",
                     whiteSpace: "nowrap",
                   }}

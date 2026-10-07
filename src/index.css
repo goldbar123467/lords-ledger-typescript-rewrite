@@ -2028,3 +2028,21 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .gambit-game button:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
 .gambit-actions { flex-wrap: wrap; justify-content: center; }
 @media(prefers-reduced-motion:reduce) { .gambit-game, .gambit-game * { animation: none !important; transition: none !important; } }
+
+/* Cellar cards share presentation; spawn and input deadlines remain logical. */
+.rats-card { background: #231e16; border-color: #8a7a3a; box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+.rats-card--cleared { border-color: #6a5a42; box-shadow: none; }
+.rats-card--countdown { min-height: 320px; box-shadow: none; }
+.rats-card--active { background: #1a1610; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+.rats-game .text-xs, .rats-game .text-sm { font-size: 1rem; line-height: 1.55; }
+.rats-button { background: #2a2318; border-color: #c4a24a; color: #f4d77f; font-size: 1rem; line-height: 1.5; transition: background-color 200ms ease; }
+.rats-button:hover { background: #3a3228; }
+.rats-button--ready { background: #315f28; border-color: #7dc673; color: #fff; }
+.rats-button--ready:hover { background: #3b6c30; }
+.rats-game button:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+.rats-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; }
+.rats-actions button { max-width: 100%; }
+.rats-result-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,6rem),1fr)); gap: .75rem; background: #1a1610; }
+.rats-result-stats > div { min-width: 0; overflow-wrap: anywhere; }
+.rats-hud { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
+@media(prefers-reduced-motion:reduce) { .rats-game *, .rats-game .rat-appear { animation: none !important; transition: none !important; } }
