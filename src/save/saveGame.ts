@@ -7,6 +7,7 @@ import { validateHallCivicState } from '../engine/hallCivic.ts';
 import seasonalEvents from '../data/seasonalEvents.ts';
 import randomEvents from '../data/randomEvents.ts';
 import type { EventDefinition } from '../data/eventTypes.ts';
+import type { SavedEvent } from './savedEvent.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -60,6 +61,8 @@ export interface BuildingInstance {
 
 /** The first typed contract covers fields required for safe loading and core play. */
 export interface GameSnapshot extends ViewMetadata {
+  currentEvent: SavedEvent | null;
+  currentRandomEvent: SavedEvent | null;
   rngState: number;
   phase: GamePhase;
   difficulty: Difficulty;
@@ -224,6 +227,12 @@ function validateSavedEvent(
     if (typeof option.chronicle !== 'string' || !isRecord(option.indicators) ||
         Object.values(option.indicators).some(indicator => typeof indicator !== 'string')) {
       return `Save ${kind} event has an invalid choice description.`;
+    }
+    for (const key of ['treasury', 'people', 'military', 'faith', 'denarii', 'food', 'population', 'garrison']) {
+      const direction = option.indicators[key];
+      if (direction !== undefined && direction !== '' && direction !== 'up' && direction !== 'down') {
+        return `Save ${kind} event choice indicator ${key} is invalid.`;
+      }
     }
   }
   return null;

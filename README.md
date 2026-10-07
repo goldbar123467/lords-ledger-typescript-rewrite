@@ -67,6 +67,8 @@ Save validation now checks consumed history, text lists, resource deltas, perspe
 
 Optional event notes, choice notes and choice summaries now reject malformed values before loading or settlement. Omitted, null, empty and historical text retain their save bytes and existing fallback behavior. The correction passes 435 unit tests, static/build checks, six browser rejection regressions and 32 supporting choice/persistence checks, with independent tester and grader review. Broader nested save and raw command validation remain unfinished.
 
+Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. The App remains JavaScript; its migration probe still has 36 compiler diagnostics, so this is a persistence and view-boundary checkpoint.
+
 ## Code map
 
 | Location | Rewrite responsibility |

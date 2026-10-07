@@ -9,6 +9,8 @@ export type ResourceEffects = Record<ResourceMeter, number> & { morale?: number 
 export type AuthoredEffects = Partial<Record<LegacyMeter | ResourceMeter | 'morale', number>>;
 export type EffectDirection = 'up' | 'down';
 export type AuthoredIndicators = Partial<Record<LegacyMeter | ResourceMeter, EffectDirection>>;
+/** Empty historical labels are intentionally suppressed by the existing truthy guards. */
+export type CompatibleAuthoredIndicators = Partial<Record<LegacyMeter | ResourceMeter, EffectDirection | ''>>;
 export type ResourceIndicators = Partial<Record<ResourceMeter, EffectDirection>>;
 
 interface MilitaryMorale { morale?: number }
@@ -133,7 +135,7 @@ export function checkGameOver(state: EndConditionState): GameOverReason | null {
  * Translate qualitative EventCard labels. Direct resource labels replace legacy
  * labels; treasury takes priority over faith when both feed the denarii label.
  */
-export function translateIndicators(indicators?: AuthoredIndicators | null): ResourceIndicators | null {
+export function translateIndicators(indicators?: CompatibleAuthoredIndicators | null): ResourceIndicators | null {
   if (!indicators) return null;
 
   const result: ResourceIndicators = {};

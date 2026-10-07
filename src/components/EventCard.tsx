@@ -1,5 +1,5 @@
-import type { EventDefinition } from '../data/eventTypes.ts';
-import { translateIndicators, type AuthoredIndicators, type EffectDirection, type ResourceIndicators } from '../engine/meterUtils.ts';
+import type { SavedEvent } from '../save/savedEvent.ts';
+import { translateIndicators, type CompatibleAuthoredIndicators, type EffectDirection, type ResourceIndicators } from '../engine/meterUtils.ts';
 
 const RESOURCE_LABELS = {
   denarii: { icon: '\u269C', name: 'Denarii' },
@@ -19,7 +19,7 @@ function isIndicatorResource(value: string): value is IndicatorResource {
 }
 
 /** Preserve the translator's insertion order for both labels and accessible names. */
-function indicatorEntries(indicators: AuthoredIndicators): IndicatorEntry[] {
+function indicatorEntries(indicators: CompatibleAuthoredIndicators): IndicatorEntry[] {
   const translated = translateIndicators(indicators) ?? {};
   const entries: IndicatorEntry[] = [];
   for (const resource of Object.keys(translated)) {
@@ -46,7 +46,7 @@ function IndicatorPills({ entries }: { entries: readonly IndicatorEntry[] }) {
 }
 
 interface EventCardProps {
-  event?: EventDefinition | null;
+  event?: SavedEvent | null;
   onChoose: (optionIndex: number) => void;
   phaseLabel?: string;
 }
