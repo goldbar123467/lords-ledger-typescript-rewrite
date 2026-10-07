@@ -86,7 +86,7 @@ export function applyResourceEffects<M extends object = MilitaryMorale>(
   const newFood = getTotalFood(newInventory);
 
   // Apply morale changes to military state
-  let newMilitary: (Omit<M, 'morale'> & MilitaryMorale) | undefined = state.military;
+  let newMilitary: (M & MilitaryMorale) | undefined = state.military;
   if (resourceEffects.morale && newMilitary) {
     const currentMorale = newMilitary.morale ?? 50;
     const newMorale = Math.max(0, Math.min(100, currentMorale + resourceEffects.morale));

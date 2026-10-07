@@ -1,3 +1,4 @@
+import { resolveEventChoice, computeResourceDeltas } from './eventChoice.ts';
 import { createInitialState } from './initialGameState.ts';
 export { createInitialState } from './initialGameState.ts';
 import {getChandelierPrestigeBonus} from "./forgeTools.ts";
@@ -114,20 +115,9 @@ function turnToSeasonYear(turn) {
   return { season: SEASONS[seasonIndex], year };
 }
 
-function addCauseChain(causeChain, turn, season, year, summary) {
-  const entry = { turn, season, year, summary };
-  const next = [...causeChain, entry];
-  return next.slice(-MAX_CAUSE_CHAIN);
-}
 
-function computeResourceDeltas(before, after) {
-  return {
-    denarii: after.denarii - before.denarii,
-    food: after.food - before.food,
-    population: after.population - before.population,
-    garrison: after.garrison - before.garrison,
-  };
-}
+
+
 
 /**
  * B-14 FIX: Diminishing-returns faith gain from spice purchases.
@@ -180,94 +170,11 @@ function pickRandomEvent(usedRandomIds, turn, allRandomEvents, random) {
   return { event, usedRandomIds: nextUsed };
 }
 
-function getOptionEffects(event, optionIndex) {
-  const option = event.options?.[optionIndex];
-  if (!option) return {};
-  if (option.effects) return option.effects;
-  return event.effects ?? {};
-}
 
-function getScribesNote(event, optionIndex) {
-  const option = event.options?.[optionIndex];
-  return option?.scribesNote ?? event.scribesNote ?? null;
-}
 
-function buildCauseChainSummary(event, optionIndex) {
-  const option = event.options?.[optionIndex];
-  if (option?.causeChainSummary) return option.causeChainSummary;
-  if (option?.text) return option.text.slice(0, 80);
-  if (event.title) return event.title.slice(0, 80);
-  return `Turn choice at event ${event.id}`;
-}
 
-/**
- * Apply an event choice: translate effects to resources, apply them, check game over.
- */
-function applyChoice(state, event, optionIndex, chronicleType) {
-  const { chronicle, causeChain, turn, season, year } = state;
 
-  const effects = getOptionEffects(event, optionIndex);
-  const resourceEffects = translateEffects(effects);
-  const applied = applyResourceEffects(state, resourceEffects, MAX_GARRISON);
-  const scribesNote = getScribesNote(event, optionIndex);
 
-  const option = event.options?.[optionIndex];
-  const chronicleText = option?.chronicle ?? option?.resultText ?? option?.text ?? event.title ?? "A decision was made.";
-
-  const newChronicle = addChronicle(chronicle, chronicleText, season, year, turn, chronicleType);
-
-  const summary = buildCauseChainSummary(event, optionIndex);
-  const newCauseChain = addCauseChain(causeChain, turn, season, year, summary);
-
-  // Reconcile typed garrison with flat garrison changes from events
-  const garrisonDelta = applied.garrison - state.garrison;
-  let updatedMilitary = applied.military || state.military;
-  if (garrisonDelta !== 0 && updatedMilitary) {
-    const milGarrison = { ...updatedMilitary.garrison };
-    if (garrisonDelta > 0) {
-      // Event adds soldiers — add as levy
-      milGarrison.levy = (milGarrison.levy || 0) + garrisonDelta;
-    } else {
-      // Event removes soldiers — remove weakest first
-      updatedMilitary = { ...updatedMilitary, garrison: removeFromGarrison(milGarrison, Math.abs(garrisonDelta)) };
-    }
-    if (garrisonDelta > 0) {
-      updatedMilitary = { ...updatedMilitary, garrison: milGarrison };
-    }
-  }
-
-  const newState = {
-    ...state,
-    denarii: applied.denarii,
-    population: applied.population,
-    garrison: applied.garrison,
-    inventory: applied.inventory,
-    food: applied.food,
-    military: updatedMilitary,
-  };
-  const gameOverReason = checkGameOver(newState);
-
-  const resourceDeltas = {
-    denarii: applied.denarii - state.denarii,
-    food: applied.food - state.food,
-    population: applied.population - state.population,
-    garrison: applied.garrison - state.garrison,
-  };
-
-  return {
-    denarii: applied.denarii,
-    population: applied.population,
-    garrison: applied.garrison,
-    inventory: applied.inventory,
-    food: applied.food,
-    military: updatedMilitary,
-    resourceDeltas,
-    chronicle: newChronicle,
-    causeChain: newCauseChain,
-    scribesNote,
-    gameOverReason,
-  };
-}
 
 /**
  * Returns which tabs are unlocked for a given turn.
@@ -1459,7 +1366,7 @@ function reduceGame(state, action, random) {
 
       if (phase !== "seasonal_action" || !currentEvent) return state;
 
-      const partial = applyChoice(state, currentEvent, optionIndex, "action");
+      const partial = resolveEventChoice(state, currentEvent, optionIndex, "action");
 
       if (partial.gameOverReason) {
         return {
@@ -1519,7 +1426,7 @@ function reduceGame(state, action, random) {
 
       if (phase !== "random_event" || !currentRandomEvent) return state;
 
-      const partial = applyChoice(state, currentRandomEvent, optionIndex, "event");
+      const partial = resolveEventChoice(state, currentRandomEvent, optionIndex, "event");
 
       if (partial.gameOverReason) {
         return {
