@@ -5,7 +5,7 @@
  * resources, buildings, and initial game state.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { waitForTitleScreen, dismissTutorial } from "../helpers.ts";
 
 /**
@@ -15,12 +15,12 @@ import { waitForTitleScreen, dismissTutorial } from "../helpers.ts";
  * relying on positional order of `.text-2xl` elements. Missing testids
  * (e.g. faith/piety may not render on every run) resolve to `undefined`.
  */
-async function getDashboardValues(page) {
+async function getDashboardValues(page: Page) {
   return page.evaluate(() => {
-    const readResource = (key) => {
+    const readResource = (key: string) => {
       const el = document.querySelector(`[data-testid="resource-${key}"]`);
       if (!el) return undefined;
-      const parsed = parseInt(el.textContent, 10);
+      const parsed = parseInt(el.textContent ?? "", 10);
       return Number.isNaN(parsed) ? undefined : parsed;
     };
     return {

@@ -1,3 +1,5 @@
+import {present} from '../../gameInput.ts';
+import type {TurnDiagnostic} from '../helpers.ts';
 /**
  * Gameplay Tests — Multi-Turn Survival
  *
@@ -5,7 +7,7 @@
  * crashing, and that resources, turns, and seasons track correctly.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame, dismissTutorial, playOneTurn } from "../helpers.ts";
 
 /**
@@ -14,12 +16,12 @@ import { startGame, dismissTutorial, playOneTurn } from "../helpers.ts";
  * Reads each resource via its `data-testid="resource-<key>"` attribute instead
  * of relying on positional order of `.text-2xl` elements (B-29 / B-37).
  */
-async function getDashboardValues(page) {
+async function getDashboardValues(page: Page) {
   return page.evaluate(() => {
-    const readResource = (key) => {
+    const readResource = (key: string) => {
       const el = document.querySelector(`[data-testid="resource-${key}"]`);
       if (!el) return undefined;
-      const parsed = parseInt(el.textContent, 10);
+      const parsed = parseInt(el.textContent ?? "", 10);
       return Number.isNaN(parsed) ? undefined : parsed;
     };
     return {
@@ -34,11 +36,11 @@ async function getDashboardValues(page) {
 /**
  * Get the current turn number from the dashboard text.
  */
-async function getCurrentTurn(page) {
+async function getCurrentTurn(page: Page) {
   return page.evaluate(() => {
     const text = document.body.innerText;
     const match = text.match(/Turn\s+(\d+)\s*\/\s*40/);
-    return match ? parseInt(match[1], 10) : null;
+    return match?.[1] === undefined ? null : parseInt(match[1], 10);
   });
 }
 
@@ -58,7 +60,7 @@ test.describe("Multi-Turn Survival", () => {
     expect(initialTurn).toBe(1);
 
     for (let i = 0; i < 4; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const success = await playOneTurn(page, diag);
       if (!success) {
         console.log(`[multi-turn] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);
@@ -93,7 +95,7 @@ test.describe("Multi-Turn Survival", () => {
     turnSnapshots.push(await getDashboardValues(page));
 
     for (let i = 0; i < 3; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const success = await playOneTurn(page, diag);
       if (!success) {
         console.log(`[multi-turn] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);
@@ -104,8 +106,8 @@ test.describe("Multi-Turn Survival", () => {
 
     expect(turnSnapshots.length).toBeGreaterThanOrEqual(2);
 
-    const initial = turnSnapshots[0];
-    const latest = turnSnapshots[turnSnapshots.length - 1];
+    const initial = present(turnSnapshots[0], "initial turn snapshot");
+    const latest = present(turnSnapshots[turnSnapshots.length - 1], "latest turn snapshot");
 
     const changed =
       initial.denarii !== latest.denarii ||
@@ -133,7 +135,7 @@ test.describe("Multi-Turn Survival", () => {
     const afterBuild = await getDashboardValues(page);
     expect(afterBuild.denarii).toBe(600); // 700 - 100
 
-    const diag = {};
+    const diag: TurnDiagnostic = {};
     const success = await playOneTurn(page, diag);
     if (success) {
       const afterTurn = await getDashboardValues(page);
@@ -172,9 +174,9 @@ test.describe("Multi-Turn Survival", () => {
 
     const afterRecruit = await getDashboardValues(page);
     // Garrison should have increased
-    expect(afterRecruit.garrison).toBeGreaterThan(initialValues.garrison);
+    expect(afterRecruit.garrison).toBeGreaterThan(present(initialValues.garrison, "initial garrison"));
 
-    const diag = {};
+    const diag: TurnDiagnostic = {};
     const success = await playOneTurn(page, diag);
     if (success) {
       const afterTurn = await getDashboardValues(page);
@@ -195,7 +197,7 @@ test.describe("Multi-Turn Survival", () => {
 
     let turnsPlayed = 0;
     for (let i = 0; i < 8; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const success = await playOneTurn(page, diag);
       if (!success) {
         console.log(`[multi-turn] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);

@@ -1,10 +1,11 @@
+import {present} from '../../gameInput.ts';
 /**
  * Gameplay Tests — Military Recruitment & Fortifications
  *
  * Verifies soldier recruitment, dismissal, and fortification upgrades.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame, navigateToTab, dismissOverlay } from "../helpers.ts";
 
 /**
@@ -13,11 +14,11 @@ import { startGame, navigateToTab, dismissOverlay } from "../helpers.ts";
  * Reads via the `data-testid="resource-garrison"` attribute instead of
  * positional `.text-2xl` indexing (B-29 / B-37).
  */
-async function getGarrison(page) {
+async function getGarrison(page: Page) {
   return page.evaluate(() => {
     const el = document.querySelector('[data-testid="resource-garrison"]');
     if (!el) return undefined;
-    const parsed = parseInt(el.textContent, 10);
+    const parsed = parseInt(el.textContent ?? "", 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   });
 }
@@ -27,11 +28,11 @@ async function getGarrison(page) {
  *
  * Reads via the `data-testid="resource-denarii"` attribute (B-29 / B-37).
  */
-async function getDenarii(page) {
+async function getDenarii(page: Page) {
   return page.evaluate(() => {
     const el = document.querySelector('[data-testid="resource-denarii"]');
     if (!el) return undefined;
-    const parsed = parseInt(el.textContent, 10);
+    const parsed = parseInt(el.textContent ?? "", 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   });
 }
@@ -58,8 +59,8 @@ test.describe("Military Tab", () => {
   });
 
   test("recruiting a levy increases garrison count", async ({ page }) => {
-    const initialGarrison = await getGarrison(page);
-    const initialDenarii = await getDenarii(page);
+    const initialGarrison = present(await getGarrison(page), "initial garrison");
+    const initialDenarii = present(await getDenarii(page), "initial denarii");
 
     // Click recruit +1 for levy
     const recruitBtn = page
@@ -78,7 +79,7 @@ test.describe("Military Tab", () => {
   });
 
   test("dismissing a soldier decreases garrison count", async ({ page }) => {
-    const initialGarrison = await getGarrison(page);
+    const initialGarrison = present(await getGarrison(page), "initial garrison");
 
     // Click dismiss for levy — button text is "Dismiss -1"
     const dismissBtn = page
@@ -99,7 +100,7 @@ test.describe("Military Tab", () => {
   });
 
   test("recruiting +5 soldiers adds 5 to garrison", async ({ page }) => {
-    const initialGarrison = await getGarrison(page);
+    const initialGarrison = present(await getGarrison(page), "initial garrison");
 
     const recruitBtn = page
       .locator("button")
@@ -120,7 +121,7 @@ test.describe("Military Tab", () => {
     const morale = await page.evaluate(() => {
       const el = document.querySelector('[data-testid="resource-morale"]');
       if (!el) return undefined;
-      const parsed = parseInt(el.textContent, 10);
+      const parsed = parseInt(el.textContent ?? "", 10);
       return Number.isNaN(parsed) ? undefined : parsed;
     });
 
@@ -147,7 +148,7 @@ test.describe("Fortification Upgrades", () => {
   test("upgrading walls costs denarii", async ({ page }) => {
     // Dismiss any scribe's note that may appear on first visit
     await dismissOverlay(page);
-    const initialDenarii = await getDenarii(page);
+    const initialDenarii = present(await getDenarii(page), "initial denarii");
 
     // Scroll down to find the walls upgrade button
     const upgradeBtn = page

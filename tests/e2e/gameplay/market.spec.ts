@@ -1,10 +1,11 @@
+import {present} from '../../gameInput.ts';
 /**
  * Gameplay Tests — Market Trading
  *
  * Verifies the buy/sell workflow in the Market Square.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame, navigateToTab } from "../helpers.ts";
 
 /**
@@ -13,11 +14,11 @@ import { startGame, navigateToTab } from "../helpers.ts";
  * Reads the value via the `data-testid="resource-denarii"` attribute instead
  * of relying on positional order of `.text-2xl` elements (B-29 / B-37).
  */
-async function getDenarii(page) {
+async function getDenarii(page: Page) {
   return page.evaluate(() => {
     const el = document.querySelector('[data-testid="resource-denarii"]');
     if (!el) return undefined;
-    const parsed = parseInt(el.textContent, 10);
+    const parsed = parseInt(el.textContent ?? "", 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   });
 }
@@ -76,7 +77,7 @@ test.describe("Market Tab", () => {
   });
 
   test("selling a resource increases denarii", async ({ page }) => {
-    const initialDenarii = await getDenarii(page);
+    const initialDenarii = present(await getDenarii(page), "initial denarii");
 
     // Enter sell mode
     const sellBtn = page.getByText("Sell to Merchant", { exact: false }).first();
@@ -99,7 +100,7 @@ test.describe("Market Tab", () => {
   });
 
   test("buying a resource decreases denarii", async ({ page }) => {
-    const initialDenarii = await getDenarii(page);
+    const initialDenarii = present(await getDenarii(page), "initial denarii");
 
     // Enter buy mode
     const buyBtn = page.getByText("Buy from Merchant", { exact: false }).first();

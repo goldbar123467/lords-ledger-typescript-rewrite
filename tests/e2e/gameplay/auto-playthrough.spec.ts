@@ -8,10 +8,30 @@
  * Results are written to tests/e2e/playthrough-results.json for analysis.
  */
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { startGame, dismissTutorial, dismissOverlay } from "../helpers.ts";
 import { writeFileSync, existsSync, readFileSync, readdirSync, unlinkSync } from "fs";
 import { resolve } from "path";
+import type {Difficulty} from '../../../src/save/saveGame.ts';
+
+type Strategy = 'passive' | 'builder' | 'military' | 'balanced';
+type Outcome = 'sim_button_missing' | 'possible_softlock' | 'victory' | `game_over:${string}` | `crash:${string}`;
+interface DiagnosticSnapshot {visibleText: string; buttons: string[];}
+type Resources = Awaited<ReturnType<typeof getResources>>;
+interface TurnEntry {
+  turn: number | null; season: string | null; year: number | null;
+  resources: Resources | null; events: string[]; choices: string[];
+  diagnostics?: DiagnosticSnapshot;
+}
+interface TurnResult {
+  continued: boolean; events: string[]; choices: string[];
+  outcome: Outcome | null; diagnostics?: DiagnosticSnapshot;
+}
+interface RunResult {
+  runId: string; difficulty: Difficulty; strategy: Strategy; turnsPlayed: number;
+  finalOutcome: Outcome | null; elapsedSeconds: number; turnData: TurnEntry[];
+  actionLog: string[]; errors: string[]; diagnostics?: DiagnosticSnapshot;
+}
 
 const RESULTS_PATH = resolve(
   import.meta.dirname,
@@ -42,12 +62,12 @@ const SCREENSHOT_DIR = resolve(
  * of positional `.text-2xl` indexing (B-29 / B-37). Missing testids resolve
  * to `null` so existing callers stay backward compatible.
  */
-async function getResources(page) {
+async function getResources(page: Page) {
   return page.evaluate(() => {
-    const readResource = (key) => {
+    const readResource = (key: string) => {
       const el = document.querySelector(`[data-testid="resource-${key}"]`);
       if (!el) return null;
-      const parsed = parseInt(el.textContent, 10);
+      const parsed = parseInt(el.textContent ?? "", 10);
       return Number.isNaN(parsed) ? null : parsed;
     };
     return {
@@ -60,26 +80,26 @@ async function getResources(page) {
 }
 
 /** Get current turn and season info from the dashboard */
-async function getTurnInfo(page) {
+async function getTurnInfo(page: Page) {
   return page.evaluate(() => {
     const text = document.body.innerText;
     const turnMatch = text.match(/Turn\s+(\d+)\s*\/\s*40/);
     const seasonMatch = text.match(/(Spring|Summer|Autumn|Winter),\s*Year\s*(\d+)/);
     return {
-      turn: turnMatch ? parseInt(turnMatch[1], 10) : null,
-      season: seasonMatch ? seasonMatch[1] : null,
-      year: seasonMatch ? parseInt(seasonMatch[2], 10) : null,
+      turn: turnMatch?.[1] === undefined ? null : parseInt(turnMatch[1], 10),
+      season: seasonMatch?.[1] ?? null,
+      year: seasonMatch?.[2] === undefined ? null : parseInt(seasonMatch[2], 10),
     };
   });
 }
 
 /** Collect visible text about events/choices made */
-async function getVisibleEventText(page) {
+async function getVisibleEventText(page: Page) {
   return page.evaluate(() => {
     // Look for event card title/description
     const headings = Array.from(document.querySelectorAll("h3, h2"));
     const texts = headings
-      .map((h) => h.textContent.trim())
+      .map((h) => (h.textContent ?? "").trim())
       .filter((t) => t.length > 3 && t.length < 200);
     return texts.slice(0, 3);
   });
@@ -89,7 +109,7 @@ async function getVisibleEventText(page) {
  * Attempt management-phase actions with varied strategies.
  * Strategy parameter controls what actions the bot prioritizes.
  */
-async function doManagementActions(page, turn, strategy, log) {
+async function doManagementActions(page: Page, turn: number, strategy: Strategy, log: string[]) {
   await dismissTutorial(page);
 
   if (strategy === "builder") {
@@ -116,7 +136,7 @@ async function doManagementActions(page, turn, strategy, log) {
 }
 
 /** Try to build the first affordable building */
-async function tryBuildSomething(page, turn, log) {
+async function tryBuildSomething(page: Page, turn: number, log: string[]) {
   const estateTab = page.locator('button[aria-label*="Estate"]');
   if (await estateTab.isVisible({ timeout: 500 }).catch(() => false)) {
     await estateTab.click();
@@ -141,7 +161,7 @@ async function tryBuildSomething(page, turn, log) {
 }
 
 /** Try to recruit soldiers */
-async function tryRecruitSoldiers(page, log) {
+async function tryRecruitSoldiers(page: Page, log: string[]) {
   const milTab = page.locator('button[aria-label*="Military"]');
   if (await milTab.isVisible({ timeout: 500 }).catch(() => false)) {
     await milTab.click();
@@ -166,7 +186,7 @@ async function tryRecruitSoldiers(page, log) {
  * plus a full-page screenshot for triage. Called on blocking outcomes
  * (sim_button_missing, possible_softlock) per B-48.
  */
-async function captureDiagnostics(page, runId, outcome) {
+async function captureDiagnostics(page: Page, runId: string, outcome: Outcome): Promise<DiagnosticSnapshot> {
   const snapshot = await page
     .evaluate(() => {
       const visibleText = document.body.innerText.slice(0, 800);
@@ -198,9 +218,9 @@ async function captureDiagnostics(page, runId, outcome) {
  * Play one full turn with event logging. Returns:
  *  { continued: bool, events: string[], choicesMade: string[], outcome: string|null }
  */
-async function playOneTurnLogged(page, runId) {
-  const events = [];
-  const choices = [];
+async function playOneTurnLogged(page: Page, runId: string): Promise<TurnResult> {
+  const events: string[] = [];
+  const choices: string[] = [];
 
   // Dismiss any tutorial or overlay before looking for sim button
   await dismissOverlay(page);
@@ -289,7 +309,7 @@ async function playOneTurnLogged(page, runId) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(100);
       await choiceBtns.nth(idx).click({ timeout: 5_000 }).catch(() => {});
-      choices.push(`Choice[${idx + 1}/${choiceCount}]: ${choiceText.trim().substring(0, 80)}`);
+      choices.push(`Choice[${idx + 1}/${choiceCount}]: ${(choiceText ?? '').trim().substring(0, 80)}`);
       continue;
     }
 
@@ -365,12 +385,12 @@ async function playOneTurnLogged(page, runId) {
 /**
  * Run a full game playthrough. Returns structured result data.
  */
-async function runPlaythrough(page, difficulty, strategy, runId) {
-  const turnData = [];
-  const actionLog = [];
+async function runPlaythrough(page: Page, difficulty: Difficulty, strategy: Strategy, runId: string): Promise<RunResult> {
+  const turnData: TurnEntry[] = [];
+  const actionLog: string[] = [];
   const errors = [];
-  let finalOutcome = null;
-  let finalDiagnostics = null;
+  let finalOutcome: Outcome | null = null;
+  let finalDiagnostics: DiagnosticSnapshot | null = null;
   let turnsPlayed = 0;
   const startTime = Date.now();
 
@@ -407,7 +427,7 @@ async function runPlaythrough(page, difficulty, strategy, runId) {
         postTurn = await getTurnInfo(page);
       }
 
-      const turnEntry = {
+      const turnEntry: TurnEntry = {
         turn: postTurn?.turn ?? turnsPlayed + 1,
         season: postTurn?.season ?? null,
         year: postTurn?.year ?? null,
@@ -428,14 +448,15 @@ async function runPlaythrough(page, difficulty, strategy, runId) {
         break;
       }
     } catch (err) {
-      errors.push(`Turn ${t + 1}: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`Turn ${t + 1}: ${message}`);
       // Try to recover
       const canContinue = await page
         .locator('button[aria-label*="Simulate"]')
         .isVisible({ timeout: 2_000 })
         .catch(() => false);
       if (!canContinue) {
-        finalOutcome = `crash:${err.message.substring(0, 100)}`;
+        finalOutcome = `crash:${message.substring(0, 100)}`;
         break;
       }
     }
@@ -443,7 +464,7 @@ async function runPlaythrough(page, difficulty, strategy, runId) {
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-  const payload = {
+  const payload: RunResult = {
     runId,
     difficulty,
     strategy,
@@ -471,10 +492,12 @@ async function runPlaythrough(page, difficulty, strategy, runId) {
 // ─── Test Runs ──────────────────────────────────────────────────────
 
 // Load or initialize results array
-function loadResults() {
+function loadResults(): unknown[] {
   if (existsSync(RESULTS_PATH)) {
     try {
-      return JSON.parse(readFileSync(RESULTS_PATH, "utf-8"));
+      const previous: unknown = JSON.parse(readFileSync(RESULTS_PATH, "utf-8"));
+      if (!Array.isArray(previous)) throw new TypeError('Playthrough history must be an array.');
+      return previous;
     } catch {
       return [];
     }
@@ -482,7 +505,7 @@ function loadResults() {
   return [];
 }
 
-function saveResults(results) {
+function saveResults(results: readonly unknown[]) {
   writeFileSync(RESULTS_PATH, JSON.stringify(results, null, 2));
 }
 
@@ -493,7 +516,7 @@ const PLAYTHROUGHS = [
   { difficulty: "normal", strategy: "military", label: "Normal/Military" },
   { difficulty: "hard", strategy: "passive", label: "Hard/Passive" },
   { difficulty: "hard", strategy: "builder", label: "Hard/Builder" },
-];
+] satisfies readonly {difficulty: Difficulty; strategy: Strategy; label: string}[];
 
 test.describe("Automated Playthroughs", () => {
   // B-53: the six auto-playthrough profiles all hit the same Vite dev server,
@@ -537,7 +560,7 @@ test.describe("Automated Playthroughs", () => {
   for (const run of PLAYTHROUGHS) {
     test(`Full game: ${run.label}`, async ({ page }) => {
       test.setTimeout(300_000); // 5 minutes per run
-      const pageErrors = [];
+      const pageErrors: string[] = [];
       page.on("pageerror", error => pageErrors.push(error.message));
 
       const result = await runPlaythrough(

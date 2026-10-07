@@ -1,10 +1,11 @@
+import {present} from '../../gameInput.ts';
 /**
  * Gameplay Tests — Estate Building & Management
  *
  * Verifies building construction, repair, and demolition workflows.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame } from "../helpers.ts";
 import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
@@ -15,22 +16,23 @@ import { writeV2Save } from '../../../src/save/saveGame.ts';
  * Reads via the `data-testid="resource-denarii"` attribute instead of
  * positional `.text-2xl` indexing (B-29 / B-37).
  */
-async function getDenarii(page) {
+async function getDenarii(page: Page) {
   return page.evaluate(() => {
     const el = document.querySelector('[data-testid="resource-denarii"]');
     if (!el) return undefined;
-    const parsed = parseInt(el.textContent, 10);
+    const parsed = parseInt(el.textContent ?? "", 10);
     return Number.isNaN(parsed) ? undefined : parsed;
   });
 }
 
-async function getPlotUsage(page) {
+async function getPlotUsage(page: Page) {
   const match = (await page.locator('body').innerText()).match(/(\d+)\s*\/\s*(\d+)\s*used/i);
   expect(match, 'Estate must show its used and total plot count').not.toBeNull();
+  if (!match || match[1] === undefined || match[2] === undefined) throw new Error("Missing plot-count captures.");
   return { used: Number(match[1]), total: Number(match[2]) };
 }
 
-async function buildStripFarm(page) {
+async function buildStripFarm(page: Page) {
   await page.getByTestId('build-card-strip_farm').getByRole('button', { name: 'Build (80d)' }).click();
 }
 
@@ -49,7 +51,7 @@ test.describe("Estate Building", () => {
   });
 
   test("building a Strip Farm costs denarii", async ({ page }) => {
-    const initialDenarii = await getDenarii(page);
+    const initialDenarii = present(await getDenarii(page), "initial denarii");
 
     expect(initialDenarii).toBe(700);
     await buildStripFarm(page);

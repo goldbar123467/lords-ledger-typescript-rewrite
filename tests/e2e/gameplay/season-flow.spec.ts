@@ -1,3 +1,4 @@
+import type {TurnDiagnostic} from '../helpers.ts';
 /**
  * Gameplay Tests — Season Simulation Flow
  *
@@ -5,13 +6,13 @@
  * seasonal event → resolve → random event → resolve → next turn.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame, dismissTutorial, playOneTurn } from "../helpers.ts";
 
 /**
  * Click "Simulate Season" and wait for the seasonal event screen.
  */
-async function simulateSeason(page) {
+async function simulateSeason(page: Page) {
   const simBtn = page.locator('button[aria-label*="Simulate"]');
   await simBtn.click();
   // Wait for event card to appear (seasonal_action phase)
@@ -23,7 +24,7 @@ async function simulateSeason(page) {
 /**
  * Choose an event option (0-indexed).
  */
-async function chooseEventOption(page, index = 0) {
+async function chooseEventOption(page: Page, index = 0) {
   const options = page.locator('[role="group"][aria-label="Choose your response"] button');
   await options.nth(index).click();
 }
@@ -32,7 +33,7 @@ async function chooseEventOption(page, index = 0) {
  * Click the resolve/continue button to advance past a resolve screen.
  * Handles the case where overlays (Scribe's Note) may be blocking.
  */
-async function clickContinue(page) {
+async function clickContinue(page: Page) {
   // First dismiss any overlay that might be on top
   const overlayBtns = page.locator(".fixed.inset-0 button");
   const overlayCount = await overlayBtns.count();
@@ -103,7 +104,7 @@ test.describe("Season Simulation Flow", () => {
 
     await expect(page.getByText("Turn 1/40", { exact: false }).first()).toBeVisible();
 
-    const diag = {};
+    const diag: TurnDiagnostic = {};
     const ok = await playOneTurn(page, diag);
     if (!ok) {
       console.log(`[season-flow] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);
@@ -119,28 +120,28 @@ test.describe("Season Simulation Flow", () => {
 
     await expect(page.getByText("Spring", { exact: false }).first()).toBeVisible();
 
-    const logDiag = (diag) => {
+    const logDiag = (diag: TurnDiagnostic) => {
       if (diag.reason) {
         console.log(`[season-flow] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);
       }
     };
 
     {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) logDiag(diag);
     }
     await expect(page.getByText("Summer", { exact: false }).first()).toBeVisible();
 
     {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) logDiag(diag);
     }
     await expect(page.getByText("Autumn", { exact: false }).first()).toBeVisible();
 
     {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) logDiag(diag);
     }
@@ -151,7 +152,7 @@ test.describe("Season Simulation Flow", () => {
     test.setTimeout(120_000);
 
     for (let i = 0; i < 4; i++) {
-      const diag = {};
+      const diag: TurnDiagnostic = {};
       const ok = await playOneTurn(page, diag);
       if (!ok) {
         console.log(`[season-flow] playOneTurn stopped: ${diag.reason} @ iter ${diag.iteration}`);

@@ -5,7 +5,7 @@
  * localStorage save/load and survives page reload.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { startGame, dismissTutorial } from "../helpers.ts";
 
 /**
@@ -14,12 +14,12 @@ import { startGame, dismissTutorial } from "../helpers.ts";
  * Reads each resource via its `data-testid="resource-<key>"` attribute instead
  * of relying on positional order of `.text-2xl` elements (B-29 / B-37).
  */
-async function getDashboardValues(page) {
+async function getDashboardValues(page: Page) {
   return page.evaluate(() => {
-    const readResource = (key) => {
+    const readResource = (key: string) => {
       const el = document.querySelector(`[data-testid="resource-${key}"]`);
       if (!el) return undefined;
-      const parsed = parseInt(el.textContent, 10);
+      const parsed = parseInt(el.textContent ?? "", 10);
       return Number.isNaN(parsed) ? undefined : parsed;
     };
     return {
