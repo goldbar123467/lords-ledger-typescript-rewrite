@@ -1414,7 +1414,7 @@ input[type="range"].labor-slider::-moz-range-thumb {
   overflow-wrap: anywhere;
   padding-bottom: 6rem;
 }
-.chapel .text-xs { font-size: .875rem; }
+.chapel .text-xs { font-size: 1rem; }
 .chapel .text-sm { font-size: 1rem; }
 .chapel button, .chapel input { min-height: 44px; }
 .chapel button { min-width: 0; }
@@ -1961,3 +1961,51 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .watchtower-history-region li:first-child { animation: watchtower-log-in 300ms ease-out; }
 .watchtower-station:focus-visible, .watchtower-action:focus-visible, .watchtower-history-region:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
 @media(prefers-reduced-motion:reduce) { .watchtower-reading, .watchtower-reading * { animation: none !important; transition: none !important; } }
+
+.chapel-card { background: linear-gradient(135deg,rgba(35,30,25,.95),rgba(28,24,20,.98)); border: 1px solid rgba(140,110,70,.25); border-radius: 4px; }
+.chapel-label, .chapel-price, .chapel-owned { font: 600 1rem/1.6 'Cinzel', serif; color: var(--chapel-text); }
+.chapel-caption { color: var(--chapel-secondary); font: 1rem/1.6 'Crimson Text', serif; }
+.chapel-gold, .chapel-price { color: #c9a84c; }
+.chapel-nav-link { display: flex; align-items: center; justify-content: center; gap: .375rem; padding: .5rem .75rem; border-bottom: 2px solid transparent; border-radius: 2px 2px 0 0; color: var(--chapel-secondary); background: transparent; font: 600 1rem/1.5 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; }
+.chapel-nav-link[aria-current="page"] { background: rgba(201,168,76,.15); border-bottom-color: #c9a84c; color: #c9a84c; }
+.chapel-npc { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.chapel-npc-symbol { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 48px; height: 48px; border: 2px solid currentColor; border-radius: 50%; background: rgba(20,16,12,.8); font-size: 1.5rem; }
+.chapel-npc-name { font: 700 1.125rem/1.6 'Cinzel', serif; }
+.chapel-npc-subtitle { color: var(--chapel-secondary); font: italic 1rem/1.6 'Crimson Text', serif; }
+.chapel-meter-values { display: flex; justify-content: space-between; margin-bottom: .25rem; font: 1rem/1.6 'Cinzel', serif; }
+.chapel-meter-values > span:last-child { color: var(--chapel-secondary); }
+.chapel-meter-track { height: 8px; background: rgba(20,16,12,.8); border-radius: 4px; overflow: hidden; }
+.chapel-meter-track > div { height: 100%; border-radius: 4px; transition: width 400ms ease; }
+.chapel-context { margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg,rgba(30,22,40,.6),rgba(25,18,35,.8)); border: 1px solid rgba(184,154,219,.2); border-radius: 4px; }
+.chapel-context h4 { display: flex; align-items: center; gap: .375rem; margin-bottom: .5rem; color: #b89adb; font: 1rem/1.6 'Cinzel', serif; text-transform: uppercase; letter-spacing: .05em; }
+.chapel-context-body { color: var(--chapel-secondary); font: 1.125rem/1.6 'Crimson Text', serif; }
+.chapel-effect { display: inline-flex; align-items: center; gap: .25rem; padding: .125rem .5rem; border-radius: .25rem; margin-right: .25rem; margin-bottom: .25rem; font: 600 1rem/1.6 'Cinzel', serif; }
+.chapel-effect--positive { color: #8dba6e; background: rgba(141,186,110,.15); border: 1px solid rgba(141,186,110,.3); }
+.chapel-effect--negative { color: #d4726a; background: rgba(212,114,106,.15); border: 1px solid rgba(212,114,106,.3); }
+.chapel-nave-header { text-align: center; margin-bottom: 1.5rem; }
+.chapel-nave-symbol { color: #c9a84c; font-size: 2rem; margin-bottom: 4px; }
+.chapel-nave-header h2 { color: #c9a84c; font: 1.625rem/1.6 'Uncial Antiqua', 'Cinzel', serif; margin: 0; }
+.chapel-nave-header p { color: var(--chapel-secondary); font: italic 1.125rem/1.6 'Crimson Text', serif; margin-top: 6px; }
+.chapel-nave-action { cursor: pointer; transition: transform 200ms ease, border-color 200ms ease; }
+.chapel-nave-action > svg { color: #c9a84c; margin-bottom: 8px; }
+.chapel-nave-action > .chapel-caption { margin-top: 2px; }
+.chapel-nave-action:not(:disabled):hover { transform: translateY(-2px); border-color: rgba(201,168,76,.5); }
+.chapel-nave-action:disabled { opacity: 1; border-style: dashed; cursor: not-allowed; }
+.chapel-piety-flavor { color: #b89adb; font: italic 1rem/1.6 'Crimson Text', serif; }
+.chapel-tithe-input { background: rgba(15,12,10,.8); border: 1px solid rgba(140,110,70,.25); color: var(--chapel-text); font: 1rem/1.6 'Crimson Text', serif; }
+.chapel-gold-button { background: linear-gradient(135deg,#8a7a3a,#c9a84c,#8a7a3a); color: #1a1510; border: 1px solid rgba(201,168,76,.6); border-radius: 4px; font: 700 1rem/1.5 'Cinzel', serif; letter-spacing: 1px; cursor: pointer; transition: background 200ms ease; }
+.chapel-gold-button:disabled { opacity: 1; background: #302a20; color: var(--chapel-text); border-style: dashed; cursor: not-allowed; }
+.chapel-gold-button--secondary { background: transparent; color: var(--chapel-secondary); border-color: rgba(140,110,70,.25); }
+.chapel-preset { background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.3); color: #c9a84c; font: 1rem/1.6 'Cinzel', serif; cursor: pointer; transition: background 200ms ease; }
+.chapel-preset:hover { background: rgba(201,168,76,.2); }
+.chapel-shop-title, .chapel-owned { color: #8dba6e; }
+.chapel-shop-item[data-owned="true"] { border-color: rgba(141,186,110,.45); }
+.chapel-shop-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 4px; background: rgba(15,12,10,.8); border: 1px solid rgba(140,110,70,.25); font-size: 1.375rem; color: #c9a84c; }
+.chapel-shop-description, .chapel-footer-quote { font-style: italic; }
+.chapel-shop-effect { color: #7eb8d4; font: 1rem/1.6 'Crimson Text', serif; margin-top: 2px; }
+.chapel-cost-warning { color: #d4726a; font: 1rem/1.6 'Crimson Text', serif; }
+.chapel-dilemma-choice { transition: transform 200ms ease, border-color 200ms ease; }
+.chapel-dilemma-choice:not(:disabled):hover { transform: translateX(4px); border-color: rgba(201,168,76,.5); }
+.chapel-dilemma-choice:disabled { opacity: 1; border-style: dashed; cursor: not-allowed; }
+.chapel button:focus-visible, .chapel input:focus-visible { outline: 3px solid #c9a84c; outline-offset: 3px; }
+@media(prefers-reduced-motion:reduce) { .chapel * { animation: none !important; transition: none !important; } .chapel-nave-action:not(:disabled):hover, .chapel-dilemma-choice:not(:disabled):hover { transform: none; } }

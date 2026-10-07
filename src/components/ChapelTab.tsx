@@ -63,8 +63,6 @@ const SYMBOL_DESCRIPTIONS = [
 ] as const;
 
 const COLORS = {
-  bg: "#0d0b0e",
-  cardBg: "linear-gradient(135deg, rgba(35, 30, 25, 0.95), rgba(28, 24, 20, 0.98))",
   cardBorder: "rgba(140, 110, 70, 0.25)",
   text: "var(--chapel-text)",
   dim: "var(--chapel-secondary)",
@@ -74,12 +72,6 @@ const COLORS = {
   piety: "#b89adb",
   happiness: "#8dba6e",
   danger: "#d4726a",
-};
-
-const cardStyle: CSSProperties = {
-  background: COLORS.cardBg,
-  border: `1px solid ${COLORS.cardBorder}`,
-  borderRadius: "4px",
 };
 
 const speechBubble: CSSProperties = {
@@ -94,18 +86,6 @@ const speechBubble: CSSProperties = {
   color: COLORS.text,
 };
 
-const goldButton: CSSProperties = {
-  background: "linear-gradient(135deg, #8a7a3a 0%, #c9a84c 50%, #8a7a3a 100%)",
-  color: "#1a1510",
-  border: "1px solid rgba(201, 168, 76, 0.6)",
-  borderRadius: "4px",
-  fontFamily: "'Cinzel', serif",
-  fontWeight: 700,
-  letterSpacing: "1px",
-  cursor: "pointer",
-  transition: "all 200ms ease",
-};
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
@@ -117,125 +97,44 @@ function ChapelNav({ view, onSetView, onStartManuscript }: ChapelNavigation & { 
     { id: "caedmon", label: "Brother Caedmon", Icon: ShoppingBag },
     { id: "manuscript", label: "Scriptorium", Icon: BookOpen },
   ];
-  return (
-    <nav aria-label="Chapel" className="chapel-nav mb-4">
-      {tabs.map((tab) => {
-        const active = view === tab.id;
-        return (
-          <button
-            key={tab.id}
-            aria-current={active ? "page" : undefined}
-            onClick={() => {
-              if (tab.id === "manuscript") {
-                onStartManuscript();
-              } else {
-                onSetView(tab.id);
-              }
-            }}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs uppercase tracking-wider transition-all duration-200"
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontWeight: 600,
-              background: active ? "rgba(201, 168, 76, 0.15)" : "transparent",
-              borderBottom: active ? `2px solid ${COLORS.gold}` : "2px solid transparent",
-              color: active ? COLORS.gold : COLORS.dim,
-              cursor: "pointer",
-              borderRadius: "2px 2px 0 0",
-            }}
-          >
-            <tab.Icon size={14} />
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
-    </nav>
-  );
+  return <nav aria-label="Chapel" className="chapel-nav mb-4">
+    {tabs.map(tab => <button key={tab.id} aria-current={view === tab.id ? 'page' : undefined}
+      onClick={() => { if (tab.id === 'manuscript') onStartManuscript(); else onSetView(tab.id); }}
+      className="chapel-nav-link">
+      <tab.Icon size={14} aria-hidden="true" /><span>{tab.label}</span>
+    </button>)}
+  </nav>;
 }
 
 function NpcPortrait({ symbol, borderColor, name, subtitle }: { symbol: string; borderColor: string; name: string; subtitle: string }) {
-  return (
-    <div className="flex items-center gap-3 mb-4">
-      <div
-        className="flex items-center justify-center shrink-0"
-        style={{
-          width: 48, height: 48, borderRadius: "50%",
-          border: `2px solid ${borderColor}`,
-          background: "rgba(20, 16, 12, 0.8)",
-          fontSize: "1.5rem", color: borderColor,
-        }}
-      >
-        {symbol}
-      </div>
-      <div>
-        <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 700, color: borderColor, fontSize: "1.125rem" }}>
-          {name}
-        </div>
-        <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1rem", fontStyle: "italic" }}>
-          {subtitle}
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="chapel-npc" style={{color: borderColor}}>
+    <div className="chapel-npc-symbol" aria-hidden="true">{symbol}</div>
+    <div><div className="chapel-npc-name">{name}</div><div className="chapel-npc-subtitle">{subtitle}</div></div>
+  </div>;
 }
 
 function MeterBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
   const pct = clamp((value / max) * 100, 0, 100);
-  return (
-    <div className="mb-2">
-      <div className="flex justify-between text-xs mb-1" style={{ fontFamily: "'Cinzel', serif" }}>
-        <span style={{ color }}>{label}</span>
-        <span style={{ color: COLORS.dim }}>{value}/{max}</span>
-      </div>
-      <div role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} style={{ height: 8, background: "rgba(20, 16, 12, 0.8)", borderRadius: 4, overflow: "hidden" }}>
-        <div
-          style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: color,
-            borderRadius: 4,
-            transition: "width 400ms ease",
-          }}
-        />
-      </div>
+  return <div className="mb-2">
+    <div className="chapel-meter-values"><span style={{color}}>{label}</span><span>{value}/{max}</span></div>
+    <div className="chapel-meter-track" role="meter" aria-label={label} aria-valuenow={value} aria-valuemin={0} aria-valuemax={max}>
+      <div style={{width: String(pct) + '%', background: color}} />
     </div>
-  );
+  </div>;
 }
 
 function HistoricalContext({ children, title }: { children: ReactNode; title?: string }) {
-  return (
-    <div
-      className="mt-4 p-4"
-      style={{
-        background: "linear-gradient(135deg, rgba(30, 22, 40, 0.6), rgba(25, 18, 35, 0.8))",
-        border: "1px solid rgba(184, 154, 219, 0.2)",
-        borderRadius: "4px",
-      }}
-    >
-      <div className="text-xs uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ fontFamily: "'Cinzel', serif", color: COLORS.piety }}>
-        <span>{"\u2726"}</span> {title || "Historical Context"}
-      </div>
-      <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1.125rem", lineHeight: 1.6 }}>
-        {children}
-      </div>
-    </div>
-  );
+  return <section className="chapel-context">
+    <h4><span aria-hidden="true">{"\u2726"}</span> {title || "Historical Context"}</h4>
+    <div className="chapel-context-body">{children}</div>
+  </section>;
 }
 
 function EffectBadge({ label, value }: { label: string; value: number }) {
   const isPositive = value > 0;
-  return (
-    <span
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold mr-1 mb-1"
-      style={{
-        background: isPositive ? "rgba(141, 186, 110, 0.15)" : "rgba(212, 114, 106, 0.15)",
-        color: isPositive ? COLORS.happiness : COLORS.danger,
-        border: `1px solid ${isPositive ? "rgba(141, 186, 110, 0.3)" : "rgba(212, 114, 106, 0.3)"}`,
-        fontFamily: "'Cinzel', serif",
-      }}
-    >
-      {isPositive ? "+" : ""}{value} {label}
-    </span>
-  );
+  return <span className={'chapel-effect ' + (isPositive ? 'chapel-effect--positive' : 'chapel-effect--negative')}>
+    {isPositive ? "+" : ""}{value} {label}
+  </span>;
 }
 
 // ---------------------------------------------------------------------------
@@ -281,12 +180,12 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
   return (
     <div>
       {/* Chapel header */}
-      <div className="text-center mb-6">
-        <div style={{ fontSize: "2rem", color: COLORS.gold, marginBottom: "4px" }}>{"\u26EA"}</div>
-        <h2 style={{ fontFamily: "'Uncial Antiqua', 'Cinzel', serif", color: COLORS.gold, fontSize: "1.625rem", margin: 0 }}>
+      <div className="chapel-nave-header">
+        <div className="chapel-nave-symbol" aria-hidden="true">{"\u26EA"}</div>
+        <h2>
           The Chapel of St. Dunstan
         </h2>
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: "1.125rem", fontStyle: "italic", marginTop: "6px" }}>
+        <p>
           Stone walls echo with whispered prayers. Candlelight flickers across weathered saints.
         </p>
       </div>
@@ -298,28 +197,13 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
             key={a.label}
             onClick={a.onClick}
             disabled={a.disabled}
-            className="p-4 text-left transition-all duration-200"
-            style={{
-              ...cardStyle,
-              borderStyle: a.disabled ? "dashed" : "solid",
-              cursor: a.disabled ? "not-allowed" : "pointer",
-            }}
-            onMouseEnter={(e) => {
-              if (!a.disabled) {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.borderColor = "rgba(201, 168, 76, 0.5)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "none";
-              e.currentTarget.style.borderColor = COLORS.cardBorder;
-            }}
+            className="chapel-card chapel-nave-action p-4 text-left"
           >
-            <a.Icon size={20} style={{ color: COLORS.gold, marginBottom: "8px" }} />
-            <div style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "1rem" }}>
+            <a.Icon size={20} aria-hidden="true" />
+            <div className="chapel-label">
               {a.label}
             </div>
-            <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: ".875rem", marginTop: "2px" }}>
+            <div className="chapel-caption">
               {a.desc}
             </div>
           </button>
@@ -327,11 +211,11 @@ function NaveView({ state, onSetView, onStartManuscript, onStartDilemma }: Pick<
       </div>
 
       {/* Faith & Piety meters */}
-      <div className="p-4" style={cardStyle}>
+      <div className="chapel-card p-4">
         <MeterBar label="Faith" value={faith} max={100} color={COLORS.faithBlue} />
         <MeterBar label="Piety" value={piety} max={100} color={COLORS.piety} />
         {pietyFlavor && (
-          <p className="mt-2 text-xs" style={{ fontFamily: "'Crimson Text', serif", color: COLORS.piety, fontStyle: "italic" }}>
+          <p className="chapel-piety-flavor mt-2">
             {pietyFlavor}
           </p>
         )}
@@ -374,8 +258,8 @@ function AnselmView({ state, dispatch }: ChapelProps) {
       </div>
 
       {/* Tithe system */}
-      <div className="p-4 mb-4" style={cardStyle}>
-        <div className="text-xs uppercase tracking-wider mb-3" style={{ fontFamily: "'Cinzel', serif", color: COLORS.gold }}>
+      <div className="chapel-card p-4 mb-4">
+        <div className="chapel-label chapel-gold uppercase tracking-wider mb-3">
           {"\u271D"} Tithe Offering
         </div>
 
@@ -392,22 +276,12 @@ function AnselmView({ state, dispatch }: ChapelProps) {
             value={titheInput}
             onChange={(e) => setTitheInput(e.target.value)}
             placeholder={`${suggestedTithe}d (10%)`}
-            className="flex-1 min-w-0 px-3 py-2 rounded text-sm"
-            style={{
-              background: "rgba(15, 12, 10, 0.8)",
-              border: `1px solid ${COLORS.cardBorder}`,
-              color: COLORS.text,
-              fontFamily: "'Crimson Text', serif",
-            }}
+            className="chapel-tithe-input flex-1 min-w-0 px-3 py-2 rounded"
           />
           <button
             onClick={() => handleTithe(titheAmount)}
             disabled={!canGive}
-            className="px-4 py-2 text-xs uppercase tracking-wider"
-            style={{
-              ...goldButton,
-              opacity: canGive ? 1 : 0.5,
-            }}
+            className="chapel-gold-button px-4 py-2 uppercase tracking-wider"
           >
             Give
           </button>
@@ -420,16 +294,7 @@ function AnselmView({ state, dispatch }: ChapelProps) {
               <button
                 key={p.label}
                 onClick={() => setTitheInput(String(amt))}
-                className="px-3 py-1.5 text-xs rounded transition-all duration-200"
-                style={{
-                  background: "rgba(201, 168, 76, 0.1)",
-                  border: `1px solid rgba(201, 168, 76, 0.3)`,
-                  color: COLORS.gold,
-                  fontFamily: "'Cinzel', serif",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(201, 168, 76, 0.2)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(201, 168, 76, 0.1)"; }}
+                className="chapel-preset px-3 py-1.5 rounded"
               >
                 {p.label} ({amt}d)
               </button>
@@ -484,7 +349,7 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
 
       {/* Shop */}
       <div className="mb-4">
-        <div className="text-xs uppercase tracking-wider mb-3" style={{ fontFamily: "'Cinzel', serif", color: COLORS.happiness }}>
+        <div className="chapel-label chapel-shop-title uppercase tracking-wider mb-3">
           {"\u2618"} Monastery Goods
         </div>
 
@@ -495,21 +360,13 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
             return (
               <div
                 key={item.id}
-                className="chapel-shop-item gap-3 p-3 transition-all duration-200"
-                style={{
-                  ...cardStyle,
-                  borderColor: owned ? "rgba(141, 186, 110, 0.45)" : COLORS.cardBorder,
-                }}
+                className="chapel-card chapel-shop-item gap-3 p-3"
+                data-owned={owned}
               >
                 {/* Icon */}
                 <div
-                  className="flex items-center justify-center shrink-0"
-                  style={{
-                    width: 36, height: 36, borderRadius: "4px",
-                    background: "rgba(15, 12, 10, 0.8)",
-                    border: `1px solid ${COLORS.cardBorder}`,
-                    fontSize: "1.375rem", color: COLORS.gold,
-                  }}
+                  className="chapel-shop-icon"
+                  aria-hidden="true"
                 >
                   {item.icon}
                 </div>
@@ -517,17 +374,17 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span style={{ fontFamily: "'Cinzel', serif", fontWeight: 600, color: COLORS.text, fontSize: "1rem" }}>
+                    <span className="chapel-label">
                       {item.name}
                     </span>
-                    <span style={{ fontFamily: "'Cinzel', serif", color: COLORS.gold, fontSize: ".875rem" }}>
+                    <span className="chapel-price">
                       {item.cost}d
                     </span>
                   </div>
-                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.dim, fontSize: ".875rem", fontStyle: "italic" }}>
+                  <div className="chapel-caption chapel-shop-description">
                     {item.description}
                   </div>
-                  <div style={{ fontFamily: "'Crimson Text', serif", color: COLORS.faithBlue, fontSize: ".875rem", marginTop: "2px" }}>
+                  <div className="chapel-shop-effect">
                     {item.effectText}
                   </div>
                 </div>
@@ -535,27 +392,20 @@ function CaedmonView({ state, dispatch }: ChapelProps) {
                 {/* Buy button */}
                 <div className="chapel-shop-action">
                   {owned ? (
-                    <span className="text-xs font-semibold" style={{ color: COLORS.happiness, fontFamily: "'Cinzel', serif" }}>
+                    <span className="chapel-owned">
                       {"\u2713"} Owned
                     </span>
                   ) : (
                     <button
                       onClick={() => handleBuy(item)}
                       disabled={!canAfford}
-                      className="px-3 py-1.5 text-xs uppercase tracking-wider"
-                      style={{
-                        ...goldButton,
-                        background: canAfford ? goldButton.background : "#302a20",
-                        color: canAfford ? goldButton.color : COLORS.text,
-                        cursor: canAfford ? "pointer" : "not-allowed",
-                        fontSize: ".875rem",
-                      }}
+                      className="chapel-gold-button px-3 py-1.5 uppercase tracking-wider"
                     >
                       Buy
                     </button>
                   )}
                   {!owned && !canAfford && (
-                    <p className="text-xs mt-2" style={{ color: COLORS.danger }}>
+                    <p className="chapel-cost-warning mt-2">
                       Requires {item.cost}d · Treasury: {state.denarii}d
                     </p>
                   )}
@@ -745,7 +595,7 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
 
       {/* Completion panel */}
       {(msPhase === "success" || msPhase === "fail") && (
-        <section role="region" aria-label="Manuscript result" tabIndex={0} className="chapel-result p-4 mb-4" style={cardStyle}>
+        <section role="region" aria-label="Manuscript result" tabIndex={0} className="chapel-card chapel-result p-4 mb-4">
           {msPhase === "success" && (
             <div className="text-center mb-3">
               <div className="text-lg mb-1" style={{ color: COLORS.happiness, fontFamily: "'Cinzel', serif", fontWeight: 700 }}>
@@ -797,20 +647,13 @@ function ScriptoriumView({ state, dispatch }: ChapelProps) {
           <div className="chapel-result-actions mt-4">
             <button
               onClick={() => dispatch({ type: "CHAPEL_MS_START" })}
-              className="px-4 py-2 text-xs uppercase tracking-wider"
-              style={goldButton}
+              className="chapel-gold-button px-4 py-2 uppercase tracking-wider"
             >
               Try Again
             </button>
             <button
               onClick={() => dispatch({ type: "CHAPEL_SET_VIEW", payload: { view: "nave" } })}
-              className="px-4 py-2 text-xs uppercase tracking-wider"
-              style={{
-                ...goldButton,
-                background: "transparent",
-                color: COLORS.dim,
-                border: `1px solid ${COLORS.cardBorder}`,
-              }}
+              className="chapel-gold-button chapel-gold-button--secondary px-4 py-2 uppercase tracking-wider"
             >
               Return to Chapel
             </button>
@@ -848,7 +691,7 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
       </div>
 
       {/* Narrative */}
-      <div className="p-4 mb-4" style={cardStyle}>
+      <div className="chapel-card p-4 mb-4">
         <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "1.125rem", lineHeight: 1.7 }}>
           {dilemma.narrative}
         </p>
@@ -866,17 +709,7 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
                 key={i}
                 disabled={!affordable}
                 onClick={() => handleChoice(i)}
-                className="w-full flex items-center gap-3 p-4 text-left transition-all duration-200 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-                style={cardStyle}
-                onMouseEnter={(e) => {
-                  if (!affordable) return;
-                  e.currentTarget.style.transform = "translateX(4px)";
-                  e.currentTarget.style.borderColor = "rgba(201, 168, 76, 0.5)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "none";
-                  e.currentTarget.style.borderColor = COLORS.cardBorder;
-                }}
+                className="chapel-card chapel-dilemma-choice w-full flex items-center gap-3 p-4 text-left"
               >
                 <IconComp size={20} style={{ color: COLORS.gold, flexShrink: 0 }} />
                 <span className="min-w-0">
@@ -893,7 +726,7 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
           })}
         </div>
       ) : (
-        <div className="p-4 mb-4" style={cardStyle}>
+        <div className="chapel-card p-4 mb-4">
           <p className="mb-3" style={{ fontFamily: "'Crimson Text', serif", color: COLORS.text, fontSize: "1.125rem", lineHeight: 1.7 }}>
             {result.text}
           </p>
@@ -905,8 +738,7 @@ function DilemmaView({ state, dispatch }: ChapelProps) {
           <div className="text-center mt-4">
             <button
               onClick={() => dispatch({ type: "CHAPEL_SET_VIEW", payload: { view: "nave" } })}
-              className="px-6 py-2 text-xs uppercase tracking-wider"
-              style={goldButton}
+              className="chapel-gold-button px-6 py-2 uppercase tracking-wider"
             >
               Return to Chapel
             </button>
@@ -992,7 +824,7 @@ export default function ChapelTab({ state, dispatch }: ChapelProps) {
 
       {/* Footer */}
       <div className="text-center mt-8 pb-4">
-        <p style={{ fontFamily: "'Crimson Text', serif", color: COLORS.muted, fontSize: ".875rem", fontStyle: "italic" }}>
+        <p className="chapel-caption chapel-footer-quote">
           "The Church forgets nothing, forgives selectively, and charges for both." — Father Anselm
         </p>
       </div>
