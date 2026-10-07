@@ -14,6 +14,14 @@ An incremental rewrite of The Lord's Ledger, a React game about managing a medie
 
 The rewrite retains React, Vite, Tailwind CSS, and the existing DOM interface. CSS, HTML, JSON, and media remain in their native formats.
 
+## Latest verified checkpoint
+
+Commit [`a0d951d`](https://github.com/goldbar123467/lords-ledger-typescript-rewrite/commit/a0d951d2163ccd42939280a23df0fc5e5682e35f) establishes a shared `GameCommand` union covering all 86 commands in the main reducer. Tavern actions and Rats in the Cellar results now use engine-owned contracts. A maintained compiler test checks command coverage against the reducer switch.
+
+All **714 unit tests**, typecheck, lint and production build passed for that checkpoint. Independent tester and grader reviews checked command payloads, coverage and compatibility. The type-only changes preserved the production build bytes; no new browser run was performed for this section.
+
+The next section migrates App to checked TSX using these commands and validated state. A temporary runtime boundary will validate output from the JavaScript reducer; it does not typecheck the reducer implementation. The subsequent reducer migration must remove that boundary. Full rewrite acceptance remains pending.
+
 ## Current progress
 
 | Area | Included in the checkpoint | Remaining work |
@@ -112,8 +120,8 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Finish remaining saved-state audits and finite command wiring for App and reducer migration.
-2. Finish finite action contracts, migrate App and the main reducer to checked TypeScript, and simplify reducer orchestration.
+1. Migrate App to checked TSX with the shared 86-command contract, validate reducer output at the temporary boundary, and verify lifecycle and player flows.
+2. Migrate the main reducer implementation to checked TypeScript, simplify orchestration, and remove the temporary boundary. Complete remaining state and command validation.
 3. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
 5. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
