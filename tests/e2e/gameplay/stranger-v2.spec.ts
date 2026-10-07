@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
 import { gameReducer, initialState } from '../../../src/engine/gameReducer.ts';
 import { writeV2Save } from '../../../src/save/saveGame.ts';
 
-test('a seeded stranger offers one canonical trade across save and load', async ({ page }) => {
+test('a seeded stranger offers one canonical trade across save and load', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
@@ -22,14 +21,13 @@ test('a seeded stranger offers one canonical trade across save and load', async 
   const tradeButton = page.getByRole('button', { name: 'Trade 150d for 10 food' });
   await expect(tradeButton).toBeVisible();
   await expect(page.locator('.tavern-enter')).toHaveCount(0);
-  await mkdir('artifacts/v2/stranger-browser', { recursive: true });
-  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-1366x768.png' });
+  await page.screenshot({ path: info.outputPath('offer-1366x768.png') });
   const laptopTradeBox = await tradeButton.boundingBox();
   expect(laptopTradeBox).not.toBeNull();
   if (laptopTradeBox) expect(laptopTradeBox.y + laptopTradeBox.height).toBeLessThanOrEqual(768);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-390x844-full.png', fullPage: true });
-  await page.screenshot({ path: 'artifacts/v2/stranger-browser/offer-390x844.png' });
+  await page.screenshot({ path: info.outputPath('offer-390x844-full.png'), fullPage: true });
+  await page.screenshot({ path: info.outputPath('offer-390x844.png') });
   const tradeBox = await tradeButton.boundingBox();
   expect(tradeBox).not.toBeNull();
   if (tradeBox) {
