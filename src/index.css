@@ -2009,3 +2009,22 @@ input[type="range"].labor-slider::-moz-range-thumb {
 .chapel-dilemma-choice:disabled { opacity: 1; border-style: dashed; cursor: not-allowed; }
 .chapel button:focus-visible, .chapel input:focus-visible { outline: 3px solid #c9a84c; outline-offset: 3px; }
 @media(prefers-reduced-motion:reduce) { .chapel * { animation: none !important; transition: none !important; } .chapel-nave-action:not(:disabled):hover, .chapel-dilemma-choice:not(:disabled):hover { transform: none; } }
+
+/* Knight's Gambit: presentation is shared; payment and reveal timing stay in the component. */
+.gambit-game .text-xs, .gambit-game .text-sm { font-size: 1rem; line-height: 1.55; }
+.gambit-button { background: #2a2318; border-color: #8a7a3a; color: #f4d77f; font: 1rem/1.5 'Cinzel', serif; transition: background-color 200ms ease, border-color 200ms ease; }
+.gambit-button:not(:disabled):hover { background: #3a3020; border-color: #c4a24a; }
+.gambit-button--note { border-color: #c4a24a; }
+.gambit-button--return { border-color: #6a5a42; color: #dbc7a8; }
+.gambit-button--walk { background: transparent; border-color: #6a5a42; color: #dbc7a8; }
+.gambit-button--walk:not(:disabled):hover { background: transparent; color: #f4e2c5; border-color: #a89070; }
+.gambit-wager:disabled { background: #1a1610; border-color: #8a7a5a; border-style: dashed; color: #dbc7a8; opacity: 1; cursor: not-allowed; }
+.gambit-leave { background: none; border: none; color: #dbc7a8; font-size: 1rem; text-decoration: underline; transition: color 200ms ease; }
+.gambit-leave:hover { color: #f4e2c5; }
+.gambit-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; width: 100%; }
+@media(min-width:640px) { .gambit-choices { gap: 1rem; } }
+.gambit-weapon { width: min(120px,27vw); min-width: min-content; min-height: min(160px,40vw); padding: .25rem; background: #1a1610; border-color: #6a5a42; color: #c8b090; transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease; }
+.gambit-weapon:hover { background: #221a12; border-color: #8b1a1a; box-shadow: 0 0 16px rgba(139,26,26,.4); }
+.gambit-game button:focus-visible { outline: 3px solid #f4d77f; outline-offset: 3px; }
+.gambit-actions { flex-wrap: wrap; justify-content: center; }
+@media(prefers-reduced-motion:reduce) { .gambit-game, .gambit-game * { animation: none !important; transition: none !important; } }

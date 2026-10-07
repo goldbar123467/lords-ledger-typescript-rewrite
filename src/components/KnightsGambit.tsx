@@ -164,7 +164,7 @@ export default function KnightsGambit({
   if (showScribesNote) {
     return (
       <div
-        className="flex flex-col items-center justify-center p-6"
+        className="gambit-game flex flex-col items-center justify-center p-6"
         style={{ backgroundColor: "#1a1208", minHeight: "300px" }}
       >
         <div
@@ -188,21 +188,7 @@ export default function KnightsGambit({
           </p>
           <button
             onClick={handleDismissScribesNote}
-            className="w-full py-2 rounded border cursor-pointer"
-            style={{
-              backgroundColor: "#2a2318",
-              borderColor: "#c4a24a",
-              color: "#c4a24a",
-              fontFamily: "Cinzel, serif",
-              fontSize: "0.85rem",
-              transition: "background-color 200ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#3a3020";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#2a2318";
-            }}
+            className="w-full py-2 rounded border cursor-pointer gambit-button gambit-button--note"
           >
             I understand
           </button>
@@ -215,7 +201,7 @@ export default function KnightsGambit({
   if (phase === PHASE_MAXED) {
     return (
       <div
-        className="flex flex-col items-center justify-center p-6 text-center"
+        className="gambit-game flex flex-col items-center justify-center p-6 text-center"
         style={{ backgroundColor: "#1a1208", minHeight: "300px" }}
       >
         <p
@@ -228,26 +214,12 @@ export default function KnightsGambit({
         >
           "Enough for one night, my lord."
         </p>
-        <p className="text-sm mb-6" style={{ color: "#6a5a42" }}>
+        <p className="text-sm mb-6" style={{ color: "#dbc7a8" }}>
           The stranger gathers his things and melts into the crowd.
         </p>
         <button
           onClick={onBack}
-          className="px-6 py-2 rounded border cursor-pointer"
-          style={{
-            backgroundColor: "#2a2318",
-            borderColor: "#6a5a42",
-            color: "#c8b090",
-            fontFamily: "Cinzel, serif",
-            fontSize: "0.85rem",
-            transition: "all 200ms ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "#c4a24a";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "#6a5a42";
-          }}
+          className="px-6 py-2 rounded border cursor-pointer gambit-button gambit-button--return"
         >
           Return to Tavern
         </button>
@@ -257,7 +229,7 @@ export default function KnightsGambit({
 
   return (
     <div
-      className={`relative flex flex-col items-center p-4 sm:p-6 ${shaking ? "tavern-shake" : ""}`}
+      className={`gambit-game relative flex flex-col items-center p-4 sm:p-6 ${shaking ? "tavern-shake" : ""}`}
       style={{ backgroundColor: "#1a1208", minHeight: "360px" }}
     >
       {/* Red vignette overlay on loss */}
@@ -307,29 +279,7 @@ export default function KnightsGambit({
                   key={amount}
                   onClick={() => canAfford && handleWager(amount)}
                   disabled={!canAfford}
-                  className="py-3 rounded border-2 cursor-pointer"
-                  style={{
-                    backgroundColor: canAfford ? "#2a2318" : "#1a1610",
-                    borderColor: canAfford ? "#8a7a3a" : "#3a3020",
-                    color: canAfford ? "#c4a24a" : "#4a4030",
-                    fontFamily: "Cinzel, serif",
-                    fontSize: "1rem",
-                    opacity: canAfford ? 1 : 0.5,
-                    cursor: canAfford ? "pointer" : "not-allowed",
-                    transition: "all 200ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (canAfford) {
-                      e.currentTarget.style.backgroundColor = "#3a3020";
-                      e.currentTarget.style.borderColor = "#c4a24a";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (canAfford) {
-                      e.currentTarget.style.backgroundColor = "#2a2318";
-                      e.currentTarget.style.borderColor = "#8a7a3a";
-                    }
-                  }}
+                  className="py-3 rounded border-2 cursor-pointer gambit-button gambit-wager"
                 >
                   {amount}d
                 </button>
@@ -338,20 +288,7 @@ export default function KnightsGambit({
           </div>
           <button
             onClick={onBack}
-            className="mt-4 text-xs cursor-pointer"
-            style={{
-              color: "#6a5a42",
-              background: "none",
-              border: "none",
-              textDecoration: "underline",
-              transition: "color 200ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#a89070";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#6a5a42";
-            }}
+            className="mt-4 text-xs cursor-pointer gambit-leave"
           >
             Leave the table
           </button>
@@ -364,36 +301,17 @@ export default function KnightsGambit({
           <p className="text-sm mb-1 text-center" style={{ color: "#a89070" }}>
             Choose your weapon.
           </p>
-          <p className="text-xs mb-4 text-center" style={{ color: "#6a5a42" }}>
+          <p className="text-xs mb-4 text-center" style={{ color: "#dbc7a8" }}>
             Wager: {wager}d
           </p>
-          <div className="flex gap-3 sm:gap-4 justify-center">
+          <div className="gambit-choices">
             {WEAPON_KEYS.map((key) => {
               const weapon = GAMBIT_WEAPONS[key];
               return (
                 <button
                   key={key}
                   onClick={() => handleChoice(key)}
-                  className="flex flex-col items-center justify-center rounded-lg border-2 cursor-pointer"
-                  style={{
-                    width: "min(120px, 27vw)",
-                    height: "min(160px, 40vw)",
-                    backgroundColor: "#1a1610",
-                    borderColor: "#6a5a42",
-                    color: "#c8b090",
-                    transition: "all 200ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#8b1a1a";
-                    e.currentTarget.style.boxShadow =
-                      "0 0 16px rgba(139, 26, 26, 0.4)";
-                    e.currentTarget.style.backgroundColor = "#221a12";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#6a5a42";
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.backgroundColor = "#1a1610";
-                  }}
+                  className="flex flex-col items-center justify-center rounded-lg border-2 cursor-pointer gambit-weapon"
                   aria-label={`Choose ${weapon.name}`}
                 >
                   <span
@@ -620,50 +538,18 @@ export default function KnightsGambit({
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-3 mt-5">
+          <div className="gambit-actions flex gap-3 mt-5">
             {roundsLeft > 0 && (
               <button
                 onClick={handlePlayAgain}
-                className="px-5 py-2 rounded border-2 cursor-pointer"
-                style={{
-                  backgroundColor: "#2a2318",
-                  borderColor: "#8a7a3a",
-                  color: "#c4a24a",
-                  fontFamily: "Cinzel, serif",
-                  fontSize: "0.85rem",
-                  transition: "all 200ms ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#3a3020";
-                  e.currentTarget.style.borderColor = "#c4a24a";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#2a2318";
-                  e.currentTarget.style.borderColor = "#8a7a3a";
-                }}
+                className="px-5 py-2 rounded border-2 cursor-pointer gambit-button"
               >
                 Another Round
               </button>
             )}
             <button
               onClick={onBack}
-              className="px-5 py-2 rounded border cursor-pointer"
-              style={{
-                backgroundColor: "transparent",
-                borderColor: "#6a5a42",
-                color: "#a89070",
-                fontFamily: "Cinzel, serif",
-                fontSize: "0.85rem",
-                transition: "all 200ms ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#a89070";
-                e.currentTarget.style.color = "#c8b090";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#6a5a42";
-                e.currentTarget.style.color = "#a89070";
-              }}
+              className="px-5 py-2 rounded border cursor-pointer gambit-button gambit-button--walk"
             >
               Walk Away
             </button>
