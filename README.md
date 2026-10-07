@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** Development resumed on 2026-10-02. The repository contains a working checkpoint, but the full TypeScript migration and final verification are incomplete. Start with the [checkpoint report](docs/v2/checkpoint.md) and [migration ledger](docs/v2/migration-ledger.md).
+**Status: work in progress.** The latest verified implementation checkpoint is `44c462f`, covering saved raid contracts and bookkeeping validation. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -41,7 +41,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-Three source JavaScript/JSX files remain: Tavern, App and the reducer. Production has 44,381 lines versus the original 45,347, a reduction of 966 lines; tests and documentation increase the repository total. The full rewrite and final verification remain incomplete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,772 production lines versus the original 45,347, a reduction of 575 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,100 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -67,9 +67,9 @@ Save validation now checks consumed history, text lists, resource deltas, perspe
 
 Optional event notes, choice notes and choice summaries now reject malformed values before loading or settlement. Omitted, null, empty and historical text retain their save bytes and existing fallback behavior. The correction passes 435 unit tests, static/build checks, six browser rejection regressions and 32 supporting choice/persistence checks, with independent tester and grader review. Broader nested save and raw command validation remain unfinished.
 
-Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. The App remains JavaScript; its migration probe still has 36 compiler diagnostics, so this is a persistence and view-boundary checkpoint.
+Loaded seasonal and random events now have explicit saved-state contracts used by EventCard. Unsupported consumed indicator directions reject before rendering; historical empty labels and omitted notes retain their behavior and bytes. The section passes 452 unit tests, static/build checks and 41 browser scenarios, with independent review of the contract and compatibility. At that checkpoint, the App migration probe had 36 compiler diagnostics; this verified persistence and view boundaries without migrating App.
 
-Loaded raids now have explicit bookkeeping, warning and result contracts. Malformed counters, flags, raid types and captured numeric metadata reject; omitted/null defaults and finite historical values stay intact. All 521 unit tests and static/build checks pass. Three new raid persistence flows and 28 integration scenarios pass across the recorded batches, including repair of an older invalid Forge test fixture. Independent tester and grader reviews accept this scope. The App probe has 34 diagnostics remaining; the App and reducer remain unchecked.
+Loaded raids now have explicit bookkeeping, warning and result contracts. Malformed counters, flags, raid types and captured numeric metadata reject; omitted/null defaults and finite historical values stay intact. At checkpoint `44c462f`, all 521 unit tests, typecheck, lint and build pass. Three new raid persistence flows pass; the initial 28 integration scenarios have 24 passes and four failures from an older invalid Forge test fixture. The same four pass after the separately committed fixture repair, giving 31 distinct passing browser scenarios across the recorded batches. Independent tester and grader reviews accept this scope. An exploratory App migration probe still reports 34 diagnostics; production App and the reducer remain unchecked.
 
 ## Code map
 
@@ -102,11 +102,11 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Complete the App and reducer state/action contracts and checked TypeScript migration.
-2. Continue reducing duplicated reducer logic and completing its state/action contracts.
-3. Continue the reducer, view, content, test, and tooling migrations in committed sections.
-4. Complete nested save validation, deterministic replay, interface review, and production-code reduction.
-5. Run final verification, including genuine browser victory and loss/restart campaigns, before declaring the rewrite complete.
+1. Complete the remaining consumed Market, Watchtower and other saved-state contracts, preserving supported historical defaults and save bytes.
+2. Finish finite action contracts, migrate App and the main reducer to checked TypeScript, and simplify reducer orchestration.
+3. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
+4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.
+5. Run final verification on the completed build, including at least 100 seeded campaigns, a genuine browser-driven 40-turn victory, and loss/restart and save/reload flows. Obtain final independent tester and grader review before declaring completion.
 
 ## Rewrite records
 
