@@ -61,9 +61,11 @@ App save feedback and deferred season actions now use checked ownership hooks. O
 
 The seeded constructor now has checked modern state/subsystem contracts and retains exact initialization/save bytes across 104 seed vectors and all difficulties. Native starts and managed restart entry points are independently verified. These are initialization tests, not campaigns; the main reducer, App and complete loaded-state contracts remain unfinished.
 
-Seasonal and random event-choice settlement now uses checked TypeScript for resource effects, military reconciliation, history and ending checks. All 1,332 authored choice transitions retain complete state and save bytes across three seeds and all difficulties. The section passes 395 unit tests, static/build checks and four choice/Save/reload browser cases, with independent review. An inherited validation gap in optional saved-event text remains open and is the next correction.
+Seasonal and random event-choice settlement now uses checked TypeScript for resource effects, military reconciliation, history and ending checks. All 1,332 authored choice transitions retain complete state and save bytes across three seeds and all difficulties. The section passes 395 unit tests, static/build checks and four choice/Save/reload browser cases, with independent review. The inherited optional saved-event text gap is corrected below.
 
 Save validation now checks consumed history, text lists, resource deltas, perspective metadata and pending/deferred synergy notifications. Malformed known fields are rejected by both readers and the writer; historical names, fractional values and unknown extensions retain their bytes. This closes a deferred notification queue crash during story continuation. The current section passes 390 unit tests, typecheck, lint, build, four browser rejection regressions and 28 existing persistence, lifecycle and initialization checks. Independent tester and grader reviews accept this scope. Complete save-schema validation remains unfinished.
+
+Optional event notes, choice notes and choice summaries now reject malformed values before loading or settlement. Omitted, null, empty and historical text retain their save bytes and existing fallback behavior. The correction passes 435 unit tests, static/build checks, six browser rejection regressions and 32 supporting choice/persistence checks, with independent tester and grader review. Broader nested save and raw command validation remain unfinished.
 
 ## Code map
 

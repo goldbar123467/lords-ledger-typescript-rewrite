@@ -9,7 +9,7 @@ import type { Season } from '../save/saveGame.ts';
 export interface ChoiceOption {
   readonly effects?: AuthoredEffects | null;
   readonly text?: string; readonly chronicle?: string; readonly resultText?: string;
-  readonly causeChainSummary?: string; readonly scribesNote?: string | null;
+  readonly causeChainSummary?: string | null; readonly scribesNote?: string | null;
 }
 export interface ChoiceEvent {
   readonly id: string; readonly title?: string;

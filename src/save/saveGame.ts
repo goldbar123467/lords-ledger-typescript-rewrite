@@ -181,6 +181,10 @@ function isSavedEffect(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && Math.abs(value) <= 1_000_000;
 }
 
+function isOptionalText(value: unknown): value is string | null | undefined {
+  return value == null || typeof value === 'string';
+}
+
 function validateSavedEvent(
   value: unknown,
   kind: 'seasonal' | 'random',
@@ -196,10 +200,14 @@ function validateSavedEvent(
       typeof value.description !== 'string' || value.description.trim() === '') {
     return `Save ${kind} event text is invalid.`;
   }
+  if (!isOptionalText(value.scribesNote)) return `Save ${kind} event note must be text or null.`;
   const savedOptions: unknown[] = value.options;
   for (const [index, option] of savedOptions.entries()) {
     if (!isRecord(option) || typeof option.text !== 'string' || option.text.trim() === '') {
       return `Save ${kind} event has an invalid choice.`;
+    }
+    for (const [key, label] of [['scribesNote', 'choice note'], ['causeChainSummary', 'choice summary']] as const) {
+      if (!isOptionalText(option[key])) return `Save ${kind} event ${label} must be text or null.`;
     }
     const authoredOption = definition.options[index];
     const savedEffects = option.effects;
