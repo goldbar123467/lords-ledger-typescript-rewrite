@@ -2,7 +2,7 @@
 
 An incremental rewrite of The Lord's Ledger, a React game about managing a medieval estate over 40 seasons. This repository tracks the migration from JavaScript to strict TypeScript, gameplay repairs, interface improvements, and removal of redundant implementation code while preserving the game's authored content and choices.
 
-**Status: work in progress.** The latest verified section covers consumed Watchtower save contracts, scan bookkeeping, warnings and historical logs. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
+**Status: work in progress.** The latest section verifies consumed synergy save contracts and counter-result typing. Independent review found an inherited large-counter save failure, tracked as G-SY01 for the next correction. App and the main reducer still need checked TypeScript migration; final interface, save-schema and campaign verification remain incomplete. Follow the [migration ledger](docs/v2/migration-ledger.md) for current evidence and the [checkpoint report](docs/v2/checkpoint.md) for the earlier repository handoff.
 
 ## Rewrite goals
 
@@ -41,7 +41,7 @@ Rats in the Cellar now has checked phase, result, rat-data, DOM-ref and timer-ha
 
 Seven saved Tavern flags and counters have runtime checks, including descriptor checks before consumed getters can run. Malformed v2 and legacy imports preserve both existing storage slots. Tavern ledger arithmetic retains exact values beyond JavaScript's safe integer range using canonical decimal strings. Ordinary numeric saves retain their original bytes; the new large-value form requires an updated reader.
 
-Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,851 production lines versus the original 45,347, a reduction of 496 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,495 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
+Two source JavaScript/JSX files remain: `src/App.jsx` and `src/engine/gameReducer.js`. The latest recorded census counts 44,869 production lines versus the original 45,347, a reduction of 478 lines. Production includes implementation, authored data, styles and type declarations. The inclusive text subtotal before that checkpoint's documentation updates is 78,651 versus the original 62,282; it includes tests, tooling, documentation and other tracked text. These are checkpoint measurements, not proof that the full code-reduction requirement is complete. See [verification notes](docs/v2/verification.md) for recorded builds and evidence limits.
 
 Chronicle now uses checked readonly entry props and a shared saved-history contract. Malformed entries are rejected before loading; historical wording and compatible metadata survive exact saves. Prototype kind names render safely. Its wider interface review remains unfinished.
 
@@ -75,6 +75,8 @@ Saved Market prices and pending bargains now expose the types proved by their ex
 
 Watchtower saves now validate consumed scan counters, flags, scouting bonuses, merchant previews and signal-log entries. Historical null/missing/fractional defaults retain their exact bytes and scan behavior; unused old report metadata remains opaque. Shared readiness and view contracts admit supported null defaults without changing their executable behavior. All 665 unit tests, static/build checks and 19 production browser scenarios pass. Independent review accepts the contract scope while retaining an initial grader reload timeout followed by a successful diagnostic rerun; the first cause remains unclassified. Full lifecycle, log readability and wider interface verification remain pending.
 
+Consumed synergy saves now reject malformed wool/spice counters, trade-history lists, seasonal defaults and revolt flags. Historical fractional counts, optional defaults, unknown trade names and duplicates retain their bytes; activated-tier validation rejects sparse arrays. The seasonal helper preserves unrelated fields and exposes its four computed counters. All 703 unit tests, static/build checks and 21 production browser scenarios pass. Independent review accepts this contract scope but leaves G-SY01 open: an accepted maximum safe-integer faith/approval counter increments beyond the writer's supported range. Exact counter arithmetic is the next correction.
+
 ## Code map
 
 | Location | Rewrite responsibility |
@@ -106,7 +108,7 @@ The original history is retained through baseline `47570f9`, with the rewrite ch
 
 ## Next rewrite sections
 
-1. Audit and complete the remaining saved-state contracts, including synergy bookkeeping, preserving supported historical defaults and save bytes.
+1. Fix G-SY01 seasonal counter precision and save continuation, then finish remaining saved-state audits.
 2. Finish finite action contracts, migrate App and the main reducer to checked TypeScript, and simplify reducer orchestration.
 3. Finish first-party test and executable tooling migration, then remove the temporary JavaScript compiler allowance.
 4. Complete nested save validation, deterministic replay, interface and accessibility review, and production-code reduction.

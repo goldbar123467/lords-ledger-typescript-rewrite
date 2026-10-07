@@ -11,6 +11,7 @@ import type { SavedEvent } from './savedEvent.ts';
 import { validateRaidBookkeeping, type SavedRaidState } from './savedRaid.ts';
 import { validateMarketMetadata, type SavedMarketState } from './savedMarket.ts';
 import { validateWatchtowerState, type SavedWatchtowerState } from './savedWatchtower.ts';
+import { validateSynergyMetadata, type SavedSynergyState } from './savedSynergy.ts';
 import { PERSPECTIVE_FLIPS } from '../data/perspectiveFlips.ts';
 import { CYOA_FLIPS } from '../data/cyoaFlips.ts';
 import { isRandomState, seedLegacySnapshot } from '../engine/random.ts';
@@ -30,7 +31,6 @@ import { validateHallFeastState } from '../engine/feast.ts';
 import { isActivatedSynergies, isActiveHaggle, isGeneratedMarketPrices, isMarketReputation } from '../engine/marketHaggle.ts';
 import { GAMBIT_MAX_ROUNDS } from '../data/tavern.ts';
 import BUILDINGS, { type BuildingId } from '../data/buildings.ts';
-import type { SynergyTierId } from '../data/synergies.ts';
 import { isFortificationLevel, type MilitaryDefenseState, type FortificationLevels } from '../data/military.ts';
 import { ALL_RESOURCES, RESOURCE_CONFIG, TAX_RATES, type GeneratedMarketPrices, type Inventory, type ResourceId as AuthoredResourceId } from '../data/economy.ts';
 export type { Inventory } from '../data/economy.ts';
@@ -125,16 +125,7 @@ export interface GameSnapshot extends ViewMetadata {
   people: CompatiblePeopleState;
   greatHall: HallSaveState;
   blacksmith: ForgeSaveState;
-  synergies: {
-    activated: SynergyTierId[];
-    tradeTypes: string[];
-    woolTrades: number;
-    spicePurchases: number;
-    lowTaxTurns: number;
-    foodSurplusTurns: number;
-    highFaithTurns?: number;
-    highPeopleTurns?: number;
-  };
+  synergies: SavedSynergyState;
 }
 
 type CompatibleSnapshot = Omit<GameSnapshot, 'rngState'> & { rngState?: number };
@@ -396,12 +387,8 @@ function validateSnapshot(value: unknown): string | null {
   if (!isRecord(synergies) || !isActivatedSynergies(synergies.activated)) {
     return 'Save activated synergy list is invalid.';
   }
-  for (const key of ['highFaithTurns', 'highPeopleTurns'] as const) {
-    const count = synergies[key];
-    if (count !== undefined && (!Number.isSafeInteger(count) || (count as number) < 0)) {
-      return `Save synergy ${key} is invalid.`;
-    }
-  }
+  const synergyMetadataIssue = validateSynergyMetadata(synergies);
+  if (synergyMetadataIssue) return synergyMetadataIssue;
 
   const chapelIssue = validateChapelState(value.chapel);
   if (chapelIssue) return chapelIssue;

@@ -66,6 +66,7 @@ type InitialForgeState = InitialFields<ForgeSaveState, 'marketPrices' | 'activeS
 
 /** Complete modern constructor shape, not a claim that older loaded snapshots contain every field. */
 export interface InitialGameState extends GameSnapshot {
+  synergies: GameSnapshot['synergies'] & { lowTaxTurns: number; foodSurplusTurns: number; highFaithTurns: number; highPeopleTurns: number };
   activeTab: TabId;
   inventoryCapacity: number; totalPlots: number;
   economyHistory: EconomyHistoryEntry[];

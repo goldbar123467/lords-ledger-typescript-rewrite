@@ -3,7 +3,7 @@ import {getDeployedToolIds} from './forgeTools.ts';
 import { TRADE_GOODS, BASE_BUY_PRICES, BASE_SELL_PRICES, type GeneratedMarketPrices, type ResourceId } from '../data/economy.ts';
 import type { HaggleDifficulty, MarketMerchantId } from '../data/market.ts';
 import { FOREIGN_TRADERS, HAGGLE_CONFIG, LOCAL_MERCHANTS, getReputationTier } from '../data/market.ts';
-import { SYNERGY_PATH_LIST, SYNERGY_TIER_MAP } from '../data/synergies.ts';
+import { SYNERGY_PATH_LIST, SYNERGY_TIER_MAP, type SynergyTierId } from '../data/synergies.ts';
 import { getSynergyTradePriceBonus, getSynergyWoolSellBonus } from './synergyEngine.ts';
 
 export type HaggleMode = 'buy' | 'sell';
@@ -28,9 +28,9 @@ export function isMarketReputation(value: unknown): value is Record<string, numb
     reputation >= 0 && reputation <= 100);
 }
 
-export function isActivatedSynergies(value: unknown): value is string[] {
+export function isActivatedSynergies(value: unknown): value is SynergyTierId[] {
   if (!Array.isArray(value) ||
-      !value.every((id: unknown) => typeof id === 'string' && Object.hasOwn(SYNERGY_TIER_MAP, id)) ||
+      Array.from(value).some((id: unknown) => typeof id !== 'string' || !Object.hasOwn(SYNERGY_TIER_MAP, id)) ||
       new Set(value).size !== value.length) return false;
   const active = new Set<string>(value);
   for (const path of SYNERGY_PATH_LIST) {

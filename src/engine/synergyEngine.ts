@@ -29,11 +29,11 @@ export interface SynergyState {
     tradeTypes?: readonly string[];
     woolTrades?: number;
     spicePurchases?: number;
-    lowTaxTurns?: number;
+    lowTaxTurns?: number | null;
     highFaithTurns?: number;
     highPeopleTurns?: number;
-    foodSurplusTurns?: number;
-    revoltTriggered?: boolean;
+    foodSurplusTurns?: number | null;
+    revoltTriggered?: boolean | null;
   };
 }
 
@@ -140,10 +140,11 @@ export function checkTierConditions(tierDef: SynergyTierDefinition, state: Syner
 }
 
 /** Count each completed season once; a perspective flip only checks new effects afterward. */
-export function advanceSynergyCounters(
-  previous: NonNullable<SynergyState['synergies']>,
+export function advanceSynergyCounters<Previous extends NonNullable<SynergyState['synergies']>>(
+  previous: Previous,
   observed: { taxRate: string; food: number; faith: number; peopleApproval: number },
-): NonNullable<SynergyState['synergies']> {
+): Omit<Previous, 'lowTaxTurns' | 'foodSurplusTurns' | 'highFaithTurns' | 'highPeopleTurns'> &
+  Record<'lowTaxTurns' | 'foodSurplusTurns' | 'highFaithTurns' | 'highPeopleTurns', number> {
   return {
     ...previous,
     lowTaxTurns: observed.taxRate === 'low' || observed.taxRate === 'medium'
