@@ -7,8 +7,12 @@ async function tabTo(page: Page, target: Locator) {
   for (let i = 0; i < 120; i++) { if (await target.evaluate(e => e === document.activeElement)) return; await page.keyboard.press('Tab'); }
   await expect(target).toBeFocused();
 }
-for (const scenario of [{ width: 1366, height: 768, root: 16, solo: false },
-  { width: 390, height: 600, root: 32, solo: false }, { width: 390, height: 600, root: 32, solo: true }]) {
+const scenarios: {width:number;height:number;root:number;solo:boolean;reflow?:boolean}[] = [
+  { width: 1366, height: 768, root: 16, solo: false },
+  { width: 390, height: 600, root: 32, solo: false }, { width: 390, height: 600, root: 32, solo: true },
+  {width:390,height:600,root:16,solo:true,reflow:true},
+];
+for (const scenario of scenarios) {
   test('focused ruling label and effects stay readable ' + JSON.stringify(scenario), async ({ page }, info) => {
     const dispute = scenario.solo ? disputes.find(d => d.id === 'dispute_015') : disputes[0]; if (!dispute) throw new Error('Missing case');
     let state: GameSnapshot = { ...createInitialState(104), phase: 'management' as const, activeTab: 'hall', tutorialsSeen: ['hall'] };
@@ -33,7 +37,13 @@ for (const scenario of [{ width: 1366, height: 768, root: 16, solo: false },
     }
     const first = dispute.rulings[0];
     for (const ruling of dispute.rulings) {
-      const choice = page.getByRole('button', { name: new RegExp(ruling.label) }); await tabTo(page, choice); await page.waitForTimeout(450);
+      const choice = page.getByRole('button', { name: new RegExp(ruling.label) }); await tabTo(page, choice);
+      if (scenario.reflow && ruling.id === first.id) {
+        // Change reading size after the original focus frame has completed.
+        await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+        await page.evaluate(() => document.documentElement.style.fontSize = '32px');
+      }
+      await page.waitForTimeout(450);
       const geometry = await choice.evaluate(e => {
         const r = e.getBoundingClientRect(); const hit = (y: number) => { const target = document.elementFromPoint(r.x + r.width / 2, y); return !!target && (target === e || e.contains(target)); };
         return { inside: r.top >= 3 && r.bottom <= innerHeight - 3 && r.left >= 0 && r.right <= innerWidth,
